@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  email       String   @unique
+  role        Role     @default(CUSTOMER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  avatarUrl   String?
+  firstName   String?
+  lastName    String?
+  password    String?
+
+  orders Order[]
+
+  @@index([clerkUserId])
+  @@index([email])
+}
+
+enum Role {
+  CUSTOMER
+  EMPLOYEE
+  ADMIN
+}
+
+enum PaymentStatus {
+  unpaid
+  paid
+  refunded
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  order     Order         @relation(fields: [orderId], references: [id])
+  orderId   String        @unique  // make one-to-one with order
+  method    String?       // JazzCash, Easypaisa, Stripe
+  status    PaymentStatus @default(unpaid)
+  reference String?       // transaction/ref id
+  amount    Float
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+enum OrderStatus {
+  pending
+  in_progress
+  completed
+  cancelled
+}
+model Order {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
+  product       String
+  service       String
+  quantity      String
+  amount        String
+  status        OrderStatus  @default(pending)
+  orderDate     DateTime?     @default(now())
+  deliveryDate  DateTime?
+  paperType     String?
+  size          String?
+  gsm           String?
+  colorMode     String?
+  sides         String?
+  finishingOptions String[]
+  designs       Json
+  requirements  String?
+  isReorder     Boolean?      @default(false)
+  payment       Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}

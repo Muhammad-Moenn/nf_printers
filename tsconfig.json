@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "app/services/[slug]/pag.tsx", "components/custom-table.tsx", "app/(dashborad)/user-dashboard/page.js", "components/charts/status-pie-chart.tsx", "app/(dashborad)/user-dashboard/page.tsx", "app/api/weakly-currentmonth-orders"  ],
   "exclude": ["node_modules"]
 }
