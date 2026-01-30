@@ -29,11 +29,29 @@ function UploadDesign() {
         endpoint="imageUploader"
         onClientUploadComplete={(res) => {
           // Do something with the response
-          toast.success("Upload Completed");
-        }}
+          console.log("Upload completed on client:", res);
+          console.log("Response structure:", JSON.stringify(res, null, 2));
+          
+          if (res && res.length > 0) {
+            const newDesignUrl = res[0].url;
+            console.log("New design URL:", newDesignUrl);
+            setDesigns([newDesignUrl, ...designs]);
+            toast.success("Upload Completed");
+          } else {
+            console.log("No response received from upload");
+          }
+         }}
         onUploadError={(error: Error) => {
           // Do something with the error.
+          console.error("Upload error:", error);
           toast.error(`Upload Error: ${error.message}`);
+        }}
+        onBeforeUploadBegin={(files) => {
+          console.log("Starting upload for files:", files);
+          return files;
+        }}
+        onUploadBegin={(fileName) => {
+          console.log("Upload began for:", fileName);
         }}
       />
       <h3 className="text-xl font-semibold text-left py-12 pb-8">

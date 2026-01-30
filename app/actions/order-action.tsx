@@ -107,7 +107,7 @@ export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
       finishingOptions:
         orderDraft.finishingOptions ?? existingOrder.finishingOptions,
 
-      ...(designsData !== undefined && { designs: designsData }),
+      ...(designsData !== null && { designs: designsData }),
       requirements: orderDraft.requirements ?? existingOrder.requirements,
 
       isReorder: true, // 🔥 important flag

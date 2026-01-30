@@ -62,7 +62,7 @@ const reorderColumns: Column<Order>[] = [
     label: "Order Date",
     sortable: true,
     hideOnMobile: true,
-    render: (value) =>
+    render: (value:any) =>
       value ? new Date(value).toLocaleDateString() : "-",
   },
 
@@ -70,7 +70,7 @@ const reorderColumns: Column<Order>[] = [
     key: "deliveryDate",
     label: "Delivery",
     hideOnMobile: true,
-    render: (value) =>
+    render: (value:any) =>
       value ? new Date(value).toLocaleDateString() : "-",
   },
 
@@ -107,7 +107,7 @@ export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
     colorMode: "",
     sides: "",
     gsm: "",
-    designs: [],
+    designs: [] ,
     requirements: "",
   });
 
@@ -128,7 +128,7 @@ export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
       gsm: selectedOrder.gsm ?? "",
       finishingOptions: selectedOrder.finishingOptions ?? [],
       requirements: selectedOrder.requirements ?? "",
-      designs: selectedOrder.designs ?? "",
+      designs: selectedOrder.designs ?? [],
     });
 
     setDialogOpen(true);

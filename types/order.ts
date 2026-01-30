@@ -1,13 +1,14 @@
+
 export type OrderStatus = "pending" | "in_progress" | "completed" | "cancelled";
 
 export interface Order {
   id: string; // Order ID
-  designs?: { url: string; key: string }[]; // Design preview URL (optional)
+  designs?: { url: string; key: string }[] ; // Design preview URL (optional)
   product: string; // Product name
   service:string
   quantity: string; // Quantity
   status?: OrderStatus; // Optional status
-  orderDate?: Date; // Order date
+  orderDate?: Date | null; // Order date
   deliveryDate?: Date | null; // Delivery date (can be "-" for N/A)
   amount: string; // Price / total
   // Optional Fields for Reorder / UI / Extra info

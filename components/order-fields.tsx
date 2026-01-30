@@ -1,4 +1,4 @@
-"use client";
+"use client"
 import { useEffect, useState } from "react";
 
 import { Label } from "./ui/label";
@@ -61,7 +61,7 @@ const PaperTypes = [
 
 function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(
-    orderDraft?.designs ?? []
+    orderDraft?.designs as UploadedImage[] || []
   );
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
@@ -379,17 +379,34 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
           <UploadButton
             endpoint="imageUploader"
             onClientUploadComplete={(res) => {
-              if (!res?.length) return;
+              console.log("Upload complete on client:", res);
+              console.log("Response structure:", JSON.stringify(res, null, 2));
+              
+              if (!res?.length) {
+                console.log("No response received");
+                return;
+              }
+              
+              const newImages = res.map((file) => {
+                console.log("Processing file:", file);
+                return {
+                  url: file.url,
+                  key: file.key,
+                };
+              });
 
-              const newImages = res.map((file) => ({
-                url: file.ufsUrl,
-                key: file.key,
-              }));
-
+              console.log("New images to add:", newImages);
               handleUpload(newImages);
             }}
             onUploadError={(error) => {
-              // Handle upload error silently or show user notification
+              console.error("Upload error:", error);
+            }}
+            onBeforeUploadBegin={(files) => {
+              console.log("Starting upload for files:", files);
+              return files;
+            }}
+            onUploadBegin={(fileName) => {
+              console.log("Upload began for:", fileName);
             }}
           />
         {/* Show all uploaded images */}

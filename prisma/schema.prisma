@@ -57,7 +57,7 @@ model Order {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   service          String
-  designs          Json
+  designs          Json?
   user             User        @relation(fields: [userId], references: [id])
   payment          Payment?
 
