@@ -2,58 +2,53 @@
 
 import { prisma } from "@/lib/prisma";
 import { Order } from "@/types/order";
-import { currentUser } from "@clerk/nextjs/server";
 import { GetDBUser } from "./user_action";
-import { Prisma } from "@prisma/client";
 
-export async function SaveOrder(orderDraft: Order) {
-  const user = await currentUser();
-  if (!user) throw new Error("User not logged in");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkUserId: user.id },
-  });
-  if (!dbUser) {
+export async function SaveOrder(
+  prevState: { success?: boolean; error?: string ,pending?:boolean},
+  formData: FormData
+) {
+ const dbUser= await GetDBUser();
+ if (!dbUser) {
     throw new Error("User not found in database");
   }
+
+   const order = JSON.parse(formData.get("order") as string);
   const savedOrder = await prisma.order.create({
     data: {
       userId: dbUser.id,
-      product: orderDraft.product,
-      service: orderDraft.service,
-      quantity: orderDraft.quantity, // ensure Int
-      amount: orderDraft.amount, // ensure Float
-      status: orderDraft.status || "pending",
-      orderDate: orderDraft.orderDate
-        ? new Date(orderDraft.orderDate)
+      product: order.product,
+      service: order.service,
+      quantity: order.quantity, // ensure Int
+      amount: order.amount, // ensure Float
+      status: order.status || "pending",
+      orderDate: order.orderDate
+        ? new Date(order.orderDate)
         : new Date(),
-      deliveryDate: orderDraft.deliveryDate
-        ? new Date(orderDraft.deliveryDate)
+      deliveryDate: order.deliveryDate
+        ? new Date(order.deliveryDate)
         : null,
-      paperType: orderDraft.paperType,
-      size: orderDraft.size,
-      gsm: orderDraft.gsm,
-      colorMode: orderDraft.colorMode,
-      sides: orderDraft.sides,
-      finishingOptions: orderDraft.finishingOptions || [],
-      designs: orderDraft.designs || [], // saves JSON array
-      requirements: orderDraft.requirements,
-      isReorder: orderDraft.isReorder || false,
+      paperType: order.paperType,
+      size: order.size,
+      gsm: order.gsm,
+      colorMode: order.colorMode,
+      sides: order.sides,
+      finishingOptions: order.finishingOptions || [],
+      designs: order.designs || [], // saves JSON array
+      requirements: order.requirements,
+      isReorder: order.isReorder || false,
     },
   });
-
-  return savedOrder;
-}
+  if (!savedOrder) {
+    return { success: false, error: "Failed to save order" };
+  }
+  return { success: true};
+  }
 
 //  update the order
 
 export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
-  const user = await currentUser();
-  if (!user) throw new Error("User not logged in");
-
-  const dbUser = await prisma.user.findUnique({
-    where: { clerkUserId: user.id },
-  });
+  const dbUser= await GetDBUser();
   if (!dbUser) {
     throw new Error("User not found in database");
   }
@@ -71,7 +66,7 @@ export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
   }
   const designsData =
     orderDraft.designs !== undefined
-      ? (orderDraft.designs as Prisma.InputJsonValue)
+      ? (orderDraft.designs as any)
       : undefined;
   const updatedOrder = await prisma.order.update({
     where: { id: orderId },
@@ -108,14 +103,14 @@ export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
 
 // fetch Crads and graph Data
 export const fetchCardsDataAndAllOrders = async () => {
-  const dbuser = await GetDBUser();
-  if (!dbuser) {
+  const dbUser= await GetDBUser();
+  if (!dbUser) {
     throw new Error("User not found in database");
   }
 
   // Fetch all orders for this user
   const allOrders = await prisma.order.findMany({
-    where: { userId: dbuser.id },
+    where: { userId: dbUser.id },
   });
 
   // Calculate active, pending, completed

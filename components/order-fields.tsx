@@ -1,14 +1,6 @@
 "use clinet";
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import { DialogTrigger } from "@radix-ui/react-dialog";
+
 import { Label } from "./ui/label";
 import {
   Select,
@@ -18,11 +10,9 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
-import { Button } from "./ui/button";
 import { services } from "@/data/services";
 import { Input } from "./ui/input";
 import { UploadButton } from "@/utils/uploadthing";
-import Image from "next/image";
 import { Trash } from "lucide-react";
 import { Order } from "@/types/order";
 
@@ -70,20 +60,21 @@ const PaperTypes = [
 ];
 
 function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(orderDraft?.designs ?? []);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(
+    orderDraft?.designs ?? []
+  );
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
- 
-
   // When user uploads a new design
-  function handleUpload(newImages: UploadedImage |UploadedImage[] ) {
-  setUploadedImages((prev) => {
-    const updatedImages = Array.isArray(newImages) ? [...newImages] : [newImages]; 
-    // Replace previous image because only 1 upload allowed
-    return updatedImages;
-  });
-  
-}
+  function handleUpload(newImages: UploadedImage | UploadedImage[]) {
+    setUploadedImages((prev) => {
+      const updatedImages = Array.isArray(newImages)
+        ? [...newImages]
+        : [newImages];
+      // Replace previous image because only 1 upload allowed
+      return updatedImages;
+    });
+  }
 
   // Sync back to orderDraft
   useEffect(() => {
@@ -385,27 +376,26 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
       </div>
       <div className="w-full flex flex-col items-start">
         <Label className="text-xl my-4 font-semibold">Upload Designs</Label>
+          <UploadButton
+            endpoint="imageUploader"
+            onClientUploadComplete={(res) => {
+              console.log("UPLOAD COMPLETE", res);
 
-        <UploadButton
-          endpoint="imageUploader"
-          onClientUploadComplete={(res) => {
-            console.log("res",res)
-            if (res && res.length > 0) {
+              if (!res?.length) return;
+
               const newImages = res.map((file) => ({
                 url: file.ufsUrl,
                 key: file.key,
               }));
-              handleUpload(newImages);
-              
-            }
-          }}
-          onUploadError={(error: Error) => {
-            console.log(`ERROR! ${error.message}`);
-          }}
-        />
 
+              handleUpload(newImages);
+            }}
+            onUploadError={(error) => {
+              console.error("UPLOAD ERROR:", error.message);
+            }}
+          />
         {/* Show all uploaded images */}
-        {(uploadedImages.length > 0 && uploadedImages) &&(
+        {uploadedImages.length > 0 && uploadedImages && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
             {uploadedImages.map((url, index) => (
               <div

@@ -40,14 +40,16 @@ if (existingUser) {
   return { success: true };
 }
 // get the current user from DB
-export const GetDBUser= async ()=>{
+export const GetDBUser = async () => {
   const user = await currentUser();
-  if (!user) throw new Error("User not logged in");
-const dbUser = await prisma.user.findUnique({
+  if (!user) return null;
+
+  try {
+    return  await prisma.user.findUnique({
     where: { clerkUserId: user.id },
   });
-  if(dbUser){
-    return dbUser;
-
-  }else{ throw new Error("User not found in DB");}
-}
+  } catch (error) {
+    console.error("DB connection failed:", error);
+    return null;
+  }
+};

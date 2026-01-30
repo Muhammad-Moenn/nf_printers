@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   // directUrl = env("DIRECT_URL")
 }
 
@@ -19,11 +19,50 @@ model User {
   firstName   String?
   lastName    String?
   password    String?
-
-  orders Order[]
+  orders      Order[]
 
   @@index([clerkUserId])
   @@index([email])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  method    String?
+  status    PaymentStatus @default(unpaid)
+  reference String?
+  amount    Float
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  order     Order         @relation(fields: [orderId], references: [id])
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  userId           String
+  product          String
+  quantity         String
+  amount           String
+  status           OrderStatus @default(pending)
+  orderDate        DateTime?   @default(now())
+  deliveryDate     DateTime?
+  paperType        String?
+  size             String?
+  gsm              String?
+  colorMode        String?
+  sides            String?
+  finishingOptions String[]
+  requirements     String?
+  isReorder        Boolean?    @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  service          String
+  designs          Json
+  user             User        @relation(fields: [userId], references: [id])
+  payment          Payment?
+
+  @@index([userId])
+  @@index([status])
 }
 
 enum Role {
@@ -38,48 +77,9 @@ enum PaymentStatus {
   refunded
 }
 
-model Payment {
-  id        String        @id @default(cuid())
-  order     Order         @relation(fields: [orderId], references: [id])
-  orderId   String        @unique  // make one-to-one with order
-  method    String?       // JazzCash, Easypaisa, Stripe
-  status    PaymentStatus @default(unpaid)
-  reference String?       // transaction/ref id
-  amount    Float
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-}
 enum OrderStatus {
   pending
   in_progress
   completed
   cancelled
-}
-model Order {
-  id            String       @id @default(cuid())
-  userId        String
-  user          User         @relation(fields: [userId], references: [id])
-  product       String
-  service       String
-  quantity      String
-  amount        String
-  status        OrderStatus  @default(pending)
-  orderDate     DateTime?     @default(now())
-  deliveryDate  DateTime?
-  paperType     String?
-  size          String?
-  gsm           String?
-  colorMode     String?
-  sides         String?
-  finishingOptions String[]
-  designs       Json
-  requirements  String?
-  isReorder     Boolean?      @default(false)
-  payment       Payment?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([status])
 }

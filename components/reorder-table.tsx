@@ -1,7 +1,7 @@
 "use client";
 
 import CustomTable, { Column } from "@/components/custom-table";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import {
   Dialog,
   DialogClose,
@@ -129,6 +129,7 @@ const reorderColumns: Column<Order>[] = [
 /* ================= PAGE COMPONENT ================= */
 
 export default function ReorderTable({ ordersData }: any) {
+  const [isPending, startTransition] = useTransition();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orderDraft, setorderDraft] = useState<Order>({
     id: "",
@@ -174,22 +175,21 @@ export default function ReorderTable({ ordersData }: any) {
 
   const handleSubmit = async (e: React.FormEvent, orderId: string) => {
     e.preventDefault();
-     if (!orderDraft) return; // safety check
+    if (!orderDraft) return; // safety check
 
-  // Only update if there is at least one design
-  if (orderDraft.designs && orderDraft.designs.length > 0) {
-    try {
-      const updatedOrder = await UpdateOrder(orderId, orderDraft);
-      if (updatedOrder) {
-        alert("Order updated successfully ✅");
+    // Only update if there is at least one design
+    if (orderDraft.designs && orderDraft.designs.length > 0) {
+      try {
+        startTransition(() => {
+          UpdateOrder(orderDraft.id, orderDraft);
+        });
+      } catch (err) {
+        console.error("Update failed:", err);
+        alert("Failed to update order");
       }
-    } catch (err) {
-      console.error("Update failed:", err);
-      alert("Failed to update order");
+    } else {
+      alert("Please upload at least one design before updating the order.");
     }
-  } else {
-    alert("Please upload at least one design before updating the order.");
-  }
 
     setDialogOpen(false);
   };
