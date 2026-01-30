@@ -8,13 +8,25 @@ export async function SaveOrder(
   prevState: { success?: boolean; error?: string ,pending?:boolean},
   formData: FormData
 ) {
- const dbUser= await GetDBUser();
- if (!dbUser) {
-    throw new Error("User not found in database");
-  }
+  try {
+    const dbUser= await GetDBUser();
+    if (!dbUser) {
+      return { success: false, error: "User not found in database" };
+    }
 
-   const order = JSON.parse(formData.get("order") as string);
-  const savedOrder = await prisma.order.create({
+    const orderData = formData.get("order");
+    if (!orderData || typeof orderData !== 'string') {
+      return { success: false, error: "Invalid order data" };
+    }
+
+    let order;
+    try {
+      order = JSON.parse(orderData);
+    } catch (parseError) {
+      return { success: false, error: "Invalid JSON format" };
+    }
+
+    const savedOrder = await prisma.order.create({
     data: {
       userId: dbUser.id,
       product: order.product,
@@ -39,34 +51,38 @@ export async function SaveOrder(
       isReorder: order.isReorder || false,
     },
   });
-  if (!savedOrder) {
-    return { success: false, error: "Failed to save order" };
+    if (!savedOrder) {
+      return { success: false, error: "Failed to save order" };
+    }
+    return { success: true};
+  } catch (error) {
+    return { success: false, error: "Failed to save order. Please try again." };
   }
-  return { success: true};
-  }
+}
 
 //  update the order
 
 export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
-  const dbUser= await GetDBUser();
-  if (!dbUser) {
-    throw new Error("User not found in database");
-  }
+  try {
+    const dbUser= await GetDBUser();
+    if (!dbUser) {
+      throw new Error("User not found in database");
+    }
 
-  // 🔒 Ensure user owns the order
-  const existingOrder = await prisma.order.findFirst({
-    where: {
-      id: orderId,
-      userId: dbUser.id,
-    },
-  });
+    // 🔒 Ensure user owns the order
+    const existingOrder = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId: dbUser.id,
+      },
+    });
 
-  if (!existingOrder) {
-    throw new Error("Order not found or unauthorized");
-  }
+    if (!existingOrder) {
+      throw new Error("Order not found or unauthorized");
+    }
   const designsData =
     orderDraft.designs !== undefined
-      ? (orderDraft.designs as any)
+      ? orderDraft.designs
       : undefined;
   const updatedOrder = await prisma.order.update({
     where: { id: orderId },
@@ -98,7 +114,10 @@ export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
     },
   });
 
-  return updatedOrder;
+    return updatedOrder;
+  } catch (error) {
+    throw new Error("Failed to update order. Please try again.");
+  }
 }
 
 // fetch Crads and graph Data

@@ -8,7 +8,7 @@ export interface Order {
   quantity: string; // Quantity
   status?: OrderStatus; // Optional status
   orderDate?: Date; // Order date
-  deliveryDate?: null; // Delivery date (can be "-" for N/A)
+  deliveryDate?: Date | null; // Delivery date (can be "-" for N/A)
   amount: string; // Price / total
   // Optional Fields for Reorder / UI / Extra info
   finishingOptions?: string[]; // ["Lamination", "Binding", etc.]

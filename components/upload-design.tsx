@@ -1,6 +1,7 @@
 import { UploadButton, UploadDropzone } from "@/utils/uploadthing";
 import React, { useState } from "react";
 import { Button } from "./ui/button";
+import { toast } from "react-toastify";
 import { Download, Trash } from "lucide-react";
 import Image from "next/image";
 import {
@@ -18,7 +19,7 @@ import {
 const imgdesigns = ["/about_img.png", "/printingImage.jpg", "/bg.png"];
 function UploadDesign() {
   const [designs, setDesigns] = useState(imgdesigns);
-  const handleDelete = (url: any) => {
+  const handleDelete = (url: string) => {
     setDesigns(designs.filter((d) => d !== url));
   };
   return (
@@ -28,12 +29,11 @@ function UploadDesign() {
         endpoint="imageUploader"
         onClientUploadComplete={(res) => {
           // Do something with the response
-          console.log("Files: ", res);
-          alert("Upload Completed");
+          toast.success("Upload Completed");
         }}
         onUploadError={(error: Error) => {
           // Do something with the error.
-          alert(`ERROR! ${error.message}`);
+          toast.error(`Upload Error: ${error.message}`);
         }}
       />
       <h3 className="text-xl font-semibold text-left py-12 pb-8">

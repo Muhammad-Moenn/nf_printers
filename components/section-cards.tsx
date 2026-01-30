@@ -26,12 +26,19 @@ const iconMap = {
 }
 
 
-export function SectionCards({cards}:any) {
-  
+interface CardData {
+  icon: keyof typeof iconMap;
+  title: string;
+  value: string | number;
+  description: string;
+}
+
+export function SectionCards({cards}: {cards: CardData[]}) {
+
   return (
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 pb-10">
-      {cards.map((card:any, i:number) => {
-  const Icon = iconMap[card.icon as keyof typeof iconMap]
+      {cards.map((card, i) => {
+  const Icon = iconMap[card.icon] || Package
 
   return (
     <Card key={i} className="@container/card w-full bg-transparent flex flex-col gap-4 cursor-pointer hover:scale-[1.04] transition-all duration-300 dark:bg-gray-900" >

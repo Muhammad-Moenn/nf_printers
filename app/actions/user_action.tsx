@@ -49,7 +49,7 @@ export const GetDBUser = async () => {
     where: { clerkUserId: user.id },
   });
   } catch (error) {
-    console.error("DB connection failed:", error);
+    // Database connection failed
     return null;
   }
 };

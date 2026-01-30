@@ -98,14 +98,14 @@ export default function CustomTable<T extends { id: string | number }>({
       // 🕒 Latest first
       if (sortMode === "latest") {
         return (
-          new Date(bVal as any).getTime() - new Date(aVal as any).getTime()
+          new Date(bVal as string | Date).getTime() - new Date(aVal as string | Date).getTime()
         );
       }
 
       // 🕒 Oldest first
       if (sortMode === "oldest") {
         return (
-          new Date(aVal as any).getTime() - new Date(bVal as any).getTime()
+          new Date(aVal as string | Date).getTime() - new Date(bVal as string | Date).getTime()
         );
       }
 
@@ -239,7 +239,7 @@ export default function CustomTable<T extends { id: string | number }>({
                       >
                         {col.key === "actions" ? (
                           renderActions ? (
-                            renderActions(row as any)
+                            renderActions(row)
                           ) : (
                             <div className="flex gap-2" />
                           )

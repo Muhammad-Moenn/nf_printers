@@ -17,46 +17,7 @@ import OrderFields from "./order-fields";
 import { Order, OrderStatus } from "@/types/order";
 import { StatusBadge } from "./status-badge";
 import { SaveOrder, UpdateOrder } from "@/app/actions/order-action";
-
-/* ================= DUMMY DATA ================= */
-
-// export const ordersData: Order[] = [
-//   {
-//     service:"",
-//     design: [],
-//     id: "ORD-1001",
-//     product: "Lamination Services",
-//     quantity: "500",
-//     status: "pending",
-//     // orderDate: "2025-12-28",
-//     // deliveryDate: "2026-01-05",
-//     amount: "4500",
-//     finishingOptions: ["Lamination", "UV Spot"],
-//     paperType: "Offset Paper",
-//     size: "16*26",
-//     colorMode: "Black",
-//     sides: "Double Side (use two copies)",
-//     gsm: "60 GSM",
-//   },
-//   {
-//     service:"",
-//     design: [],
-//     id: "ORD-1004",
-//     product: "Lamination Services",
-//     quantity:"50",
-//     status: "completed",
-//     // orderDate: "2025-12-10",
-//     // deliveryDate: "2025-12-14",
-//     amount: "6000",
-//     paperType: "Offset Paper",
-//     finishingOptions: ["Lamination", "UV Spot"],
-//     size: "17×27",
-//     sides: "Double Side (use two copies)",
-//     colorMode: "Four Color (CMYK)",
-//     gsm: "53 GSM",
-//     requirements:"loremsjssj njshs sbhshs "
-//   },
-// ];
+import { toast } from "react-toastify";
 
 /* ================= TABLE COLUMNS ================= */
 
@@ -101,7 +62,7 @@ const reorderColumns: Column<Order>[] = [
     label: "Order Date",
     sortable: true,
     hideOnMobile: true,
-    render: (value: any) =>
+    render: (value) =>
       value ? new Date(value).toLocaleDateString() : "-",
   },
 
@@ -109,7 +70,7 @@ const reorderColumns: Column<Order>[] = [
     key: "deliveryDate",
     label: "Delivery",
     hideOnMobile: true,
-    render: (value: any) =>
+    render: (value) =>
       value ? new Date(value).toLocaleDateString() : "-",
   },
 
@@ -128,7 +89,7 @@ const reorderColumns: Column<Order>[] = [
 
 /* ================= PAGE COMPONENT ================= */
 
-export default function ReorderTable({ ordersData }: any) {
+export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
   const [isPending, startTransition] = useTransition();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orderDraft, setorderDraft] = useState<Order>({
@@ -151,10 +112,10 @@ export default function ReorderTable({ ordersData }: any) {
   });
 
   const completedOrders = ordersData.filter(
-    (order: any) => order.status == "completed"
+    (order: Order) => order.status === "completed"
   );
   const reorder = (id: string) => {
-    const selectedOrder = ordersData.find((o: any) => o.id === id);
+    const selectedOrder = ordersData.find((o: Order) => o.id === id);
     if (!selectedOrder) return;
 
     setorderDraft({
@@ -184,11 +145,10 @@ export default function ReorderTable({ ordersData }: any) {
           UpdateOrder(orderDraft.id, orderDraft);
         });
       } catch (err) {
-        console.error("Update failed:", err);
-        alert("Failed to update order");
+        toast.error("Failed to update order");
       }
     } else {
-      alert("Please upload at least one design before updating the order.");
+      toast.warning("Please upload at least one design before updating the order.");
     }
 
     setDialogOpen(false);
@@ -208,7 +168,7 @@ export default function ReorderTable({ ordersData }: any) {
               View
             </button>
 
-            {order.status == "completed" && (
+            {order.status === "completed" && (
               <button
                 className="bg-yellow-500 text-white cursor-pointer px-2 py-1 rounded"
                 onClick={() => reorder(order.id)}

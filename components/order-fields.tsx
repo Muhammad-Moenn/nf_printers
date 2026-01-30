@@ -1,4 +1,4 @@
-"use clinet";
+"use client";
 import { useEffect, useState } from "react";
 
 import { Label } from "./ui/label";
@@ -379,8 +379,6 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
           <UploadButton
             endpoint="imageUploader"
             onClientUploadComplete={(res) => {
-              console.log("UPLOAD COMPLETE", res);
-
               if (!res?.length) return;
 
               const newImages = res.map((file) => ({
@@ -391,7 +389,7 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
               handleUpload(newImages);
             }}
             onUploadError={(error) => {
-              console.error("UPLOAD ERROR:", error.message);
+              // Handle upload error silently or show user notification
             }}
           />
         {/* Show all uploaded images */}
