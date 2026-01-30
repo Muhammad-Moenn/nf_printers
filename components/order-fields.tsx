@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Label } from "./ui/label";
 import {
@@ -26,7 +26,14 @@ interface OrderFieldsProps {
   setorderDraft: React.Dispatch<React.SetStateAction<Order>>;
 }
 
-const PaperSizes = ["16×26", "17×27", "18×28", "19×29", "20×23", "20×30"];
+const PaperSizes = [
+  "16\u00d726",
+  "17\u00d727",
+  "18\u00d728",
+  "19\u00d729",
+  "20\u00d723",
+  "20\u00d730",
+];
 const PaperWeights = [
   "52 GSM",
   "53 GSM",
@@ -60,29 +67,18 @@ const PaperTypes = [
 ];
 
 function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>(
-    orderDraft?.designs as UploadedImage[] || []
-  );
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const uploadedImages = (orderDraft.designs ?? []) as UploadedImage[];
 
   // When user uploads a new design
   function handleUpload(newImages: UploadedImage | UploadedImage[]) {
-    setUploadedImages((prev) => {
-      const updatedImages = Array.isArray(newImages)
-        ? [...newImages]
-        : [newImages];
-      // Replace previous image because only 1 upload allowed
-      return updatedImages;
-    });
-  }
-
-  // Sync back to orderDraft
-  useEffect(() => {
+    const updatedImages = Array.isArray(newImages) ? [...newImages] : [newImages];
+    // Replace previous image because only 1 upload allowed
     setorderDraft((prev) => ({
       ...prev,
-      designs: uploadedImages,
+      designs: updatedImages,
     }));
-  }, [uploadedImages]);
+  }
 
   const toggleFinishing = (option: string) => {
     setorderDraft((prev) => ({
@@ -106,7 +102,10 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
       if (!res.ok) throw new Error("Delete failed");
 
       if (res.ok) {
-        setUploadedImages((prev) => prev.filter((img) => img.key !== key));
+        setorderDraft((prev) => ({
+          ...prev,
+          designs: (prev.designs ?? []).filter((img) => img.key !== key),
+        }));
       }
     } catch (err) {
       console.error(err);
@@ -212,7 +211,7 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
             {orderDraft.size === "custom" ||
             (orderDraft.size && !PaperSizes.includes(orderDraft.size)) ? (
               <Input
-                placeholder="Enter size (e.g. 16×26)"
+                placeholder="Enter size (e.g. 16\u00d726)"
                 type="text"
                 value={orderDraft.size === "custom" ? "" : orderDraft.size}
                 onChange={(e) =>
@@ -292,8 +291,7 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <div className="grid gap-2">
-            {" "}
-            <Label>Color Mode</Label>{" "}
+            <Label>Color Mode</Label>
             <Select
               key={orderDraft.colorMode}
               value={orderDraft.colorMode}
@@ -301,24 +299,21 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
                 setorderDraft({ ...orderDraft, colorMode: v })
               }
             >
-              {" "}
               <SelectTrigger className="w-full focus:outline-none focus:ring-2 focus:ring-primary">
-                {" "}
-                <SelectValue placeholder="Select color mode" />{" "}
-              </SelectTrigger>{" "}
+                <SelectValue placeholder="Select color mode" />
+              </SelectTrigger>
               <SelectContent>
-                {" "}
-                <SelectItem value=" White"> White</SelectItem>{" "}
-                <SelectItem value="Black ">Black</SelectItem>{" "}
+                <SelectItem value="White">White</SelectItem>
+                <SelectItem value="Black">Black</SelectItem>
                 <SelectItem value="Two Color (CMYK)">
                   Two Color (CMYK)
-                </SelectItem>{" "}
+                </SelectItem>
                 <SelectItem value="Four Color (CMYK)">
                   Four Color (CMYK)
-                </SelectItem>{" "}
-              </SelectContent>{" "}
-            </Select>{" "}
-          </div>{" "}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-2">
             <Label className="">Quantity</Label>
             <Input
@@ -410,7 +405,7 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
             }}
           />
         {/* Show all uploaded images */}
-        {uploadedImages.length > 0 && uploadedImages && (
+        {uploadedImages.length > 0 && (
           <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
             {uploadedImages.map((url, index) => (
               <div
