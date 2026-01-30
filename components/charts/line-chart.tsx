@@ -37,8 +37,8 @@ export default function OrdersLineChart({
       : "hsl(var(--muted-foreground))";
 
   return (
-    <div className="h-[320px] w-full ">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[320px] min-h-[320px] w-full min-w-0">
+      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
         <LineChart data={data}>
           {/* Grid */}
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))"  />

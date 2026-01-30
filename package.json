@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "create:dummy-user": "tsx scripts/create-dummy-user.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
