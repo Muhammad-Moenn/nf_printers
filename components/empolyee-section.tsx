@@ -2,6 +2,9 @@ import { Employee } from "@/types/user";
 import { HoverEffect } from "./ui/card-hover-effect";
 import { Button } from "./ui/button";
 import { MoveRight } from "lucide-react";
+import { get } from "http";
+import { getLocale, getTranslations } from "next-intl/server";
+import Link from "next/link";
 
 const employees: Employee[] = [
   {
@@ -59,15 +62,18 @@ const employees: Employee[] = [
   },
 ];
 
-export default function EmployeeSection() {
+export default async function EmployeeSection() {
+  const locale = await getLocale();
+  const t = await getTranslations("home");
+  const isLocaleUr = locale === "ur";
+  const employees = t.raw("employees");
   return (
     <div id="our-team" className="max-w-6xl mx-auto px-8 py-16">
       <h1 className="text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-white font-semibold text-center px-4">
-        Our Skilled Printing Professionals
+        {t("employees_title")}
       </h1>
       <p className="text-gray-500 leading-6 dark:text-gray-300 text-lg text-center max-w-xl mx-auto my-7">
-        Behind every high-quality print is a team of experienced professionals
-        dedicated to precision, quality, and timely delivery.
+        {t("employees_description")}
       </p>
       <HoverEffect users={employees} />
       <Button
@@ -78,19 +84,20 @@ export default function EmployeeSection() {
       group z-10 hover:-translate-y-0.5 transition duration-200  text-center 
   "
       >
-        <a
+        <Link
           href="/"
-          className="flex items-center gap-1 text-md leading-none py-4 "
+          className={`flex items-center gap-1 text-md leading-none py-4 ${isLocaleUr ? "flex-row-reverse" : "flex-row"}`}
         >
-          View All{" "}
+          {isLocaleUr ? "سب دیکھیں" : "View All"}
+
           <MoveRight
-            className=" ml-1
+            className={` ml-1
         w-4 h-4
         transition-transform duration-500 ease-out
-        group-hover:translate-x-2
-      "
+        
+        ${isLocaleUr ? " -rotate-180 group-hover:-translate-x-2" : " group-hover:translate-x-2" }`}
           ></MoveRight>
-        </a>
+        </Link>
       </Button>
     </div>
   );

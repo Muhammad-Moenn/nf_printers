@@ -19,30 +19,37 @@ import { ModeToggle } from "./ui/mode-toggle";
 import { Button } from "./ui/button";
 import { LayoutDashboard, LogIn, LogInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+import LanguageSelector from "./language-selector";
+import { useLocale, useTranslations } from "next-intl";
+// import Link from "next/link";
 
 export function NavBar() {
-  const navItems = [
-    {
-      name: "About",
-      link: "#about",
-    },
-    {
-      name: "Partners",
-      link: "#partners",
-    },
-    {
-      name: " Team",
-      link: "#our-team",
-    },
-    {
-      name: "Services",
-      link: "#services",
-    },
-    {
-      name: "Testimonials",
-      link: "#testimonials",
-    },
-  ];
+  const t = useTranslations("home.header");
+  const items = t.raw("navItems");
+  const locale = useLocale();
+  const isLocale = locale === "ur";
+  // const navItems = [
+  //   {
+  //     name: "About",
+  //     link: "#about",
+  //   },
+  //   {
+  //     name: "Partners",
+  //     link: "#partners",
+  //   },
+  //   {
+  //     name: " Team",
+  //     link: "#our-team",
+  //   },
+  //   {
+  //     name: "Services",
+  //     link: "#services",
+  //   },
+  //   {
+  //     name: "Testimonials",
+  //     link: "#testimonials",
+  //   },
+  // ];
   const { user } = useUser();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -82,7 +89,7 @@ export function NavBar() {
       bg-black/90
       dark:bg-gray-100
       backdrop-blur-md
-      max-w-[600px]
+      max-w-[630px]
       mx-auto
       px-6
       rounded-3xl
@@ -90,7 +97,7 @@ export function NavBar() {
       z-50
     "
         >
-          {navItems.map((item, idx) => (
+          {items.map((item: any, idx: number) => (
             <Link
               to={item.link}
               smooth={true}
@@ -110,29 +117,49 @@ export function NavBar() {
               <span className="relative z-20  ">{item.name}</span>
             </Link>
           ))}
-          <Button
-            asChild
-            className="
+
+          {!user ? (
+            <Button
+              asChild
+              className="
     flex items-center justify-center
     max-h-[32px] max-w-[100px] w-full
     rounded-2xl
    
   "
-          >
-            <a
-              href="/"
-              className=" group flex items-center justify-center h-full gap-1 text-sm leading-none"
             >
-              Login
-              <LogIn
-                className="
+              <a
+                href="/sign-in"
+                className=" group flex items-center justify-center h-full gap-1 text-sm leading-none"
+              >
+                Login
+                <LogIn
+                  className="
         w-4 h-4
         transition-transform duration-500 ease-out
         group-hover:translate-x-2
       "
-              />
-            </a>
-          </Button>
+                />
+              </a>
+            </Button>
+          ) : (
+            <Button
+              asChild
+              className="
+             flex items-center justify-center
+             cursor-pointer text-sm leading-none
+                z-10 hover:-translate-y-0.5 transition duration-200  text-center rounded-2xl
+               "
+            >
+              <a
+                href="/user-dashboard"
+                className="flex items-center gap-1 text-sm leading-none"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+               {isLocale ? "ڈیش بورڈ" : "Dashboard"}
+              </a>
+            </Button>
+          )}
         </motion.div>
       )}
 
@@ -141,8 +168,10 @@ export function NavBar() {
 
         <NavBody>
           <NavbarLogo />
-          <NavItems items={navItems} />
-          <div className="flex items-center gap-4">
+          <NavItems items={items} />
+          <div className="flex items-center gap-4 z-10">
+            <LanguageSelector />
+            <ModeToggle />
             {!user ? (
               <Button
                 onClick={handleLogin}
@@ -158,7 +187,8 @@ export function NavBar() {
                 className="flex items-center gap-1 text-sm leading-none"
               > */}
                 <LogIn className="h-4 w-4" />
-                Login
+                {isLocale ?  "لاگ ان" : "Login"}
+                
                 {/* </a> */}
               </Button>
             ) : (
@@ -175,12 +205,10 @@ export function NavBar() {
                   className="flex items-center gap-1 text-sm leading-none"
                 >
                   <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  {isLocale ? "ڈیش بورڈ" : "Dashboard"}
                 </a>
               </Button>
             )}
-
-            <ModeToggle />
           </div>
         </NavBody>
 
@@ -197,8 +225,9 @@ export function NavBar() {
           <MobileNavMenu
             isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
+            className={`${isLocale?"text-right":"text-left"}`}
           >
-            {navItems.map((item, idx) => (
+            {items.map((item: any, idx: number) => (
               <Link
                 to={item.link}
                 smooth={true}
@@ -207,28 +236,52 @@ export function NavBar() {
                 key={`mobile-link-${idx}`}
                 href={item.link}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="relative text-neutral-600 dark:text-neutral-300"
+                className={`relative w-full text-neutral-600 dark:text-neutral-300 ${isLocale?"text-right":"text-left"}`}
               >
                 <span className="block">{item.name}</span>
               </Link>
             ))}
-            <div className="flex w-full flex-col gap-4">
+            <div className={`flex w-full flex-col gap-4 max ${isLocale?"items-end":"items-start"}`}>
+               <LanguageSelector />
+                <ModeToggle />
+               {!user ? (
               <Button
-                asChild
+                onClick={handleLogin}
+                // asChild
                 className="
     flex items-center justify-center
     cursor-pointer
-    rounded-lg 
+    rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
   "
               >
+                {/* <a
+                href="/"
+                className="flex items-center gap-1 text-sm leading-none"
+              > */}
+                <LogIn className="h-4 w-4" />
+                {isLocale ?  "لاگ ان" : "Login"}
+                
+                {/* </a> */}
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="
+             flex items-center justify-center
+             cursor-pointer
+              rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
+               "
+              >
                 <a
-                  href="/"
+                  href="/user-dashboard"
                   className="flex items-center gap-1 text-sm leading-none"
                 >
-                  <LogIn className="h-4 w-4" />
-                  Login
+                  <LayoutDashboard className="h-4 w-4" />
+                  {isLocale ? "ڈیش بورڈ" : "Dashboard"}
                 </a>
               </Button>
+            )}
+             
               {/* <NavbarButton
                 onClick={() => setIsMobileMenuOpen(false)}
                 variant="primary"
@@ -244,7 +297,7 @@ export function NavBar() {
                 Book a call
               </NavbarButton> */}
             </div>
-            <ModeToggle />
+           
           </MobileNavMenu>
         </MobileNav>
       </Navbar>

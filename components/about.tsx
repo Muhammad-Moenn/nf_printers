@@ -1,66 +1,48 @@
-import React from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, MoveRight } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 
-function About() {
+async function About() {
+  const locale=await getLocale();
+  const t = await getTranslations("home.about_us");
+const description = t.raw("description") as string[];
+const features = t.raw("features") as string[];
   return (
     <section id="about" className=" bg-gray-50 dark:bg-black ">
       <div className="max-w-6xl mx-auto px-6 lg:px-8 py-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className={`flex flex-col-reverse  gap-12 items-center ${locale === "ur" ? "text-right  lg:flex-row-reverse " : " lg:flex-row text-left"}`}>
           {/* LEFT — CONTENT */}
-          <div>
+          <div className={`w-full lg:w-[50%] ${locale === "ur" ? "text-right " : "text-left"}`}>
             <span className="inline-block mb-4 text-sm  tracking-wide text-blue-600 dark:text-blue-500 font-medium text-[18px]">
-              About Us
+              {t("title")}
             </span>
 
-            <h2 className="text-3xl md:text-4xl xl:text-[46px] font-semibold text-gray-800 dark:text-white/95 max-w-[600px]">
-              Reliable & Professional Printing Solutions
+            <h2 className={`text-3xl  md:text-4xl xl:text-[46px] font-semibold text-gray-800 dark:text-white/95 max-w-[600px] ${locale === "ur" ? "ml-auto " : "mr-auto "}`}>
+             {t("heading")}
             </h2>
 
             <p className="mt-6  xl:text-lg text-gray-600 dark:text-gray-300">
-              We are a modern printing press delivering high-quality prints for
-              businesses, institutions, and individuals. From digital printing
-              to large-format solutions, we focus on precision, speed, and
-              excellence.
+              {description[0]}
             </p>
 
             <p className="mt-4 text-gray-600 dark:text-gray-300">
-              Our mission is to combine advanced printing technology with expert
-              craftsmanship to help brands stand out and communicate
-              effectively.
+               {description[1]}
             </p>
 
             {/* FEATURES */}
-            <div className="mt-8 grid sm:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
+            <div className={`mt-8 grid sm:grid-cols-2 gap-4 `}>
+              {features.map((feature, index) => (
+                <div className={`flex items-center gap-3 ${locale === "ur" ? "text-left flex-row-reverse" : " text-right flex-row"}`} key={index}>
                 <span className="w-2 h-2 rounded-full bg-blue-600" />
                 <span className="text-gray-700 dark:text-gray-200">
-                  High-quality materials
+                  {feature}
                 </span>
               </div>
+              ))}
 
-              <div className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-blue-600" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  Fast turnaround time
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  Affordable pricing
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-gray-700 dark:text-gray-200">
-                  Professional support
-                </span>
-              </div>
+              
             </div>
 
             {/* BUTTON */}
@@ -68,21 +50,21 @@ function About() {
               asChild
               className=" group mt-10 px-7 w-[150px] py-3 h-[42px] rounded-full  text-white transition"
             >
-              <Link href="" className="">
-                Learn More{" "}
+              <Link href="/" className={`flex gap-4 ${locale === "ur" ? "flex-row-reverse" : "flex-row"}`} >
+                {t("button_text")}{" "}
                 <MoveRight
-                  className="
+                  className={` ${locale === "ur" ? " -rotate-180 group-hover:-translate-x-2 " : "group-hover:translate-x-2 "} 
                         w-4 h-4
                         transition-transform duration-500 ease-out
-                        group-hover:translate-x-2
-                      "
+                        
+                       `}
                 ></MoveRight>
               </Link>
             </Button>
           </div>
 
           {/* RIGHT — IMAGE */}
-          <div className="relative">
+          <div className={` w-full lg:w-[50%] relative ${locale === "ur" ? " " : " "}`}>
             <Image
               priority
               width={300}

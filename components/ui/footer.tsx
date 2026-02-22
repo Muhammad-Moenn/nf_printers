@@ -1,91 +1,26 @@
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 
 // import { Logo, LogoImage, LogoText } from "@/components/shadcnblocks/logo";
 
-interface MenuItem {
-  title: string;
-  links: {
-    text: string;
-    url: string;
-  }[];
-}
-
-interface Footer2Props {
-  logo?: {
-    url: string;
-    src: string;
-    alt: string;
-    title: string;
-  };
+interface FooterProps {
   className?: string;
-  tagline?: string;
-  menuItems?: MenuItem[];
-  copyright?: string;
-  bottomLinks?: {
-    text: string;
-    url: string;
-  }[];
 }
 
-const Footer = (
-  {
-  logo = {
-    src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
-    alt: "blocks for shadcn/ui",
-    title: "Shadcnblocks.com",
-    url: "https://www.shadcnblocks.com",
-  },
-  className,
-  tagline = "Professional printing solutions delivering precision, quality, and reliability for businesses and individuals.",
-  menuItems = [
-    {
-      title: "Services",
-       links: [
-      { text: "Offset Printing", url: "/services/offset-printing" },
-      { text: "Digital Printing", url: "/services/digital-printing" },
-      { text: "Large Format Printing", url: "/services/large-format" },
-      { text: "Packaging & Labels", url: "/services/packaging" },
-      { text: "Binding & Finishing", url: "/services/binding" },
-    ],
-    },
-    {
-      title: "Company",
-      links: [
-      { text: "About Us", url: "/about" },
-      { text: "Our Team", url: "/team" },
-      { text: "Our Clients", url: "/clients" },
-      { text: "Careers", url: "/careers" },
-      { text: "Contact Us", url: "/contact" },
-    ],
-    },
-    {
-      title: "Resources",
-       links: [
-      { text: "Get a Quote", url: "/quote" },
-      { text: "Design Guidelines", url: "/guidelines" },
-      { text: "FAQs", url: "/faq" },
-      { text: "Delivery Information", url: "/delivery" },
-      { text: "Blog", url: "/blog" },
-    ],
-    },
-    {
-      title: "Social",
-      links: [
-        { text: "Twitter", url: "#" },
-        { text: "Instagram", url: "#" },
-        { text: "LinkedIn", url: "#" },
-      ],
-    },
-  ],
-  copyright = "© 2024 PrimePrint Press. All rights reserved.",
-  bottomLinks = [
-    { text: "Terms and Conditions", url: "#" },
-    { text: "Privacy Policy", url: "#" },
-  ],
-}: Footer2Props) => {
+const Footer: React.FC<FooterProps> = ({ className }) => {
+  const t = useTranslations("home.footer");
+  const items = t.raw("menuItems");
+  const bottomLinks = t.raw("bottomLinks");
+  const locale = useLocale();
+  const isLocale = locale === "ur";
   return (
-    <section className={cn("pt-32 pb-8 bg-gray-200 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700", className)} >
+    <section
+      className={cn(
+        "pt-32 pb-8 bg-gray-200 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700",
+        className
+      )}
+    >
       <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <footer>
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
@@ -100,19 +35,33 @@ const Footer = (
                   />
                   <LogoText className="text-xl">{logo.title}</LogoText>
                 </Logo> */}
-                <Image src={logo.src} alt={logo.alt} priority width={100} height={80}/>
+                <Image
+                  src={t("logo.src")}
+                  alt={t("logo.alt")}
+                  priority
+                  width={100}
+                  height={80}
+                />
               </div>
-              <p className="mt-4 text-gray-700 dark:text-gray-200">{tagline}</p>
+              <p
+                className={`mt-4 text-gray-700 dark:text-gray-200 ${
+                  isLocale ? "text-right" : "text-left"
+                }`}
+              >
+                {t("tagline")}
+              </p>
             </div>
-            {menuItems.map((section, sectionIdx) => (
-              <div key={sectionIdx}>
-                <h3 className="mb-4 font-semibold xl:text-lg text-gray-800 dark:text-white">{section.title}</h3>
+            {items.map((section: any, sectionIdx: number) => (
+              <div
+                key={sectionIdx}
+                className={`${isLocale ? "text-right" : "text-left"}`}
+              >
+                <h3 className="mb-4 font-semibold xl:text-lg text-gray-800 dark:text-white">
+                  {section.title}
+                </h3>
                 <ul className="space-y-4 text-muted-foreground dark:text-gray-300">
-                  {section.links.map((link, linkIdx) => (
-                    <li
-                      key={linkIdx}
-                      className=" hover:underline "
-                    >
+                  {section.links.map((link: any, linkIdx: number) => (
+                    <li key={linkIdx} className=" hover:underline ">
                       <a href={link.url}>{link.text}</a>
                     </li>
                   ))}
@@ -121,9 +70,9 @@ const Footer = (
             ))}
           </div>
           <div className="mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium text-muted-foreground dark:text-gray-300 md:flex-row md:items-center">
-            <p>{copyright}</p>
+            <p>{t("copyright")}</p>
             <ul className="flex gap-4">
-              {bottomLinks.map((link, linkIdx) => (
+              {bottomLinks.map((link: any, linkIdx: number) => (
                 <li key={linkIdx} className="underline ">
                   <a href={link.url}>{link.text}</a>
                 </li>
@@ -137,4 +86,3 @@ const Footer = (
 };
 
 export { Footer };
-

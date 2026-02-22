@@ -1,0 +1,578 @@
+{
+  "home": {
+    "about_us": {
+      "button_text": "Learn More",
+      "description": [
+        "We are a modern printing press delivering high-quality prints for businesses, institutions, and individuals. From digital printing to large-format solutions, we focus on precision, speed, and excellence.",
+        "Our mission is to combine advanced printing technology with expert craftsmanship to help brands stand out and communicate effectively."
+      ],
+      "features": [
+        "High-quality materials",
+        "Fast turnaround time",
+        "Affordable pricing",
+        "Professional support"
+      ],
+      "heading": "Reliable & Professional Printing Solutions",
+      "title": "About Us"
+    },
+    "actionbanner": {
+      "description": "Join thousands of satisfied clients who trust us for high-quality printing solutions.",
+      "heading": "Ready to Take Your Printing Business to the Next Level?",
+      "primaryHref": "/sign-up",
+      "primaryText": "Get Started",
+      "secondaryHref": "/sign-in",
+      "secondaryText": "Login",
+      "showPrimary": "true",
+      "showSecondary": "true"
+    },
+    "brand_description": "Partnering with top brands to deliver exceptional, high-quality printing solutions tailored to every project",
+    "brands": [
+      {
+        "name": "Multan Public",
+        "logo": "/Multan_public_school.jpeg"
+      },
+      {
+        "name": "American ",
+        "logo": "/American_school .jpg"
+      },
+      {
+        "name": "Defense ",
+        "logo": "/Defense_school.jpeg"
+      },
+      {
+        "name": "Laureate",
+        "logo": "/Larat_school .jpeg"
+      },
+      {
+        "name": " Dritish International ",
+        "logo": "/British_international_school .jpeg"
+      },
+      {
+        "name": "Punjab College ",
+        "logo": "/Punjab_college .png"
+      },
+      {
+        "name": "Ramada Hotel",
+        "logo": "/Ramada_hotel.png"
+      }
+    ],
+    "brand_title": "Brands We Work With",
+    "btn_text": "Start Your Print Order",
+    "description": "With modern equipment and expert staff, we provide reliable, cost-effective printing solutions tailored to your business needs.",
+    "employees": [
+      {
+        "id": 1,
+        "name": "Ahmed Raza",
+        "position": "Production Manager",
+        "description": "Supervises daily printing operations, schedules jobs, and ensures quality output.",
+        "profileImage": "/profileImage.jpeg"
+      },
+      {
+        "id": 2,
+        "name": "Usman Ali",
+        "position": "Graphic Designer",
+        "description": "Creates print-ready designs, manages layouts, and handles color corrections.",
+        "profileImage": "/profileImage.jpeg"
+      },
+      {
+        "id": 3,
+        "name": "Bilal Khan",
+        "position": "Offset Machine Operator",
+        "description": "Operates offset and digital machines with precision and efficiency.",
+        "profileImage": "/profileImage.jpeg"
+      },
+      {
+        "id": 4,
+        "name": "Shahid Mahmood",
+        "position": "Quality Control Supervisor",
+        "description": "Ensures color accuracy, paper quality, and finishing standards.",
+        "profileImage": "/profileImage.jpeg"
+      },
+      {
+        "id": 5,
+        "name": "Hassan Tariq",
+        "position": "Sales & Client Coordinator",
+        "description": "Handles customer orders, pricing, and client communication.",
+        "profileImage": "/profileImage.jpeg"
+      },
+      {
+        "id": 6,
+        "name": "Imran Yousaf",
+        "position": "Binding & Finishing Specialist",
+        "description": "Manages cutting, lamination, binding, and final product finishing.",
+        "profileImage": "/profileImage.jpeg"
+      }
+    ],
+    "employees_description": "Behind every high-quality print is a team of experienced professionals dedicated to precision, quality, and timely delivery.",
+    "employees_title": " Our Skilled Printing Professionals",
+    
+    "faq_section": {
+      "description": "Find answers to common questions about our printing services, quality, and delivery process.",
+      "faqs": [
+        {
+          "question": "What types of printing services do you offer?",
+          "answer": "We offer a wide range of printing services including register printing, notebooks, visiting cards, brochures, flyers, letterheads, books, and customized office stationery."
+        },
+        {
+          "question": "Can I customize the size, paper quality, and layout?",
+          "answer": "Yes, all our printing services are fully customizable. You can choose page size (A4, A3, custom), paper quality (80gsm, 100gsm, etc.), ruling style, cover type, and layout according to your requirements."
+        },
+        {
+          "question": "What is the minimum order quantity?",
+          "answer": "Our minimum order quantity depends on the product type. For registers and notebooks, bulk orders are preferred, but small orders can also be discussed."
+        },
+        {
+          "question": "How long does printing and delivery take?",
+          "answer": "Standard orders usually take 3–7 working days. Large or customized orders may take longer depending on quantity and specifications."
+        },
+        {
+          "question": "Do you provide sample prints before final production?",
+          "answer": "Yes, we can provide a sample or digital proof before final printing to ensure complete satisfaction and accuracy."
+        },
+        {
+          "question": "Do you offer bulk discounts?",
+          "answer": "Yes, we offer special pricing for bulk and long-term orders from schools, colleges, offices, and organizations."
+        },
+        {
+          "question": "Can you print logos and custom branding?",
+          "answer": "Absolutely. We offer logo printing, branding, and custom designs for covers, pages, and office stationery."
+        },
+        {
+          "question": "What payment methods do you accept?",
+          "answer": "We accept cash, bank transfer, and online payments. Payment terms can be discussed for bulk or recurring orders."
+        }
+      ],
+      "title": "Frequently Asked Questions"
+    },
+    "footer": {
+      "bottomLinks": [
+        {
+          "text": "Terms and Conditions",
+          "url": "#"
+        },
+        {
+          "text": "Privacy Policy",
+          "url": "#"
+        }
+      ],
+      "copyright": "© 2024 PrimePrint Press. All rights reserved.",
+      "logo": {
+        "alt": "blocks for shadcn/ui",
+        "src": "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
+        "title": "Shadcnblocks.com",
+        "url": "https://www.shadcnblocks.com"
+      },
+      "menuItems": [
+        {
+          "title": "Services",
+          "links": [
+            {
+              "text": "Offset Printing",
+              "url": "/services/offset-printing"
+            },
+            {
+              "text": "Digital Printing",
+              "url": "/services/digital-printing"
+            },
+            {
+              "text": "Large Format Printing",
+              "url": "/services/large-format"
+            },
+            {
+              "text": "Packaging & Labels",
+              "url": "/services/packaging"
+            },
+            {
+              "text": "Binding & Finishing",
+              "url": "/services/binding"
+            }
+          ]
+        },
+        {
+          "title": "Company",
+          "links": [
+            {
+              "text": "About Us",
+              "url": "/about"
+            },
+            {
+              "text": "Our Team",
+              "url": "/team"
+            },
+            {
+              "text": "Our Clients",
+              "url": "/clients"
+            },
+            {
+              "text": "Careers",
+              "url": "/careers"
+            },
+            {
+              "text": "Contact Us",
+              "url": "/contact"
+            }
+          ]
+        },
+        {
+          "title": "Resources",
+          "links": [
+            {
+              "text": "Get a Quote",
+              "url": "/quote"
+            },
+            {
+              "text": "Design Guidelines",
+              "url": "/guidelines"
+            },
+            {
+              "text": "FAQs",
+              "url": "/faq"
+            },
+            {
+              "text": "Delivery Information",
+              "url": "/delivery"
+            },
+            {
+              "text": "Blog",
+              "url": "/blog"
+            }
+          ]
+        },
+        {
+          "title": "Social",
+          "links": [
+            {
+              "text": "Twitter",
+              "url": "#"
+            },
+            {
+              "text": "Instagram",
+              "url": "#"
+            },
+            {
+              "text": "LinkedIn",
+              "url": "#"
+            }
+          ]
+        }
+      ],
+      "tagline": "Professional printing solutions delivering precision, quality, and reliability for businesses and individuals."
+    },
+    "header": {
+      "navItems": [
+        {
+          "name": "About",
+          "link": "#about"
+        },
+        {
+          "name": "Partners",
+          "link": "#partners"
+        },
+        {
+          "name": "Team",
+          "link": "#our-team"
+        },
+        {
+          "name": "Services",
+          "link": "#services"
+        },
+        {
+          "name": "Testimonials",
+          "link": "#testimonials"
+        }
+      ]
+    },
+    "hero_title": "High-Quality Printing Solutions That Bring Your Ideas to Life",
+    "servic_section": {
+      "description": "We provide reliable and professional printing solutions for individuals, businesses, and institutions.",
+      "heading": "Our Printing Services",
+      "services": [
+        {
+          "id": 1,
+          "title": "Register Printing",
+          "description": "School, college, and office registers printed with durable paper and clean formatting.",
+          "icon": "notebookPen",
+          "iconColor": "text-blue-500",
+          "iconBg": "bg-blue-500/10",
+          "details": "We provide long-lasting register printing designed for daily academic and office use. Our registers are printed with clear ruling, strong binding, and premium paper to ensure durability over time.",
+          "features": [
+            "Strong binding for daily usage",
+            "Clear ruling and neat margins",
+            "High-quality ink for long-term readability",
+            "Custom page count and layouts"
+          ],
+          "options": [
+            "A4 / A3 size",
+            "Single or double ruling",
+            "Soft or hard cover"
+          ],
+          "idealFor": [
+            "Schools",
+            "Colleges",
+            "Offices"
+          ],
+          "link": "/services/register-printing",
+          "slug": "register-printing"
+        },
+        {
+          "id": 2,
+          "title": "Book Printing",
+          "description": "High-quality book printing including textbooks, novels, manuals, and magazines.",
+          "icon": "bookOpen",
+          "iconColor": "text-blue-500",
+          "iconBg": "bg-blue-500/10",
+          "details": "Our book printing service delivers professional-grade results with excellent paper quality, sharp text, and strong binding. Whether you need educational books or commercial publications, we ensure consistency and accuracy.",
+          "features": [
+            "High-resolution printing",
+            "Multiple binding options",
+            "Black & white or full color",
+            "Bulk and small quantity support"
+          ],
+          "options": [
+            "Paperback / Hardcover",
+            "Offset & digital printing",
+            "Glossy or matte pages"
+          ],
+          "idealFor": [
+            "Authors",
+            "Publishers",
+            "Institutions"
+          ],
+          "link": "/services/book-printing"
+        },
+        {
+          "id": 3,
+          "title": "Title & Cover Printing",
+          "description": "Attractive book titles and covers printed with premium paper and sharp colors.",
+          "icon": "layers",
+          "iconColor": "text-orange-500",
+          "iconBg": "bg-orange-500/10",
+          " details": "We design and print visually appealing book covers using premium materials. Our printing ensures accurate colors, smooth finishing, and a professional look.",
+          "features": [
+            "Vibrant color printing",
+            "Premium cardstock",
+            "Lamination available"
+          ],
+          "options": [
+            "Glossy / Matte finish",
+            "Single or double-sided"
+          ],
+          "idealFor": [
+            "Books",
+            "Reports",
+            "Projects"
+          ],
+          "link": "/services/title-printing"
+        },
+        {
+          "id": 4,
+          "title": "File & Document Printing",
+          "description": "Fast and accurate printing of files, reports, notes, and official documents.",
+          "icon": "fileText",
+          "iconColor": "text-emerald-500",
+          "iconBg": "bg-emerald-500/10",
+          "details": "We offer quick and precise document printing services suitable for academic and professional needs, maintaining clarity and formatting accuracy.",
+          "features": [
+            "Fast turnaround",
+            "Clear text output",
+            "Multiple paper options"
+          ],
+          "options": [
+            "Black & white / Color",
+            "Single / Double-sided"
+          ],
+          "idealFor": [
+            "Students",
+            "Offices",
+            "Businesses"
+          ],
+          "link": "/services/file-printing"
+        },
+        {
+          "id": 5,
+          "title": "Book Binding",
+          "description": "Spiral, soft, hard, and thermal binding for books and documents.",
+          "icon": "archive",
+          "iconColor": "text-indigo-500",
+          "iconBg": "bg-indigo-500/10",
+          "details": "Our binding services provide durability and a professional finish, ensuring your documents remain secure and presentable.",
+          "features": [
+            "Strong and neat binding",
+            "Custom spine thickness",
+            "Durable materials"
+          ],
+          "options": [
+            "Spiral",
+            "Hard binding",
+            "Thermal binding"
+          ],
+          "idealFor": [
+            "Books",
+            "Reports",
+            "Projects"
+          ],
+          "link": "/services/book-binding"
+        },
+        {
+          "id": 6,
+          "title": "Bulk Printing",
+          "description": "Cost-effective bulk printing solutions for businesses and institutions.",
+          "icon": "printer",
+          "iconColor": "text-red-500",
+          "iconBg": "bg-red-500/10",
+          "details": "We specialize in large-scale printing with consistent quality and competitive pricing, ideal for organizations with high-volume needs.",
+          "features": [
+            "Affordable pricing",
+            "Consistent print quality",
+            "Fast production time"
+          ],
+          "options": [
+            "Flyers",
+            "Books",
+            "Forms"
+          ],
+          "idealFor": [
+            "Businesses",
+            "Schools",
+            "Organizations"
+          ],
+          "link": "/services/bulk-printing"
+        },
+        {
+          "id": 9,
+          "title": "Poster Printing",
+          "description": "Large-format posters with vibrant colors and sharp image quality.",
+          "icon": "image",
+          "iconColor": "text-pink-500",
+          "iconBg": "bg-pink-500/10",
+          "details": "Our poster printing service delivers eye-catching visuals with accurate color reproduction and crisp details.",
+          "features": [
+            "High-resolution output",
+            "Fade-resistant ink",
+            "Large format support"
+          ],
+          "options": [
+            "A2 / A1 / Custom size",
+            "Glossy / Matte"
+          ],
+          "idealFor": [
+            "Marketing",
+            "Events",
+            "Advertising"
+          ],
+          "link": "/services/poster-printing"
+        },
+        {
+          " id": 10,
+          "title": "Invoice & Receipt Books",
+          "description": "Custom invoice, receipt, and bill books with NCR paper options.",
+          "icon": "receipt",
+          "iconColor": "text-emerald-500",
+          "iconBg": "bg-emerald-500/10",
+          "details": "We print professional invoice and receipt books with clear formatting and optional carbonless (NCR) paper.",
+          "features": [
+            "Duplicate & triplicate copies",
+            "Clear numbering",
+            "Custom branding"
+          ],
+          "options": [
+            "NCR paper",
+            "Custom size"
+          ],
+          "idealFor": [
+            "Shops",
+            "Businesses"
+          ],
+          "link": "/services/invoice-printing"
+        },
+        {
+          "id": 12,
+          "title": "Sticker & Label Printing",
+          "description": "Custom stickers and labels for products, branding, and packaging.",
+          "icon": "sticker",
+          "iconColor": "text-pink-500",
+          "iconBg": "bg-pink-500/10",
+          "details": "We create high-quality stickers and labels that stick well and look professional for branding and packaging.",
+          "features": [
+            "Water-resistant options",
+            "Custom shapes",
+            "Strong adhesive"
+          ],
+          "options": [
+            "Vinyl / Paper",
+            "Glossy / Matte"
+          ],
+          "idealFor": [
+            "Products",
+            "Packaging",
+            "Branding"
+          ],
+          "link": "/services/sticker-printing"
+        },
+        {
+          "id": 13,
+          "title": "Calendar Printing",
+          "description": "Wall and desk calendars with customized designs and branding.",
+          "icon": "calendarDays",
+          "iconColor": "text-sky-500",
+          "iconBg": "bg-sky-500/10",
+          "link": "/services/calendar-printing"
+        },
+        {
+          "id": 17,
+          "title": "Lamination Services",
+          "description": "Glossy and matte lamination for documents, cards, and posters.",
+          "icon": "shieldCheck",
+          "iconColor": "text-teal-500",
+          "iconBg": "bg-teal-500/10",
+          "link": "/services/lamination"
+        },
+        {
+          "id": 18,
+          "title": "Cutting & Trimming",
+          "description": "Precision cutting and finishing for printed materials.",
+          "icon": "scissors",
+          "iconColor": "text-yellow-500",
+          "iconBg": "bg-yellow-500/10",
+          "link": "/services/cutting-trimming"
+        }
+      ]
+    },
+    "testimonial_section": {
+      "description": "Real feedback from businesses and individuals who trust us for high-quality printing, timely delivery, and exceptional service.",
+      "testimonials": [
+        {
+          "quote": "The attention to detail and innovative features have completely transformed our workflow. This is exactly what we've been looking for.",
+          "name": "Sarah Chen",
+          "designation": "Product Manager at TechFlow",
+          "src": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=3560&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        },
+        {
+          "quote": "Implementation was seamless and the results exceeded our expectations. The platform's flexibility is remarkable.",
+          "name": "Michael Rodriguez",
+          "designation": "CTO at InnovateSphere",
+          "src": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        },
+        {
+          "quote": "This solution has significantly improved our team's productivity. The intuitive interface makes complex tasks simple.",
+          "name": "Emily Watson",
+          "designation": "Operations Director at CloudScale",
+          "src": "https://images.unsplash.com/photo-1623582854588-d60de57fa33f?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        },
+        {
+          "quote": "Outstanding support and robust features. It's rare to find a product that delivers on all its promises.",
+          "name": "James Kim",
+          "designation": "Engineering Lead at DataPro",
+          "src": "https://images.unsplash.com/photo-1636041293178-808a6762ab39?q=80&w=3464&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        },
+        {
+          "quote": "The scalability and performance have been game-changing for our organization. Highly recommend to any growing business.",
+          "name": "Lisa Thompson",
+          "designation": "VP of Technology at FutureNet",
+          "src": "https://images.unsplash.com/photo-1624561172888-ac93c696e10c?q=80&w=2592&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        }
+      ],
+      "title": "Trusted by Our Clients"
+    }
+  }
+}
