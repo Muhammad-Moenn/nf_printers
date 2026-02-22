@@ -41,8 +41,11 @@ interface CustomTableProps<T extends { id: string | number }> {
 }
 type SortMode = "az" | "za" | "latest" | "oldest";
 /* ================= COMPONENT ================= */
-
-export default function CustomTable<T extends { id: string | number }>({
+type BaseRow = {
+  id: string | number;
+  isReorder?: boolean;
+};
+export default function CustomTable<T extends BaseRow>({
   data,
   columns,
   pageSizeOptions = [5, 10, 20],
@@ -78,37 +81,32 @@ export default function CustomTable<T extends { id: string | number }>({
 
   const sortedData = useMemo(() => {
     if (!sortKey) return filteredData;
-
     return [...filteredData].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
 
-      if (!aVal || !bVal) return 0;
 
-      // 🔤 A → Z
+     if (!aVal && !bVal) return 0;
+    if (!aVal) return 1;   // push empty values to bottom
+    if (!bVal) return -1;
       if (sortMode === "az") {
         return String(aVal).localeCompare(String(bVal));
       }
-
-      // 🔤 Z → A
       if (sortMode === "za") {
         return String(bVal).localeCompare(String(aVal));
       }
-
-      // 🕒 Latest first
       if (sortMode === "latest") {
         return (
-          new Date(bVal as string | Date).getTime() - new Date(aVal as string | Date).getTime()
+          new Date(bVal as string | Date).getTime() -
+          new Date(aVal as string | Date).getTime()
         );
       }
-
-      // 🕒 Oldest first
       if (sortMode === "oldest") {
         return (
-          new Date(aVal as string | Date).getTime() - new Date(bVal as string | Date).getTime()
+          new Date(aVal as string | Date).getTime() -
+          new Date(bVal as string | Date).getTime()
         );
       }
-
       return 0;
     });
   }, [filteredData, sortKey, sortMode]);
@@ -141,7 +139,7 @@ export default function CustomTable<T extends { id: string | number }>({
         <div className="flex gap-2 flex-wrap">
           {/* Sort Column */}
           <Select onValueChange={(v) => setSortKey(v as keyof T)}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-[160px] cursor-pointer">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -159,7 +157,7 @@ export default function CustomTable<T extends { id: string | number }>({
 
           {/* Sort Order */}
           <Select onValueChange={(v) => setSortMode(v as SortMode)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px] cursor-pointer">
               <SelectValue placeholder="Sort order" />
             </SelectTrigger>
             <SelectContent>
@@ -175,7 +173,7 @@ export default function CustomTable<T extends { id: string | number }>({
             value={String(pageSize)}
             onValueChange={(v) => setPageSize(Number(v))}
           >
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-[130px] cursor-pointer">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="dark:text-gray-100">
@@ -195,13 +193,13 @@ export default function CustomTable<T extends { id: string | number }>({
           <thead
             // dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.8),rgba(37,99,235,0.6))]
             className="bg-blue-100/[0.9]  dark:bg-blue-700/[0.9]
- text-[14px] md:text-[16px] text-gray-800 dark:text-gray-50"
+ text-[14px] md:text-[16px] text-gray-800 dark:text-gray-50 "
           >
             <tr>
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className={`px-4 py-3 text-left text-sm font-medium ${
+                  className={`px-4 py-4 text-left text-sm font-medium ${
                     col.hideOnMobile ? "hidden lg:table-cell" : ""
                   }`}
                 >
@@ -213,51 +211,51 @@ export default function CustomTable<T extends { id: string | number }>({
 
           <tbody>
             {paginatedData.length ? (
-              paginatedData.map((row) => (
-                
-                <tr
-                  key={row.id}
-                  className="border-b hover:bg-blue-50/[0.4] dark:hover:bg-blue-400/[0.1] dark:border-gray-500/[0.7] cursor-pointer"
-                >
-                  {columns.map((col) => {
-                    // 🔹 Extract design URL safely (only when needed)
-                    const designs =
-                      col.key === "designs"
-                        ? (row[col.key as keyof T] as {
-                            key: string;
-                            url: string;
-                          }[])
-                        : null;
+              paginatedData.map((row) => {
+                return (
+                  <tr
+                    key={row.id}
+                    className="border-b hover:bg-blue-50/[0.4] dark:hover:bg-blue-400/[0.1] dark:border-gray-500/[0.7] cursor-pointer"
+                  >
+                    {columns.map((col) => {
+                      // 🔹 Extract design URL safely (only when needed)
+                      const designs =
+                        col.key === "designs"
+                          ? (row[col.key as keyof T] as {
+                              key: string;
+                              url: string;
+                            }[])
+                          : null;
 
-                    const designUrl = designs?.[0]?.url;
-                    return (
-                      <td
-                        key={String(col.key)}
-                        className={`px-4 py-3 text-[10px] md:text-sm ${
-                          col.hideOnMobile ? "hidden lg:table-cell" : ""
-                        }`}
-                      >
-                        {col.key === "actions" ? (
-                          renderActions ? (
-                            renderActions(row)
-                          ) : (
-                            <div className="flex gap-2" />
-                          )
-                        ) : col.key === "designs" ? (
-                          designUrl ? (
-                            <div className="relative group w-fit ">
-                              <Image
-                                priority
-                                width={140}
-                                height={100}
-                                src={designUrl}
-                                alt="design"
-                                className="h-8 w-12 rounded-md object-cover border transition-transform duration-200 group-hover:scale-105"
-                              />
+                      const designUrl = designs?.[0]?.url;
+                      return (
+                        <td
+                          key={String(col.key)}
+                          className={`px-4 py-3 text-[10px] md:text-sm ${
+                            col.hideOnMobile ? "hidden lg:table-cell" : ""
+                          }`}
+                        >
+                          {col.key === "actions" ? (
+                            renderActions ? (
+                              renderActions(row)
+                            ) : (
+                              <div className="flex gap-2" />
+                            )
+                          ) : col.key === "designs" ? (
+                            designUrl ? (
+                              <div className="relative group w-fit ">
+                                <Image
+                                  priority
+                                  width={140}
+                                  height={100}
+                                  src={designUrl}
+                                  alt="design"
+                                  className="h-8 w-12 rounded-md object-cover border transition-transform duration-200 group-hover:scale-105"
+                                />
 
-                              {/* Overlay */}
-                              <div
-                                className="
+                                {/* Overlay */}
+                                <div
+                                  className="
                 absolute inset-0
                 flex items-center justify-center
                 rounded-md
@@ -267,25 +265,34 @@ export default function CustomTable<T extends { id: string | number }>({
                 group-hover:opacity-100
                 cursor-pointer
               "
-                                onClick={() => window.open(designUrl, "_blank")}
-                                title="Download"
-                              >
-                                <Download className="w-4 h-4 text-white" />
+                                  onClick={() =>
+                                    window.open(designUrl, "_blank")
+                                  }
+                                  title="Download"
+                                >
+                                  <Download className="w-4 h-4 text-white" />
+                                </div>
                               </div>
-                            </div>
+                            ) : (
+                              <span className="text-gray-400">No design</span>
+                            )
+                          ) : col.render ? (
+                            col.render(row[col.key as keyof T], row)
+                          ) : col.key === "isReorder" ? (
+                            row.isReorder ? (
+                              "Yes"
+                            ) : (
+                              "No"
+                            )
                           ) : (
-                            <span className="text-gray-400">No design</span>
-                          )
-                        ) : col.render ? (
-                          col.render(row[col.key as keyof T], row)
-                        ) : (
-                          String(row[col.key as keyof T] ?? "")
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
+                            String(row[col.key as keyof T] ?? "")
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td

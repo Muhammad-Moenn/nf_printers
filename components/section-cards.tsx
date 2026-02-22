@@ -26,7 +26,7 @@ const iconMap = {
 }
 
 
-interface CardData {
+export interface CardData {
   icon: keyof typeof iconMap;
   title: string;
   value: string | number;

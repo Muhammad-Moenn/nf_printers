@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState } from "react";
 
 import { Label } from "./ui/label";
@@ -13,8 +13,18 @@ import { Checkbox } from "./ui/checkbox";
 import { services } from "@/data/services";
 import { Input } from "./ui/input";
 import { UploadButton } from "@/utils/uploadthing";
-import { Trash } from "lucide-react";
+import { Images, Trash } from "lucide-react";
 import { Order } from "@/types/order";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
 
 type UploadedImage = {
   url: string;
@@ -24,6 +34,7 @@ type UploadedImage = {
 interface OrderFieldsProps {
   orderDraft: Order;
   setorderDraft: React.Dispatch<React.SetStateAction<Order>>;
+  prevdesigns?: UploadedImage[];
 }
 
 const PaperSizes = [
@@ -66,13 +77,21 @@ const PaperTypes = [
   "Grey Board",
 ];
 
-function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
+function OrderFields({
+  orderDraft,
+  setorderDraft,
+  prevdesigns=[],
+}: OrderFieldsProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const uploadedImages = (orderDraft.designs ?? []) as UploadedImage[];
 
   // When user uploads a new design
   function handleUpload(newImages: UploadedImage | UploadedImage[]) {
-    const updatedImages = Array.isArray(newImages) ? [...newImages] : [newImages];
+    const updatedImages = Array.isArray(newImages)
+      ? [...newImages]
+      : [newImages];
     // Replace previous image because only 1 upload allowed
     setorderDraft((prev) => ({
       ...prev,
@@ -113,6 +132,16 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
       setDeletingKey(null);
     }
   };
+
+  const selectSingleDesign = (design: UploadedImage) => {
+    // setorderDraft((prev) => ({
+    //   ...prev,
+    //   designs: [design], // 🔥 always only one
+    // }));
+    setSelectedKey(design.key);
+  };
+
+  // const Key = orderDraft.designs?.[0]?.key;
 
   return (
     <div className="overflow-y-scroll max-h-[50vh]  md:max-h-[48vh]  lg:max-h-[56vh] xl:max-h-[70vh]   px-4 md:px-6 w-full custom-scrollbar h-full pb-3">
@@ -369,23 +398,43 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
           )}
         </div>
       </div>
-      <div className="w-full flex flex-col items-start">
-        <Label className="text-xl my-4 font-semibold">Upload Designs</Label>
+      <Label className="text-md my-4 mb-2 font-medium">Upload Design</Label>
+      <div className="flex gap-4 justify-start items-start mt-4">
+        <div className=" flex flex-col items-start">
           <UploadButton
+            className="ut-button:bg-slate-300/80
+             ut-button:hover:bg-slate-300/100 
+              ut-button:text-black
+             ut-button:flex-ut-button:items-center
+             ut-button:px-6 ut-button:py-5
+             ut-button:rounded-md
+             ut-button:flex ut-button:items-center ut-button:gap-4
+             dark:ut-button:bg-slate-300/100
+             dark:ut-button:hover:bg-slate-400
+             ut-button:relative
+ut-button:pl-10
+ut-button:w-[150px]
+ut-button:before:content-['']
+ut-button:before:absolute
+ut-button:before:left-[18px]
+ut-button:before:top-1/2
+ut-button:before:-translate-y-1/2
+ut-button:before:w-4 ut-button:before:h-4
+ut-button:before:bg-[url('/upload.svg')]
+ut-button:before:bg-contain
+ut-button:before:bg-no-repeat
+             "
             endpoint="imageUploader"
+            // 
             onClientUploadComplete={(res) => {
-              console.log("Upload complete on client:", res);
-              console.log("Response structure:", JSON.stringify(res, null, 2));
-              
               if (!res?.length) {
-                console.log("No response received");
+                console.log("callback not runing");
                 return;
               }
-              
+
               const newImages = res.map((file) => {
-                console.log("Processing file:", file);
                 return {
-                  url: file.url,
+                  url: file.ufsUrl,
                   key: file.key,
                 };
               });
@@ -396,43 +445,132 @@ function OrderFields({ orderDraft, setorderDraft }: OrderFieldsProps) {
             onUploadError={(error) => {
               console.error("Upload error:", error);
             }}
-            onBeforeUploadBegin={(files) => {
-              console.log("Starting upload for files:", files);
-              return files;
-            }}
-            onUploadBegin={(fileName) => {
-              console.log("Upload began for:", fileName);
-            }}
           />
-        {/* Show all uploaded images */}
-        {uploadedImages.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-            {uploadedImages.map((url, index) => (
-              <div
-                key={index}
-                className="relative cursor-pointer group overflow-hidden"
-              >
-                <img
-                  src={url.url}
-                  alt={`Uploaded Design ${index + 1}`}
-                  className="w-full h-20 object-cover border rounded-md"
-                />
-                <div className="w-full h-full absolute  justify-end hidden  group-hover:flex cursor-pointer z-40 bg-[rgba(0,0,0,0.5)] top-0 left-0 p-3 transition-all duration-500">
-                  <Trash
-                    className="w-4 h-4 text-red-600 opacity-100 "
-                    onClick={() => deleteImage(url.key)}
-                  />
-                </div>
-                {deletingKey === url.key && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  </div>
-                )}
+          {/* Show all uploaded images */}
+        </div>
+        <span className="mt-[6px]">or</span>
+        <div className="w-full flex flex-col items-start">
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className=" p-5  bg-slate-300/80 hover:bg-slate-300/100 text-gray-600 dark:bg-slate-300/100 dark:hover:bg-slate-400 cursor-pointer px-7">
+                {" "}
+                <Images className="w-4 h-4" /> Use Existing Design
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="sm:max-w-[550px] px-0 bg-gray-100 text-gray-800  dark:text-gray-100  dark:bg-gray-900 border border-gray-600 w-full  ">
+              <DialogHeader className="px-4 md:px-6 pb-4 border-b border-gray-300 border-gray-500/60">
+                <DialogTitle className="text-[20px] md:text-2xl font-semibold">
+                  Select a Design
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-scroll max-h-[50vh]  md:max-h-[48vh]  lg:max-h-[56vh] xl:max-h-[70vh]   px-4 md:px-6 w-full custom-scrollbar h-full pb-3">
+                { prevdesigns.length >0 && prevdesigns.map((design) => {
+                  const selected = selectedKey === design.key;
+
+                  return (
+                    <div
+                      key={design.key}
+                      onClick={() => {
+                        selectSingleDesign(design);
+                      }}
+                      className={`relative cursor-pointer rounded-lg overflow-hidden border transition h-30
+              ${
+                selected ? "ring-2 ring-primary border-primary" : "border-muted"
+              }`}
+                    >
+                      <img
+                        src={design.url}
+                        alt="design"
+                        className="h-36 w-full object-cover object-center"
+                      />
+
+                      {/* Overlay */}
+                      <div
+                        className={`absolute inset-0 flex items-center justify-center text-sm font-medium
+                ${
+                  selected
+                    ? "bg-primary/50 text-white"
+                    : "bg-black/40 text-white opacity-0 hover:opacity-100"
+                }`}
+                      >
+                        {selected ? "Selected ✓" : "Click to Select"}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        )}
+              <div className=" border-t  border-gray-300 dark:border-gray-500/60">
+                <DialogFooter className=" px-4 md:px-6 mt-6   flex justify-center gap-4 items-center w-full  ">
+                  <div className="w-full">
+                    <DialogClose asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className=" w-full cursor-pointer border-gray-400 bg-gray-200/60 dark:bg-gray-800/50 py-5 "
+                        onClick={() => {
+                          setSelectedKey(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                  </div>
+                  <div className="w-full">
+                    <Button
+                      className="w-full cursor-pointer py-5 "
+                      type="button"
+                      onClick={() => {
+                        if (selectedKey) {
+                          const selectedDesign = prevdesigns.find(
+                            (design) => design.key === selectedKey
+                          );
+                          if (selectedDesign) {
+                            handleUpload([selectedDesign]);
+                          }
+                        }
+                        setDialogOpen(false);
+                      }}
+                    >
+                      Add to Order
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Show all uploaded images */}
+        </div>
       </div>
+      {uploadedImages.length > 0 && (
+        <div className="mt-4 max-w-[150px] w-full">
+          {uploadedImages.map((url, index) => (
+            <div
+              key={index}
+              className="relative cursor-pointer group overflow-hidden"
+            >
+              <img
+                src={url.url}
+                alt={`Uploaded Design ${index + 1}`}
+                className="w-full h-28 object-cover border rounded-md"
+              />
+              <div className="w-full h-full absolute  justify-end hidden  group-hover:flex cursor-pointer z-40 bg-[rgba(0,0,0,0.5)] top-0 left-0 p-3 transition-all duration-500">
+                <Trash
+                  className="w-4 h-4 text-red-600 opacity-100 "
+                  onClick={() => deleteImage(url.key)}
+                />
+              </div>
+              {deletingKey === url.key && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -20,7 +20,7 @@ model User {
   lastName    String?
   password    String?
   orders      Order[]
-
+  designs     Designs[]
   @@index([clerkUserId])
   @@index([email])
 }
@@ -65,6 +65,23 @@ model Order {
   @@index([status])
 }
 
+model Designs {
+  id        String   @id @default(cuid())
+
+  // File info (from UploadThing)
+  url       String
+  key       String
+  size      Int?
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  
+
+  createdAt DateTime @default(now())
+}
+
+
 enum Role {
   CUSTOMER
   EMPLOYEE
@@ -82,4 +99,5 @@ enum OrderStatus {
   in_progress
   completed
   cancelled
+  processing
 }

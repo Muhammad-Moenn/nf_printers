@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { faqs } from "@/data/faqs";
+// import { faqs } from "@/data/faqs";
+import { useLocale, useTranslations } from "next-intl";
 
 
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-
+   const t=useTranslations("home.faq_section")
+   const faqs=t.raw("faqs")
+   const locale=useLocale()
+   const isLocaleUr = locale === "ur";
   return (
     <section className=" bg-gray-50 dark:bg-gray-950 ">
       <div className="max-w-4xl mx-auto px-6 py-16 pb-30">
@@ -15,16 +19,16 @@ export default function FAQSection() {
         {/* Heading */}
         <div className="text-center mb-12 px-4">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-gray-900 dark:text-white">
-            Frequently Asked Questions
+            {t("title")}
           </h2>
           <p className="mt-4 text-gray-600 dark:text-gray-300 text-[18px]">
-            Everything you need to know about our printing services
+            {t("description")}
           </p>
         </div>
 
         {/* FAQ */}
         <div className="space-y-4">
-          {faqs.map((faq, index) => {
+          {faqs.map((faq:any, index:number) => {
             const isOpen = openIndex === index;
 
             return (
@@ -34,7 +38,7 @@ export default function FAQSection() {
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
-                  className=" cursor-pointer w-full flex justify-between items-center px-6 py-5 text-left"
+                  className={` cursor-pointer w-full flex justify-between items-center px-6 py-5 text-left ${isLocaleUr ? "flex-row-reverse" : "flex-row"}`}
                 >
                   <span className="font-medium  md:text-[17px] text-gray-900 dark:text-gray-100">
                     {faq.question}
@@ -52,7 +56,7 @@ export default function FAQSection() {
                     ${isOpen ? "max-h-40 opacity-100 pb-5" : "max-h-0 opacity-0 pb-0"}
                   `}
                 >
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  <p className={`w-full text-gray-700 dark:text-gray-300 leading-relaxed ${isLocaleUr ? "text-right" : "text-left"}`}>
                     {faq.answer}
                   </p>
                   

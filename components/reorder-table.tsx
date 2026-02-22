@@ -1,7 +1,7 @@
 "use client";
 
 import CustomTable, { Column } from "@/components/custom-table";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Dialog,
   DialogClose,
@@ -16,8 +16,10 @@ import { Button } from "./ui/button";
 import OrderFields from "./order-fields";
 import { Order, OrderStatus } from "@/types/order";
 import { StatusBadge } from "./status-badge";
-import { SaveOrder, UpdateOrder } from "@/app/actions/order-action";
+import { UpdateOrder } from "@/app/actions/order-action";
 import { toast } from "react-toastify";
+import { useCartStore } from "@/app/store/cart-store";
+import { Design, getUserDesigns } from "@/app/actions/designs-action";
 
 /* ================= TABLE COLUMNS ================= */
 
@@ -62,17 +64,17 @@ const reorderColumns: Column<Order>[] = [
     label: "Order Date",
     sortable: true,
     hideOnMobile: true,
-    render: (value:any) =>
+    render: (value: any) =>
       value ? new Date(value).toLocaleDateString() : "-",
   },
 
-  {
-    key: "deliveryDate",
-    label: "Delivery",
-    hideOnMobile: true,
-    render: (value:any) =>
-      value ? new Date(value).toLocaleDateString() : "-",
-  },
+  // {
+  //   key: "deliveryDate",
+  //   label: "Delivery",
+  //   hideOnMobile: true,
+  //   render: (value: any) =>
+  //     value ? new Date(value).toLocaleDateString() : "-",
+  // },
 
   {
     key: "amount",
@@ -80,7 +82,11 @@ const reorderColumns: Column<Order>[] = [
     hideOnMobile: true,
     render: (value) => `Rs ${value}`,
   },
-
+  {
+    key: "isReorder",
+    label: "Is Reorder",
+    render: (value) => (value === true ? <span>Yes</span> : <span>No</span>),
+  },
   {
     key: "actions",
     label: "Actions",
@@ -90,7 +96,9 @@ const reorderColumns: Column<Order>[] = [
 /* ================= PAGE COMPONENT ================= */
 
 export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
-  const [isPending, startTransition] = useTransition();
+   const addToCart = useCartStore((state) => state.addToCart);
+   const [prevdesigns, setPrevDesigns] = useState<Design[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [orderDraft, setorderDraft] = useState<Order>({
     id: "",
@@ -102,17 +110,56 @@ export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
     amount: "0",
     finishingOptions: [],
     paperType: "",
-    // paperTypeMode: "",
     size: "",
     colorMode: "",
     sides: "",
     gsm: "",
-    designs: [] ,
+    designs: [],
     requirements: "",
+    isReorder: false,
   });
-
+  const validations = [
+    {
+      check: !orderDraft.designs || orderDraft.designs.length === 0,
+      message: "Please upload at least one design before updating the order.",
+    },
+    {
+      check: !orderDraft.service || orderDraft.service.trim() === "",
+      message: "Please select a service before updating the order.",
+    },
+    {
+      check: !orderDraft.paperType,
+      message: "Please select a paper type before updating the order.",
+    },
+    {
+      check: !orderDraft.size,
+      message: "Please select a size before updating the order.",
+    },
+    {
+      check: !orderDraft.colorMode,
+      message: "Please select a color mode before updating the order.",
+    },
+    {
+      check: !orderDraft.sides,
+      message: "Please select a side before updating the order.",
+    },
+    {
+      check: !orderDraft.gsm,
+      message: "Please select weight (gsm) before updating the order.",
+    },
+  ];
+   useEffect(() => {
+      async function getPreviousDesigns() {
+        const prevdesigns = await getUserDesigns();
+        setPrevDesigns(prevdesigns);
+      }
+      getPreviousDesigns();
+    }, []);
   const completedOrders = ordersData.filter(
-    (order: Order) => order.status === "completed"
+    (order: Order) =>
+      order.status === "completed" ||
+      (order.isReorder &&
+        (order.status === "processing" || order.status === "pending"))
   );
   const reorder = (id: string) => {
     const selectedOrder = ordersData.find((o: Order) => o.id === id);
@@ -129,6 +176,7 @@ export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
       finishingOptions: selectedOrder.finishingOptions ?? [],
       requirements: selectedOrder.requirements ?? "",
       designs: selectedOrder.designs ?? [],
+      isReorder: true,
     });
 
     setDialogOpen(true);
@@ -136,23 +184,82 @@ export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
 
   const handleSubmit = async (e: React.FormEvent, orderId: string) => {
     e.preventDefault();
-    if (!orderDraft) return; // safety check
+    if (!orderDraft) return;
 
     // Only update if there is at least one design
-    if (orderDraft.designs && orderDraft.designs.length > 0) {
-      try {
-        startTransition(() => {
-          UpdateOrder(orderDraft.id, orderDraft);
-        });
-      } catch (err) {
-        toast.error("Failed to update order");
+
+    for (const validation of validations) {
+      if (validation.check) {
+        toast.warning(validation.message);
+        return;
       }
-    } else {
-      toast.warning("Please upload at least one design before updating the order.");
     }
 
-    setDialogOpen(false);
+    try {
+      setIsLoading(true);
+      await UpdateOrder( orderDraft);
+
+      toast.success("Reorder placed successfully!");
+      setDialogOpen(false);
+
+      // if you want to redirect
+      // router.push("/user-dashboard/orders");
+    } catch (err) {
+      toast.error("Failed to placed order");
+    } finally {
+      setIsLoading(false);
+      setorderDraft({
+        id: "",
+        product: "",
+        service: "",
+        quantity: "0",
+        orderDate: new Date(),
+        deliveryDate: null,
+        amount: "0",
+        finishingOptions: [],
+        paperType: "",
+        size: "",
+        colorMode: "",
+        sides: "",
+        gsm: "",
+        designs: [],
+        requirements: "",
+        isReorder: false,
+      });
+      setDialogOpen(false); // ✅ stop pending
+    }
   };
+  const handleAddToCart = () => {
+      if (!orderDraft) return;
+  
+      for (const validation of validations) {
+        if (validation.check) {
+          toast.warning(validation.message);
+          return;
+        }
+      }
+  
+      addToCart({
+        id: crypto.randomUUID(),
+        product: orderDraft.product,
+        service: orderDraft.service,
+        quantity:orderDraft.quantity,
+        requirements: orderDraft.requirements,
+        designs: orderDraft.designs,
+        size: orderDraft.size,
+        paperType: orderDraft.paperType,
+        gsm: orderDraft.gsm,
+        colorMode: orderDraft.colorMode,
+        sides: orderDraft.sides,
+        finishingOptions: orderDraft.finishingOptions,
+        amount: orderDraft.amount,
+        isReorder: true,
+      });
+  
+      toast.success("Item added to cart");
+      setDialogOpen(false);
+    };
+
   return (
     <div className="">
       <CustomTable
@@ -195,23 +302,34 @@ export default function ReorderTable({ ordersData }: { ordersData: Order[] }) {
             <OrderFields
               orderDraft={orderDraft}
               setorderDraft={setorderDraft}
+              prevdesigns={prevdesigns}
             />
-            <div className=" px-4 md:px-6 mt-8   w-full flex justify-center gap-8 items-center">
-              <DialogClose className="" asChild>
+            <div className=" px-4 md:px-6 mt-8   w-full flex justify-center gap-4 items-center ">
+              <div className="w-full cursor-pointer">
+                <DialogClose className="cursor-pointer" asChild>
+                  <Button variant="outline" className="w-full py-5 ">
+                    Cancel
+                  </Button>
+                </DialogClose>
+              </div>
+              <div className="w-full cursor-pointer">
                 <Button
-                  variant="outline"
-                  className="w-full py-5 max-w-[150px] md:max-w-[220px]"
+                  onClick={handleAddToCart}
+                  className="w-full py-5 cursor-pointer"
                 >
-                  Cancel
+                  Add To Cart
                 </Button>
-              </DialogClose>
-              <Button
-                onClick={(e) => handleSubmit(e, orderDraft.id)}
-                type="submit"
-                className="w-full py-5 max-w-[150px] md:max-w-[220px]"
-              >
-                Place Order
-              </Button>
+              </div>
+              <div className="w-full cursor-pointer">
+                <Button
+                  disabled={isLoading}
+                  onClick={(e) => handleSubmit(e, orderDraft.id)}
+                  type="submit"
+                  className="w-full py-5 cursor-pointer"
+                >
+                  {isLoading ? "Saving..." : "Save Order"}
+                </Button>
+              </div>
             </div>
           </form>
         </DialogContent>

@@ -7,13 +7,14 @@ import { useState } from "react";
 import { Button } from "./button";
 import { Employee } from "@/types/user";
 import { MoveRight } from "lucide-react";
+import { useLocale } from "next-intl";
 
 
 export const HoverEffect = ({
   users,
   className,
 }: {
-  users: Employee[];
+  users: any[];
   className?: string;
 }) => {
   let [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -64,6 +65,8 @@ export const Card = ({
   user: Employee;
   className?: string;
 }) => {
+  const locale = useLocale();
+  const isLocaleUr = locale === "ur";
   return (
     <div
       className={cn(
@@ -109,13 +112,13 @@ export const Card = ({
 
         {/* Buttons */}
         <div className="mt-5 flex justify-center gap-3">
-          <Button  className="rounded-full w-[140px] group ">
-            View Profile             <MoveRight
-              className="
+          <Button  className={`cursor-pointer flex rounded-full w-[140px] group ${isLocaleUr ? "flex-row-reverse" : "flex-row"} items-center justify-center  text-sm leading-none py-2 transition-transform duration-200  hover:-translate-y-0.5 `}>
+           {isLocaleUr ? "پروفائل دیکھیں  ": " View Profile "}            <MoveRight
+              className={`
         w-4 h-4
         transition-transform duration-500 ease-out
-        group-hover:translate-x-2
-      "
+        ${isLocaleUr ? " -rotate-180 group-hover:-translate-x-2" : " group-hover:translate-x-2" }
+      `}
             ></MoveRight>
           </Button>
 

@@ -3,170 +3,234 @@
 import { prisma } from "@/lib/prisma";
 import { Order } from "@/types/order";
 import { GetDBUser } from "./user_action";
+import { toast } from "react-toastify";
 
-export async function SaveOrder(
-  prevState: { success?: boolean; error?: string ,pending?:boolean},
-  formData: FormData
-) {
+export async function SaveOrder(order: Order | Order[]) {
   try {
-    const dbUser= await GetDBUser();
+    const dbUser = await GetDBUser();
     if (!dbUser) {
       return { success: false, error: "User not found in database" };
     }
 
-    const orderData = formData.get("order");
-    if (!orderData || typeof orderData !== 'string') {
-      return { success: false, error: "Invalid order data" };
-    }
+    const orders = Array.isArray(order) ? order : [order];
 
-    let order;
-    try {
-      order = JSON.parse(orderData);
-    } catch (parseError) {
-      return { success: false, error: "Invalid JSON format" };
-    }
-
-    const savedOrder = await prisma.order.create({
-    data: {
-      userId: dbUser.id,
-      product: order.product,
-      service: order.service,
-      quantity: order.quantity, // ensure Int
-      amount: order.amount, // ensure Float
-      status: order.status || "pending",
-      orderDate: order.orderDate
-        ? new Date(order.orderDate)
-        : new Date(),
-      deliveryDate: order.deliveryDate
-        ? new Date(order.deliveryDate)
-        : null,
-      paperType: order.paperType,
-      size: order.size,
-      gsm: order.gsm,
-      colorMode: order.colorMode,
-      sides: order.sides,
-      finishingOptions: order.finishingOptions || [],
-      designs: order.designs || [], // saves JSON array
-      requirements: order.requirements,
-      isReorder: order.isReorder || false,
-    },
-  });
-    if (!savedOrder) {
-      return { success: false, error: "Failed to save order" };
-    }
-    return { success: true};
+    await prisma.order.createMany({
+      data: orders.map((item) => ({
+        userId: dbUser.id,
+        product: item.product,
+        service: item.service,
+        quantity: item.quantity,
+        amount: item.amount,
+        status: item.status || "pending",
+        orderDate: item.orderDate ? new Date(item.orderDate) : new Date(),
+        deliveryDate: item.deliveryDate ? new Date(item.deliveryDate) : null,
+        paperType: item.paperType,
+        size: item.size,
+        gsm: item.gsm,
+        colorMode: item.colorMode,
+        sides: item.sides,
+        finishingOptions: item.finishingOptions || [],
+        designs: item.designs || [],
+        requirements: item.requirements,
+        isReorder: item.isReorder || false,
+      })),
+    });
+    return {
+      success: true,
+    };
   } catch (error) {
-    return { success: false, error: "Failed to save order. Please try again." };
+    throw new Error("Failed to save order. Please try again.");
   }
 }
 
 //  update the order
+type OrderUpdatePayload = {
+  id: string;
+} & Partial<Order>;
 
-export async function UpdateOrder(orderId: string, orderDraft: Partial<Order>) {
+export async function UpdateOrder(
+  orderDraft: OrderUpdatePayload | OrderUpdatePayload[]
+) {
   try {
-    const dbUser= await GetDBUser();
+    const dbUser = await GetDBUser();
     if (!dbUser) {
       throw new Error("User not found in database");
     }
 
-    // 🔒 Ensure user owns the order
-    const existingOrder = await prisma.order.findFirst({
-      where: {
-        id: orderId,
-        userId: dbUser.id,
-      },
+    const drafts = Array.isArray(orderDraft) ? orderDraft : [orderDraft];
+
+    const updatedOrders = await prisma.$transaction(async (prismaTx) => {
+      const results = [];
+
+      for (const draft of drafts) {
+        // 🔒 Ownership check inside transaction
+        const existingOrder = await prismaTx.order.findFirst({
+          where: {
+            id: draft.id,
+            userId: dbUser.id,
+          },
+        });
+
+        if (!existingOrder) {
+          throw new Error(`Order ${draft.id} not found or unauthorized`);
+        }
+
+        const updated = await prismaTx.order.update({
+          where: { id: draft.id },
+          data: {
+            product: draft.product ?? existingOrder.product,
+            service: draft.service ?? existingOrder.service,
+
+            quantity:
+              draft.quantity !== undefined
+                ? draft.quantity
+                : existingOrder.quantity,
+
+            amount: draft.amount ?? existingOrder.amount,
+            status: "pending",
+
+            orderDate: new Date(),
+            deliveryDate: draft.deliveryDate
+              ? new Date(draft.deliveryDate)
+              : existingOrder.deliveryDate,
+
+            paperType: draft.paperType ?? existingOrder.paperType,
+            size: draft.size ?? existingOrder.size,
+            gsm: draft.gsm ?? existingOrder.gsm,
+            colorMode: draft.colorMode ?? existingOrder.colorMode,
+            sides: draft.sides ?? existingOrder.sides,
+
+            finishingOptions:
+              draft.finishingOptions ?? existingOrder.finishingOptions,
+
+            designs:
+              draft.designs !== undefined
+                ? draft.designs
+                : existingOrder.designs ?? [],
+
+            requirements: draft.requirements ?? existingOrder.requirements,
+
+            isReorder: true,
+          },
+        });
+
+        results.push(updated);
+      }
+
+      return results;
     });
 
-    if (!existingOrder) {
-      throw new Error("Order not found or unauthorized");
-    }
-  const designsData =
-    orderDraft.designs !== undefined
-      ? orderDraft.designs
-      : undefined;
-  const updatedOrder = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      product: orderDraft.product ?? existingOrder.product,
-      service: orderDraft.service ?? existingOrder.service,
-      quantity: orderDraft.quantity ?? existingOrder.quantity,
-      amount: orderDraft.amount ?? existingOrder.amount,
-      status: orderDraft.status ?? "pending",
-
-      orderDate: new Date(),
-      deliveryDate: orderDraft.deliveryDate
-        ? new Date(orderDraft.deliveryDate)
-        : existingOrder.deliveryDate,
-
-      paperType: orderDraft.paperType ?? existingOrder.paperType,
-      size: orderDraft.size ?? existingOrder.size,
-      gsm: orderDraft.gsm ?? existingOrder.gsm,
-      colorMode: orderDraft.colorMode ?? existingOrder.colorMode,
-      sides: orderDraft.sides ?? existingOrder.sides,
-
-      finishingOptions:
-        orderDraft.finishingOptions ?? existingOrder.finishingOptions,
-
-      ...(designsData !== null && { designs: designsData }),
-      requirements: orderDraft.requirements ?? existingOrder.requirements,
-
-      isReorder: true, // 🔥 important flag
-    },
-  });
-
-    return updatedOrder;
+    return {
+      success: true,
+    };
   } catch (error) {
-    throw new Error("Failed to update order. Please try again.");
+    console.error("UpdateOrder error:", error);
+    return {
+      success: false,
+      error: "Failed to update order. Please try again.",
+    };
   }
 }
 
 // fetch Crads and graph Data
 export const fetchCardsDataAndAllOrders = async () => {
-  const dbUser= await GetDBUser();
+  const dbUser = await GetDBUser();
+
   if (!dbUser) {
     throw new Error("User not found in database");
   }
 
-  // Fetch all orders for this user
   const allOrders = await prisma.order.findMany({
     where: { userId: dbUser.id },
+    orderBy: { orderDate: "desc" },
   });
 
-  // Calculate active, pending, completed
+  // Status splits
   const activeOrders = allOrders.filter((o) => o.status === "in_progress");
   const pendingOrders = allOrders.filter((o) => o.status === "pending");
   const completedOrders = allOrders.filter((o) => o.status === "completed");
 
-  // Total paid from completed orders
+  // Total paid
   const totalPaid = completedOrders.reduce((sum, order) => {
     const clean = order.amount.replace(/[^\d.]/g, "");
     const amount = Number(clean);
     return sum + (isNaN(amount) ? 0 : amount);
   }, 0);
 
-  // Generate weekly data dynamically
-  const weeklyData: {
-    label: string;
-    total: number;
-    completed: number;
-    pending: number;
-    cancelled: number;
-  }[] = [];
+  const now = new Date();
+  const today = new Date(now);
 
-  // Days of week in order
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  // Monday-based week index
+  const dayOfWeek = (today.getDay() + 6) % 7;
 
-  for (let i = 0; i < 7; i++) {
-    const dayOrders = allOrders.filter((o) => o.orderDate?.getDay() === i);
+  // -------- CURRENT WEEK --------
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - dayOfWeek);
+  startOfWeek.setHours(0, 0, 0, 0);
 
-    weeklyData.push({
-      label: days[i],
-      total: dayOrders.length,
-      completed: dayOrders.filter((o) => o.status === "completed").length,
-      pending: dayOrders.filter((o) => o.status === "pending").length,
-      cancelled: dayOrders.filter((o) => o.status === "cancelled").length,
-    });
-  }
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  const weekOrders = allOrders.filter((o) => {
+    if (!o.orderDate) return false;
+    const d = new Date(o.orderDate);
+    return d >= startOfWeek && d <= endOfWeek;
+  });
+
+  // -------- LAST WEEK --------
+  const lastWeekStart = new Date(startOfWeek);
+  lastWeekStart.setDate(startOfWeek.getDate() - 7);
+  lastWeekStart.setHours(0, 0, 0, 0);
+
+  const lastWeekEnd = new Date(lastWeekStart);
+  lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+  lastWeekEnd.setHours(23, 59, 59, 999);
+
+  const lastWeekOrders = allOrders.filter((o) => {
+    if (!o.orderDate) return false;
+    const d = new Date(o.orderDate);
+    return d >= lastWeekStart && d <= lastWeekEnd;
+  });
+
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const buildWeekData = (orders: typeof allOrders, start: Date) => {
+    const data: {
+      label: string;
+      total: number;
+      completed: number;
+      pending: number;
+      cancelled: number;
+    }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const currentDay = new Date(start);
+      currentDay.setDate(start.getDate() + i);
+
+      const dayOrders = orders.filter((o) => {
+        const d = new Date(o.orderDate!);
+        return (
+          d.getFullYear() === currentDay.getFullYear() &&
+          d.getMonth() === currentDay.getMonth() &&
+          d.getDate() === currentDay.getDate()
+        );
+      });
+
+      data.push({
+        label: days[i],
+        total: dayOrders.length,
+        completed: dayOrders.filter((o) => o.status === "completed").length,
+        pending: dayOrders.filter((o) => o.status === "pending").length,
+        cancelled: dayOrders.filter((o) => o.status === "cancelled").length,
+      });
+    }
+
+    return data;
+  };
+
+  const weeklyData = buildWeekData(weekOrders, startOfWeek);
+  const lastWeekData = buildWeekData(lastWeekOrders, lastWeekStart);
 
   return {
     allOrders,
@@ -175,6 +239,7 @@ export const fetchCardsDataAndAllOrders = async () => {
     completedOrders,
     totalPaid,
     weeklyData,
+    lastWeekData, // ✅ added
   };
 };
 
@@ -187,56 +252,80 @@ export const fetchCurrentMonthOrders = async () => {
   }
 
   const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(
+
+  // -------- CURRENT MONTH --------
+  const currentFirstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentLastDay = new Date(
     now.getFullYear(),
     now.getMonth() + 1,
     0,
     23,
     59,
-    59
+    59,
+    999
   );
 
-  // Fetch all orders of current month
-  const monthOrders = await prisma.order.findMany({
-    where: {
-      userId: dbuser.id,
-      orderDate: {
-        gte: firstDay,
-        lte: lastDay,
+  // -------- LAST MONTH --------
+  const lastFirstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastLastDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    0,
+    23,
+    59,
+    59,
+    999
+  );
+
+  const getMonthStats = async (start: Date, end: Date) => {
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: dbuser.id,
+        orderDate: {
+          gte: start,
+          lte: end,
+        },
       },
-    },
-    select: {
-      status: true,
-      amount: true,
-    },
-  });
+      select: {
+        status: true,
+        amount: true,
+      },
+    });
 
-  // Count orders by status
-  const totalOrders = monthOrders.length;
-  const completed = monthOrders.filter((o) => o.status === "completed").length;
-  const pending = monthOrders.filter((o) => o.status === "pending").length;
-  const inProgress = monthOrders.filter(
-    (o) => o.status === "in_progress"
-  ).length;
-  const cancelled = monthOrders.filter((o) => o.status === "cancelled").length;
+    const totalOrders = orders.length;
+    const completed = orders.filter(o => o.status === "completed").length;
+    const pending = orders.filter(o => o.status === "pending").length;
+    const inProgress = orders.filter(o => o.status === "in_progress").length;
+    const cancelled = orders.filter(o => o.status === "cancelled").length;
 
-  // Total paid in this month
-  const totalPaid = monthOrders
-    .filter((o) => o.status === "completed")
-    .reduce((sum, order) => {
-      const clean = order.amount.replace(/[^\d.]/g, "");
-      const amount = Number(clean);
-      return sum + (isNaN(amount) ? 0 : amount);
-    }, 0);
+    const totalPaid = orders
+      .filter(o => o.status === "completed")
+      .reduce((sum, order) => {
+        const clean = order.amount.replace(/[^\d.]/g, "");
+        const amount = Number(clean);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+
+    return {
+      orders,
+      totalOrders,
+      completed,
+      pending,
+      inProgress,
+      cancelled,
+      totalPaid,
+    };
+  };
+
+  // Run both queries
+  const [currentMonth, lastMonth] = await Promise.all([
+    getMonthStats(currentFirstDay, currentLastDay),
+    getMonthStats(lastFirstDay, lastLastDay),
+  ]);
 
   return {
-    totalOrders,
-    completed,
-    pending,
-    inProgress,
-    cancelled,
-    totalPaid,
+    currentMonth,   // ✅ this month data
+    lastMonth,      // ✅ last month data
   };
 };
 

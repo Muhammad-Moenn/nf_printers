@@ -122,7 +122,7 @@ export default function OrderStatusPieChart({PiChartData }: Props) {
   // { name: "Total Paid", value: Number(totalPaid), color: "#10B981" }, 
   ];
   return (
-    <div className="flex flex-col justify-center -mt-7 relative">
+    <div className="flex flex-col justify-center items-center -mt-14 relative">
       <div
         className="absolute font-medium  bottom-5 text-center left-1/2 -translate-x-1/2 flex"
       >Total Paid:
