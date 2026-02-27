@@ -13,7 +13,7 @@ export default async function DesignDashboardLayoutWithCards({
     await fetchCardsDataAndAllOrders();
  
   return (
-    <div>
+    <div >
       <RealtimeReordersClient Data={data} />
       <div className="">{children}</div>
     </div>

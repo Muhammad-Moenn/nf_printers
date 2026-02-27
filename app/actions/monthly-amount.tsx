@@ -3,7 +3,13 @@ import { GetDBUser } from "./user_action";
 
 export async function getMonthlyPaidAmount() {
   const dbUser = await GetDBUser();
-  if (!dbUser) throw new Error("User not found");
+  if (!dbUser) {
+    // Return empty data instead of throwing to prevent infinite loops
+    return Array.from({ length: 12 }, (_, i) => ({
+      month: new Date(0, i).toLocaleString("en", { month: "short" }),
+      total: 0,
+    }));
+  }
 
   const year = new Date().getFullYear();
 

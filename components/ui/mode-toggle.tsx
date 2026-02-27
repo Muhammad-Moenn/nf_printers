@@ -29,7 +29,7 @@ export function ModeToggle() {
         rounded-full transition-colors duration-300
         focus:outline-none ring-2 ring-offset-2 cursor-pointer mx-[5px]
         ${isDark
-          ? "bg-zinc-600 ring-gray-500"
+          ? "bg-zinc-700/70 ring-gray-400"
           : "bg-yellow-400 ring-yellow-500"}
       `}
     >

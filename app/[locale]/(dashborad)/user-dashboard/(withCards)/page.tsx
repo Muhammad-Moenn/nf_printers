@@ -32,7 +32,10 @@ export default async function MainPage({
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
     .slice(0, 3);
-  // console.log("last week orders", lastWeekData);
+
+  const weeklyTotal = Array.isArray(weeklyData)
+  ? weeklyData.reduce((sum, day) => sum + (day.total || 0), 0)
+  : 0;
   const weekSeries = weeklyData.map((d) => ({
     label: d.label,
     total: d.total,
@@ -49,13 +52,12 @@ export default async function MainPage({
   const lastWeek = lastWeekData.length;
   const thisMonth = currentMonth.totalOrders;
   const lastMonthData = lastMonth.totalOrders;
-
   return (
     <div className="text-center -mb-12">
       <div className="w-full grid grid-cols-1 lg:grid-cols-2  gap-4 lg:gap-6 px-6">
         <div
           className="flex flex-col gap-6   p-6 bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-        dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/60 dark:border-gray-600/70 rounded-xl  overflow-hidden  shadow-sm h-fit "
+        dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/60 dark:border-gray-600/70 rounded-xl  overflow-hidden  shadow-sm h-full "
         >
           <div className="flex gap-2 items-center">
             <ChartLine className="w-5 h-5 text-blue-500" />
@@ -64,10 +66,10 @@ export default async function MainPage({
             </h4>
           </div>
 
-          {weeklyData&& weeklyData.length > 0  ? (
+          {weeklyTotal   ? (
             <OrdersLineChart data={weeklyData} />
           ) : (
-            <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground h-full">
                <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
               No weekly data available
             </div>
@@ -75,7 +77,7 @@ export default async function MainPage({
         </div>
         <div
           className="w-full bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-         dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e] flex-col       justify-center   items-center border-2 border-gray-200 dark:border-gray-600/70       rounded-xl   overflow-hidden  shadow p-6 h-fit pb-0 "
+         dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e] flex-col       justify-center   items-center border-2 border-gray-200 dark:border-gray-600/70       rounded-xl   overflow-hidden  shadow p-6 h-full pb-0 "
         >
           {/* for the current month orders status */}
           <div className="flex gap-2 items-center">
@@ -85,7 +87,7 @@ export default async function MainPage({
             </h4>
           </div>
 
-          {currentMonth ? (<OrderStatusPieChart PiChartData={currentMonth} />) :( <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground">
+          {currentMonth.totalOrders ? (<OrderStatusPieChart PiChartData={currentMonth} />) :( <div className="flex items-center justify-center -mt-2 text-sm text-muted-foreground h-full">
                <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
               No monthly data available
             </div>)}

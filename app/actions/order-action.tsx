@@ -137,25 +137,18 @@ export const fetchCardsDataAndAllOrders = async () => {
   const dbUser = await GetDBUser();
 
   if (!dbUser) {
-    throw new Error("User not found in database");
+    return {
+      allOrders: [],
+      activeOrders: [],
+      pendingOrders: [],
+      completedOrders: [],
+      totalPaid: 0,
+      weeklyData: [],
+      lastWeekData: [],
+      currentWeekPaid: 0,
+      currentMonthPaid: 0,
+    };
   }
-
-  const allOrders = await prisma.order.findMany({
-    where: { userId: dbUser.id },
-    orderBy: { orderDate: "desc" },
-  });
-
-  // Status splits
-  const activeOrders = allOrders.filter((o) => o.status === "in_progress");
-  const pendingOrders = allOrders.filter((o) => o.status === "pending");
-  const completedOrders = allOrders.filter((o) => o.status === "completed");
-
-  // Total paid
-  const totalPaid = completedOrders.reduce((sum, order) => {
-    const clean = order.amount.replace(/[^\d.]/g, "");
-    const amount = Number(clean);
-    return sum + (isNaN(amount) ? 0 : amount);
-  }, 0);
 
   const now = new Date();
   const today = new Date(now);
@@ -172,12 +165,6 @@ export const fetchCardsDataAndAllOrders = async () => {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
 
-  const weekOrders = allOrders.filter((o) => {
-    if (!o.orderDate) return false;
-    const d = new Date(o.orderDate);
-    return d >= startOfWeek && d <= endOfWeek;
-  });
-
   // -------- LAST WEEK --------
   const lastWeekStart = new Date(startOfWeek);
   lastWeekStart.setDate(startOfWeek.getDate() - 7);
@@ -187,12 +174,45 @@ export const fetchCardsDataAndAllOrders = async () => {
   lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
   lastWeekEnd.setHours(23, 59, 59, 999);
 
-  const lastWeekOrders = allOrders.filter((o) => {
-    if (!o.orderDate) return false;
-    const d = new Date(o.orderDate);
-    return d >= lastWeekStart && d <= lastWeekEnd;
+  // -------- CURRENT MONTH --------
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  // Helper to parse amounts
+  const parseAmount = (amountStr: string) => {
+    const clean = amountStr.replace(/[^\d.]/g, "");
+    const amount = Number(clean);
+    return isNaN(amount) ? 0 : amount;
+  };
+
+  // -------- FETCH ORDERS --------
+  const allOrders = await prisma.order.findMany({
+    where: { userId: dbUser.id },
+    orderBy: { createdAt: "desc" },
   });
 
+  const completedOrders = allOrders.filter((o) => o.status === "completed");
+  const activeOrders = allOrders.filter((o) => o.status === "in_progress");
+  const pendingOrders = allOrders.filter((o) => o.status === "pending");
+
+  // -------- TOTALS --------
+  const totalPaid = completedOrders.reduce((sum, o) => sum + parseAmount(o.amount), 0);
+
+  const weekOrders = allOrders.filter(
+    (o) => o.createdAt && o.createdAt >= startOfWeek && o.createdAt <= endOfWeek
+  );
+  const currentWeekPaid = weekOrders
+    .filter((o) => o.status === "completed")
+    .reduce((sum, o) => sum + parseAmount(o.amount), 0);
+
+  const monthOrders = allOrders.filter(
+    (o) => o.createdAt && o.createdAt >= startOfMonth && o.createdAt <= endOfMonth
+  );
+  const currentMonthPaid = monthOrders
+    .filter((o) => o.status === "completed")
+    .reduce((sum, o) => sum + parseAmount(o.amount), 0);
+
+  // -------- BUILD WEEKLY DATA --------
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const buildWeekData = (orders: typeof allOrders, start: Date) => {
@@ -209,7 +229,7 @@ export const fetchCardsDataAndAllOrders = async () => {
       currentDay.setDate(start.getDate() + i);
 
       const dayOrders = orders.filter((o) => {
-        const d = new Date(o.orderDate!);
+        const d = new Date(o.createdAt!);
         return (
           d.getFullYear() === currentDay.getFullYear() &&
           d.getMonth() === currentDay.getMonth() &&
@@ -230,7 +250,12 @@ export const fetchCardsDataAndAllOrders = async () => {
   };
 
   const weeklyData = buildWeekData(weekOrders, startOfWeek);
+  const lastWeekOrders = allOrders.filter(
+    (o) => o.createdAt && o.createdAt >= lastWeekStart && o.createdAt <= lastWeekEnd
+  );
   const lastWeekData = buildWeekData(lastWeekOrders, lastWeekStart);
+
+  console.log("current totals:", totalPaid, currentWeekPaid, currentMonthPaid);
 
   return {
     allOrders,
@@ -238,8 +263,10 @@ export const fetchCardsDataAndAllOrders = async () => {
     pendingOrders,
     completedOrders,
     totalPaid,
+    currentWeekPaid,
+    currentMonthPaid,
     weeklyData,
-    lastWeekData, // ✅ added
+    lastWeekData,
   };
 };
 
@@ -248,7 +275,27 @@ export const fetchCardsDataAndAllOrders = async () => {
 export const fetchCurrentMonthOrders = async () => {
   const dbuser = await GetDBUser();
   if (!dbuser) {
-    throw new Error("User not found in database");
+    // Return empty data instead of throwing to prevent infinite loops
+    return {
+      currentMonth: {
+        orders: [],
+        totalOrders: 0,
+        completed: 0,
+        pending: 0,
+        inProgress: 0,
+        cancelled: 0,
+        totalPaid: 0,
+      },
+      lastMonth: {
+        orders: [],
+        totalOrders: 0,
+        completed: 0,
+        pending: 0,
+        inProgress: 0,
+        cancelled: 0,
+        totalPaid: 0,
+      },
+    };
   }
 
   const now = new Date();
@@ -343,7 +390,16 @@ type MonthlyOrdersProps = {
 export async function getMonthlyOrdersAction() {
   const dbuser = await GetDBUser();
   if (!dbuser) {
-    throw new Error("User not found in database");
+    // Return empty data instead of throwing to prevent infinite loops
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months.map((label) => ({
+      label,
+      pending: 0,
+      completed: 0,
+      cancelled: 0,
+      inprogress: 0,
+      total: 0,
+    }));
   }
 
   const currentYear = new Date().getFullYear();
