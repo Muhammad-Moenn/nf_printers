@@ -15,7 +15,7 @@ type Props = {
   initialMonthlyOrders: any[];
   initialOrders: any[];
 };
-function RealtimeOrdersClient({
+function RealtimeAdminOrdersClient({
   initialMonthlyTotal,
   initialMonthlyOrders,
   initialOrders,
@@ -120,4 +120,4 @@ function RealtimeOrdersClient({
   );
 }
 
-export default RealtimeOrdersClient;
+export default RealtimeAdminOrdersClient;

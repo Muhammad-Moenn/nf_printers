@@ -9,16 +9,36 @@ import { NavUser } from "./nav-user"
 import { currentUser } from "@clerk/nextjs/server"
 
 
-export  async function SiteHeader() {
-  const user= await currentUser()
-   const email=user?.imageUrl
-  console.log("uswer",email)
+export async function SiteHeader() {
+  const user = await currentUser()
+  
+  // If no user, return a minimal header without user-specific elements
+  if (!user) {
+    return (
+      <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+        <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+          <SidebarTrigger className="-ml-1" />
+          <Separator
+            orientation="vertical"
+            className="mx-1 data-[orientation=vertical]:h-4 cursor-pointer"
+          />
+          <h1 className="text-xl font-medium">Dashboard</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <LanguageSelector/>
+            <ModeToggle />
+          </div>
+        </div>
+      </header>
+    )
+  }
+  
   const data = {
-  user: {
-    name: user?.fullName ?? undefined,
-    email: user?.emailAddresses[0]?.emailAddress ?? undefined,
-    avatar: user?.imageUrl ?? undefined,
-  },}
+    user: {
+      name: user?.fullName ?? undefined,
+      email: user?.emailAddresses[0]?.emailAddress ?? undefined,
+      avatar: user?.imageUrl ?? undefined,
+    },
+  }
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">

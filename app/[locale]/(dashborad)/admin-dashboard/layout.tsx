@@ -4,7 +4,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import type { ReactNode } from "react";
 import "react-toastify/dist/ReactToastify.css";
 
-export default async function UserDashboardLayout({
+export default async function AdminDashboardLayout({
   children,
 }: {
   children: ReactNode;
@@ -13,32 +13,42 @@ export default async function UserDashboardLayout({
   navMain: [
     {
       title: "Dashboard",
-      url: "/user-dashboard",
-      icon: "dashboard",
+      url: "/admin-dashboard",
+      icon: "IconLayoutDashboard",
     },
     {
-      title: "My Orders",
-      url: "/user-dashboard/orders",
-      icon: "orders",
+      title: "Users",
+      url: "/admin-dashboard/users",
+      icon: "IconUsers",
     },
     {
-      title: "New Order",
-      url: "/user-dashboard/new-order",
-      icon: "newOrder",
+      title: "Orders",
+      url: "/admin-dashboard/orders",
+      icon: "IconShoppingCart",
     },
     {
-      title: "My Designs",
-      url: "/user-dashboard/my-designs",
-      icon: "designs",
+      title: "Employees",
+      url: "/admin-dashboard/employees",
+      icon: "IconUserCog",
     },
     {
-      title: "Reorder",
-      url: "/user-dashboard/reorder",
-      icon: "reorder",
+      title: "Services",
+      url: "/admin-dashboard/services",
+      icon: "IconBriefcase",
+    },
+    // {
+    //   title: "Affiliates",
+    //   url: "/admin-dashboard/affiliates",
+    //   icon: "IconAffiliate",
+    // },
+    {
+      title: "Revenue",
+      url: "/admin-dashboard/revenue",
+      icon: "IconCurrencyDollar",
     },
     {
       title: "Settings",
-      url: "/user-dashboard/settings",
+      url: "/admin-dashboard/settings",
       icon: "settings",
     },
   ],

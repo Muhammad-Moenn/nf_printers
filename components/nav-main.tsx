@@ -10,16 +10,47 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
+import {
+  IconDashboard,
+  IconListDetails,
+  IconChartBar,
+  IconFolder,
+  IconRepeat,
+  
+    IconLayoutDashboard,
+  IconUsers,
+  IconUserCog,
+  IconShoppingCart,
+  IconBriefcase,
+  IconAffiliate,
+  IconCurrencyDollar,
+  IconSettings,
+} from "@tabler/icons-react";
 
+const iconMap = {
+  dashboard: IconDashboard,
+  orders: IconListDetails,
+  newOrder: IconChartBar,
+  designs: IconFolder,
+  reorder: IconRepeat,
+  settings: IconSettings,
+  IconLayoutDashboard: IconLayoutDashboard,
+  IconUsers: IconUsers,
+  IconUserCog: IconUserCog,
+  IconShoppingCart: IconShoppingCart,
+  IconBriefcase: IconBriefcase,
+  IconAffiliate: IconAffiliate,
+  IconCurrencyDollar: IconCurrencyDollar,
+}as const;
+type IconKey = keyof typeof iconMap;
 export function NavMain({
   items,
 }: {
   items: {
     title: string;
     url: string;
-    icon?: Icon;
+    icon: IconKey ;
   }[];
 }) {
   const pathname = usePathname();
@@ -30,6 +61,7 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => {
+             const Icon = iconMap[item.icon];
             const url = item.url.startsWith("/") ? item.url : `/${item.url}`;
 
             const withLocale = `/${locale}${url}`;
@@ -53,7 +85,7 @@ export function NavMain({
                     href={item.url}
                     className="flex gap-3 justify-center items-center cursor-pointer "
                   >
-                    {item.icon && <item.icon className="w-5 h-5" />}
+                    {item.icon && <Icon className="w-5 h-5" />}
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
