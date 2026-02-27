@@ -101,3 +101,23 @@ enum OrderStatus {
   cancelled
   processing
 }
+
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String   @unique  // one conversation per user
+  adminId   String
+  messages  Message[]
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  text           String   @db.Text
+  seen           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+}
