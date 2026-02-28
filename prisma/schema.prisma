@@ -3,27 +3,40 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
   // directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id          String   @id @default(cuid())
-  clerkUserId String   @unique
-  email       String   @unique
-  role        Role     @default(CUSTOMER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  avatarUrl   String?
-  firstName   String?
-  lastName    String?
-  password    String?
-  orders      Order[]
-  designs     Designs[]
+  id                String         @id @default(cuid())
+  clerkUserId       String         @unique
+  email             String         @unique
+  role              Role           @default(CUSTOMER)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  avatarUrl         String?
+  firstName         String?
+  lastName          String?
+  password          String?
+
+  // Relations
+  orders            Order[]
+  designs           Designs[]
+
+  // Conversations where this user is the regular user
+  userConversations Conversation[] @relation("UserConversations")
+
+  // Conversations where this user is the admin
+  adminConversations Conversation[] @relation("AdminConversations")
+
+  // All messages sent by this user
+  messages           Message[]
+
   @@index([clerkUserId])
   @@index([email])
 }
+
 
 model Payment {
   id        String        @id @default(cuid())
@@ -66,21 +79,18 @@ model Order {
 }
 
 model Designs {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // File info (from UploadThing)
-  url       String
-  key       String
-  size      Int?
+  url    String
+  key    String
+  size   Int?
   // Relations
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-
-  
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 }
-
 
 enum Role {
   CUSTOMER
@@ -102,22 +112,42 @@ enum OrderStatus {
   processing
 }
 
-
 model Conversation {
-  id        String   @id @default(cuid())
-  userId    String   @unique  // one conversation per user
-  adminId   String
-  messages  Message[]
+  id String @id @default(cuid())
+
+  // Regular user in the conversation
+  userId String @unique
+  user   User   @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Admin of the conversation (optional)
+  adminId String?
+  admin   User?   @relation("AdminConversations", fields: [adminId], references: [id])
+
+  // Messages in this conversation
+  messages Message[]
+
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+
+  // @@index([userId])
+  @@index([adminId])
 }
 
 model Message {
-  id             String   @id @default(cuid())
-  conversationId String
-  senderId       String
-  text           String   @db.Text
-  seen           Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  id String @id @default(cuid())
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+
+  text String
+  seen Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
 }

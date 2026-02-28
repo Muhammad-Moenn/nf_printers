@@ -17,7 +17,7 @@ export default function UserMessage({ user }: { user: any }) {
     const res = await fetch("/api/user-message/get-message");
     const data = await res.json();
     setMessages(data);
-    console.log("Fetched messages:", data);
+    // console.log("Fetched messages:", data);
   }
 
   async function SendMessage() {
@@ -61,6 +61,8 @@ export default function UserMessage({ user }: { user: any }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+
+  
   return (
     <div className="h-full w-full bg-gray-100 dark:bg-gray-950 transition-colors duration-300 flex items-center justify-center p-2 sm:p-4 md:p-6 md:py-0">
       <Card className="w-full h-full sm:h-[95vh] md:max-w-full rounded-none sm:rounded-3xl shadow-none sm:shadow-xl flex flex-col gap-0 bg-white dark:bg-gray-900">
