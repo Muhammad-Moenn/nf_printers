@@ -49,7 +49,6 @@ function RealtimeReordersClient({ Data }: { Data: any }) {
       console.error("Refetch failed", err);
     }
   };
-  console.log("current",currentMonthPaid,currentWeekPaid)
   useEffect(() => {
     const channel = supabase
       .channel("cards-realtime")
