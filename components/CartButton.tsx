@@ -2,12 +2,20 @@
 
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCartStore } from "@/app/store/cart-store";
 import Link from "next/link";
 
 export function CartButton() {
+  const [mounted, setMounted] = useState(false);
+  const isClient = typeof window !== "undefined";
   const items = useCartStore((s) => s.items.length);
+  useEffect(() => {
+  setMounted(true);
+}, []);
+
+if (!mounted) return null;
+
   return (
     <Link href="/user-dashboard/add-to-cart">
     <div

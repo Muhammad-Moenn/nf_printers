@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 import { GetDBUser } from "@/app/actions/user_action";
 
 export async function GET() {
@@ -9,22 +8,20 @@ export async function GET() {
     // if (!clerkUser) {
     //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // }
-
     const dbUser= await GetDBUser();
     if (!dbUser) {
       return NextResponse.json({ error: "Unauthorized, this is not exist in db" }, { status: 401 });
     }
-    const conversation = await prisma.conversation.findUnique({
-      where: { userId: dbUser.id },
-    });
+    // const conversation = await prisma.conversation.findUnique({
+    //   where: { userId: dbUser.id },
+    // });
 
-    if (!conversation) {
-      return NextResponse.json({ count: 0 });
-    }
+    // if (!conversation) {
+    //   return NextResponse.json({ count: 0 });
+    // }
 
     const count = await prisma.message.count({
       where: {
-        conversationId: conversation.id,
         senderId: {
           not: dbUser.id,
         },
