@@ -10,6 +10,7 @@ import { Check, Send } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function AdminDashboardMessages({ user }: { user: any }) {
+  const [isClient, setIsClient] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
@@ -20,6 +21,10 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Load all conversations
   useEffect(() => {
     async function fetchConversations() {
@@ -29,10 +34,10 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
 
       if (data.length > 0) {
         setActiveConversationId(data[0].id);
-         await fetch(
-        `/api/admin-message/all-conversations/${data[0].id}/mark-seen`,
-        { method: "POST" }
-      );
+        await fetch(
+          `/api/admin-message/all-conversations/${data[0].id}/mark-seen`,
+          { method: "POST" }
+        );
       }
     }
 
@@ -44,30 +49,44 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
     if (!activeConversationId) return;
 
     async function fetchMessages() {
-      setLoading(true);
-      const res = await fetch(
-        `/api/admin-message/all-conversations/${activeConversationId}`
-      );
-      const data = await res.json();
-      setMessages(data);
-      setLoading(false);
+      try {
+        setLoading(true);
 
-      await fetch(
-        `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
-        { method: "POST" }
-      );
-      // const res2 = await fetch("/api/admin-message/all-conversations");
-      //     if (!res2.ok) return;
+        const res = await fetch(
+          `/api/admin-message/all-conversations/${activeConversationId}`
+        );
+        if (!res.ok) return;
 
-      //     const updatedConversations = await res2.json();
-      //     setConversations(updatedConversations);
-           setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === activeConversationId
-            ? { ...conv, _count: { messages: 0 }, messages: data }
-            : conv
-        )
-      );
+        const conversation = await res.json();
+
+        // 🔹 Set messages correctly
+        setMessages(conversation.messages ?? []);
+        // 🔹 Mark seen
+        await fetch(
+          `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
+          { method: "POST" }
+        );
+        const lastmessage = conversation.messages.length;
+
+        // 🔹 Reset unread count locally (no full refetch)
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === activeConversationId
+              ? {
+                  ...conv,
+                  messages: conversation.messages?.length
+                    ? [conversation.messages[lastmessage - 1]] // latest message preview
+                    : [],
+                  _count: { messages: 0 },
+                }
+              : conv
+          )
+        );
+      } catch (err) {
+        console.error("Fetch messages error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchMessages();
@@ -161,65 +180,209 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   // }, [activeConversationId, user.userId]);
 
   useEffect(() => {
-  const channel = supabase
-    .channel("messages-listener")
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "Message" },
-      async () => {
-        try {
-          setLoading(true);
+    const channel = supabase
+      .channel("messages-listener")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Message" },
+        async (payload) => {
+          console.log("Event:", payload.eventType);
 
-          // 🔹 Refetch all conversations with updated _count
-          const res = await fetch("/api/admin-message/all-conversations");
-          if (!res.ok) return;
+          if (payload.eventType === "INSERT") {
+            if (!activeConversationId) return;
 
-          const updatedConversations = await res.json();
-          setConversations(updatedConversations);
+            try {
+              // 🔹 Fetch all conversations ONCE
+              const res = await fetch("/api/admin-message/all-conversations");
+              if (!res.ok) return;
 
-          // 🔹 If active conversation, append the latest message
-          const activeConv = updatedConversations.find(
-            (c: any) => c.id === activeConversationId
-          );
-          if (!activeConv) return;
+              const updatedConversations = await res.json();
 
-          const latestMessage = activeConv.messages[0];
-          if (!latestMessage) return;
+              // 🔹 Sort by latest message
+              const sorted = [...updatedConversations].sort((a, b) => {
+                const aTime = a.messages?.[0]?.createdAt ?? 0;
+                const bTime = b.messages?.[0]?.createdAt ?? 0;
+                return new Date(bTime).getTime() - new Date(aTime).getTime();
+              });
 
-          // Append only if it's from the other user
-          if (latestMessage.id && latestMessage.senderId !== user.userId) {
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === latestMessage.id)) return prev;
-              return [...prev, latestMessage];
-            });
+              setConversations(sorted);
 
-            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+              // 🔹 Find active conversation from NEW data (not old state)
+              const activeConv = sorted.find(
+                (c: any) => c.id === activeConversationId
+              );
 
-            // 🔹 Mark messages as seen, but no await in cleanup
-            await fetch(
-              `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
-              { method: "POST" }
-            );
-            const res = await fetch("/api/admin-message/all-conversations");
-          if (!res.ok) return;
+              if (!activeConv) return;
 
-          const updatedConversations = await res.json();
-          setConversations(updatedConversations);
+              const latestMessage = activeConv.messages?.[0];
+              if (!latestMessage) return;
+
+              // 🔹 Append if not exists
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === latestMessage.id)) return prev;
+                return [...prev, latestMessage];
+              });
+
+              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+              // 🔹 Mark seen only if from other user
+              if (latestMessage.senderId !== user.userId) {
+                await fetch(
+                  `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
+                  { method: "POST" }
+                );
+
+                // 🔹 Update unread count locally instead of refetching again
+                setConversations((prev) =>
+                  prev.map((conv) =>
+                    conv.id === activeConversationId
+                      ? { ...conv, _count: { messages: 0 } }
+                      : conv
+                  )
+                );
+              }
+            } catch (err) {
+              console.error("Realtime error:", err);
+            }
           }
-        } catch (err) {
-          console.error("Realtime fetch error:", err);
-        } finally {
-          setLoading(false);
-        }
-      }
-    )
-    .subscribe();
 
-  // 🔹 Synchronous cleanup
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [activeConversationId, user.userId]);
+          if (payload.eventType === "UPDATE") {
+            if (!activeConversationId) return;
+            const updatedMessage = payload.new as any;
+
+            // Only update if the updated message is in the active conversation
+            // if (updatedMessage.conversationId !== activeConversationId) return;
+            setMessages((prev) => [
+              // First update old messages
+              ...prev.map((msg) => ({
+                ...msg,
+                seen: msg.seen === false ? true : msg.seen,
+              })),
+
+             
+            ]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeConversationId, user.userId]);
+
+  //   useEffect(() => {
+  //     const channel = supabase
+  //       .channel("messages-listener")
+  //       .on(
+  //         "postgres_changes",
+  //         { event: "INSERT", schema: "public", table: "Message" },
+  //         async () => {
+  //           try {
+  //             setLoading(true);
+  //             8;
+
+  //             // 🔹 Step 1: Get latest updated conversation id
+  //             const res = await fetch("/api/admin-message/latest-converstaion");
+  //             if (!res.ok) return;
+  //             const latestConversation = await res.json();
+  //             const conversationId = latestConversation.id;
+  //             console.log("🔥 New message in conversation:", conversationId);
+  //             if (!conversationId) return;
+  //             // 🔹 Step 2: Fetch only that conversation
+  //             const convRes = await fetch(
+  //               `/api/admin-message/all-conversations/${conversationId}`
+  //             );
+  //             if (!convRes.ok) return;
+  //             const updatedConversation = await convRes.json();
+
+  //             // 🔹 Step 3: Update conversation in sidebar list
+  //           setConversations((prev) => {
+  //   if (!updatedConversation?.id) return prev;
+
+  //   const exists = prev.some((c) => c.id === updatedConversation.id);
+
+  //   let newConversations;
+  //   if (exists) {
+  //     newConversations = prev.map((conv) => {
+  //       if (conv.id !== updatedConversation.id) return conv;
+
+  //       // compute new unread count
+  //       const oldUnread = conv._count?.messages ?? 0;
+  //       const latestMsg = updatedConversation.messages?.[0];
+  //       const isFromOtherUser = latestMsg?.senderId !== user.userId;
+
+  //       return {
+  //         ...conv,
+  //         ...updatedConversation,
+  //         _count: {
+  //           messages:
+  //             conv.id === activeConversationId
+  //               ? 0 // reset if active
+  //               : isFromOtherUser
+  //               ? oldUnread + 1
+  //               : oldUnread,
+  //         },
+  //       };
+  //     });
+  //   } else {
+  //     newConversations = [
+  //       {
+  //         ...updatedConversation,
+  //         _count: {
+  //           messages:
+  //             updatedConversation.messages?.[0]?.senderId !== user.userId &&
+  //             updatedConversation.id !== activeConversationId
+  //               ? 1
+  //               : 0,
+  //         },
+  //       },
+  //       ...prev,
+  //     ];
+  //   }
+
+  //   // remove duplicates
+  //   const uniqueConversations = Array.from(
+  //     new Map(newConversations.map((c) => [c.id, c])).values()
+  //   );
+
+  //   return uniqueConversations;
+  // });
+
+  //             // 🔹 Step 4: If active conversation, append latest message
+  //             if (conversationId === activeConversationId) {
+  //               // Ensure messages are sorted descending (latest first)
+  //               const latestMessage = updatedConversation.messages?.[0];
+  //               if (!latestMessage) return;
+
+  //               setMessages((prev) => {
+  //                 if (prev.some((m) => m.id === latestMessage.id)) return prev;
+  //                 return [...prev, latestMessage];
+  //               });
+
+  //               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+  //               // 🔹 Mark as seen only if from other user
+  //               if (latestMessage.senderId !== user.userId) {
+  //                 await fetch(
+  //                   `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
+  //                   { method: "POST" }
+  //                 );
+  //               }
+  //             }
+  //           } catch (err) {
+  //             console.error("Realtime insert error:", err);
+  //           } finally {
+  //             setLoading(false);
+  //           }
+  //         }
+  //       )
+  //       .subscribe();
+
+  //     return () => {
+  //       supabase.removeChannel(channel);
+  //     };
+  //   }, [activeConversationId, user.userId]);
 
   useEffect(() => {
     if (!activeConversationId) return;
@@ -267,7 +430,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
 
     setLoading(true);
 
-    await fetch(
+    const res = await fetch(
       `/api/admin-message/all-conversations/${activeConversationId}/send-message`,
       {
         method: "POST",
@@ -275,7 +438,17 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
         body: JSON.stringify({ text }),
       }
     );
+    if (!res.ok) {
+      throw new Error("Failed to send message");
+    }
 
+    const newMessage = await res.json(); // <-- get actual data
+
+    setMessages((prev) => {
+      // prevent duplicate messages
+      if (prev.some((m) => m.id === newMessage.id)) return prev;
+      return [...prev, newMessage];
+    });
     setText("");
     setLoading(false);
     // ❌ No refetch needed — realtime handles it
@@ -291,6 +464,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+  if (!isClient) return null;
   return (
     <div className="h-full w-full p-6 bg-gray-100">
       <div className="grid grid-cols-12 gap-4 h-[90%] max-h-[90%]">
@@ -315,23 +489,23 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                     }`}
                   >
                     <Avatar>
-                      <AvatarImage src={conv.user.avatarUrl || ""} />
+                      <AvatarImage src={conv.user?.avatarUrl || ""} />
                       <AvatarFallback>
-                        {conv.user.firstName?.charAt(0) ||
-                          conv.user.email.charAt(0)}
+                        {conv.user?.firstName?.charAt(0) ||
+                          conv.user?.email.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col w-full">
                       <p className="font-medium line-clamp-1">
-                        {conv.user.firstName} {conv.user.lastName}
+                        {conv.user?.firstName} {conv.user?.lastName}
                       </p>
                       <p className="text-sm opacity-60 line-clamp-1">
-                        {conv.messages[0]?.text}
+                        {conv?.messages?.[0]?.text}
                       </p>
                     </div>
                     {conv._count?.messages > 0 && (
                       <span className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                        {conv._count.messages}
+                        {conv._count?.messages}
                       </span>
                     )}
                   </div>
@@ -371,7 +545,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
               <div ref={bottomRef} />
             </ScrollArea> */}
             <div className="min-h-[70vh]  overflow-y-auto px-3 sm:px-6 py-4 space-y-4 bg-gray-50 dark:bg-gray-950">
-              {messages.map((msg) => {
+              {messages?.map((msg) => {
                 const date = formatTime(msg.createdAt);
                 return (
                   <div
@@ -384,7 +558,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                   >
                     <div>
                       <div
-                        className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-5 sm:py-[10px] sm:pb-1 rounded-xl text-xs sm:text-sm shadow-sm break-words ml-auto ${
+                        className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-4 sm:pr-3 sm:py-[10px] sm:pb-1 rounded-lg text-xs sm:text-sm shadow-sm  ml-auto ${
                           msg.senderId === user.userId
                             ? "bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white"
                             : "dark:bg-gray-300 bg-gray-800 dark:text-gray-900 text-white"
@@ -402,7 +576,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                           {date}
                           {msg.senderId === user.userId && (
                             <Check
-                              className={`w-3 h-3  ${
+                              className={`w-4 h-4  ${
                                 msg.seen ? "text-blue-600" : ""
                               }`}
                             />
@@ -412,7 +586,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                     </div>
                   </div>
                 );
-              })}
+              }) || null}
               <div ref={bottomRef} />
             </div>
             {/* Input */}

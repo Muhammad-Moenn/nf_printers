@@ -30,6 +30,7 @@ export async function GET() {
       },
       data: {
         seen: true,
+        updatedAt: new Date(),
       },
     });
   }

@@ -39,7 +39,7 @@ export async function GET(
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
     }
 
-    return NextResponse.json(conversation.messages);
+    return NextResponse.json(conversation);
   } catch (error) {
     console.error("Prisma error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

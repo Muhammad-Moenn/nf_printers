@@ -5,16 +5,27 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-export default function  NotificationButton() {
+export default function  NotificationButton({ dbUser }:any) {
   const [notification,setnotification]=useState(0);
-  
+   ;
   useEffect(() => {
   async function fetchCount() {
+    if(!dbUser){
+      return;
+    }
+    if(dbUser.role === "ADMIN") {
+      const res = await fetch("/api/admin-message/all-unseen-count");
+      const data = await res.json();
+      setnotification(data);
+      console.log("notification admin count:", notification); 
+    } 
+    if(dbUser.role === "CUSTOMER") {
     const res = await fetch("/api/user-message/unseen-count");
     const data = await res.json();
-    setnotification(data.count);
+    setnotification(data);
+    console.log("notification customer count:", notification); 
   }
-
+  }
   fetchCount();
 }, []);
   return (

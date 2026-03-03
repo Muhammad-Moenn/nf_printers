@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Send } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function UserMessage({ user }: { user: any }) {
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,16 @@ export default function UserMessage({ user }: { user: any }) {
     if (!text.trim()) return;
     setLoading(true);
 
-    // setMessages((prev) => [...prev, {text:text,senderId: user.id,createdAt: new Date().toISOString(),seen:false}]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: text,
+        senderId: user.userId, // use a different senderId to distinguish from actual messages
+        createdAt: new Date().toISOString(),
+        seen: false,
+        id: user.id + "-" + Math.random().toString(36).substr(2, 9), // add a temporary unique id for React key
+      },
+    ]);
     const res = await fetch("/api/user-message/send-message", {
       method: "POST",
       headers: {
@@ -33,7 +43,6 @@ export default function UserMessage({ user }: { user: any }) {
       body: JSON.stringify({ text }),
     });
     const data = await res.json();
-
     if (!res.ok) {
       console.error("Error:", data.error);
       return;
@@ -48,6 +57,39 @@ export default function UserMessage({ user }: { user: any }) {
     setText("");
   }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("messages-listener")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Message" },
+        (payload) => {
+          console.log("Event:", payload.eventType);
+
+          if (payload.eventType === "INSERT") {
+            fetchMessages();
+          }
+
+          if (payload.eventType === "UPDATE") {
+            // fetchMessages();
+            setMessages((prev) => [
+              // First update old messages
+              ...prev.map((msg) => ({
+                ...msg,
+                seen: msg.seen === false ? true : msg.seen,
+              })),
+
+             
+            ]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   function formatTime(dateString: string) {
     const date = new Date(dateString);
 
@@ -61,8 +103,6 @@ export default function UserMessage({ user }: { user: any }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-
-  
   return (
     <div className="h-full w-full bg-gray-100 dark:bg-gray-950 transition-colors duration-300 flex items-center justify-center p-2 sm:p-4 md:p-6 md:py-0">
       <Card className="w-full h-full sm:h-[95vh] md:max-w-full rounded-none sm:rounded-3xl shadow-none sm:shadow-xl flex flex-col gap-0 bg-white dark:bg-gray-900">
@@ -93,7 +133,7 @@ export default function UserMessage({ user }: { user: any }) {
               >
                 <div>
                   <div
-                    className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-5 sm:py-[10px] sm:pb-1 rounded-xl text-xs sm:text-sm shadow-sm break-words ml-auto ${
+                    className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-4 sm:pr-3 sm:py-[10px] sm:pb-1 rounded-lg text-xs sm:text-sm shadow-sm break-words ml-auto ${
                       msg.senderId === user.userId
                         ? "bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white"
                         : "dark:bg-gray-300 bg-gray-800 dark:text-gray-900 text-white"
@@ -111,7 +151,7 @@ export default function UserMessage({ user }: { user: any }) {
                       {date}
                       {msg.senderId === user.userId && (
                         <Check
-                          className={`w-3 h-3  ${
+                          className={`w-4 h-4  ${
                             msg.seen ? "text-blue-600" : ""
                           }`}
                         />

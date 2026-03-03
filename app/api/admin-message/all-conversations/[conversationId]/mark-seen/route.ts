@@ -21,7 +21,10 @@ export async function POST(req: Request, { params }: Params) {
       senderId: { not: dbUser.id },
       seen: false,
     },
-    data: { seen: true },
+    data: {
+    seen: true,
+    updatedAt: new Date(),  // ensures Realtime sees a row-level change
+  },
   });
 
   return NextResponse.json({ updatedCount: updated.count });
