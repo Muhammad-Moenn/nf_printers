@@ -8,6 +8,7 @@ export async function GET() {
   const clerkUser = await currentUser();
   if (!clerkUser) return NextResponse.json({ error: "Unauthorized" });
 //  await getOrCreateConversation();
+
  const dbUser = await GetDBUser();
   const conversation = await prisma.conversation.findUnique({
     where: { userId: dbUser?.id },

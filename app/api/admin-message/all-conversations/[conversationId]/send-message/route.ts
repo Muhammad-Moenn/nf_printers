@@ -32,6 +32,7 @@ export async function POST(req: Request, { params }: Params) {
 
   // 2️⃣ Receiver is the customer (since admin is sender)
   const receiverId = conversation.userId;
+
   const message = await prisma.message.create({
     data: {
       conversationId,

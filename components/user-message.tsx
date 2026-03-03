@@ -33,6 +33,7 @@ export default function UserMessage({ user }: { user: any }) {
         createdAt: new Date().toISOString(),
         seen: false,
         id: user.id + "-" + Math.random().toString(36).substr(2, 9), 
+
       },
     ]);
 
@@ -66,7 +67,7 @@ export default function UserMessage({ user }: { user: any }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "Message" },
         (payload) => {
-          // console.log("Event:", payload.eventType);
+
 
           if (payload.eventType === "INSERT") {
             fetchMessages();

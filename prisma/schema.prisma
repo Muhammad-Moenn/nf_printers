@@ -142,7 +142,9 @@ model Message {
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
   receiverId    String  
+
   text String
   seen Boolean @default(false)
 

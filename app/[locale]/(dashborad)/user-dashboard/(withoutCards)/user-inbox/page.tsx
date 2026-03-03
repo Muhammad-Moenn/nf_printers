@@ -15,6 +15,7 @@ export default async function UserDashboardMessages() {
   };
 
   const conversation = await getOrCreateConversation()
+
   if (user) {
     return (
       <div className="h-full w-full bg-gray-100  ">
