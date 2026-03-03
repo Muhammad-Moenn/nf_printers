@@ -15,6 +15,7 @@ export function CartButton() {
 }, []);
 
 if (!mounted) return null;
+
   return (
     <Link href="/user-dashboard/add-to-cart">
     <div

@@ -26,6 +26,7 @@ export default function  NotificationButton({ dbUser }:any) {
     console.log("notification customer count:", notification); 
   }
   }
+
   fetchCount();
 }, []);
   return (

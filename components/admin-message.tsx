@@ -38,6 +38,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
           `/api/admin-message/all-conversations/${data[0].id}/mark-seen`,
           { method: "POST" }
         );
+
       }
     }
 
@@ -87,6 +88,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
       } finally {
         setLoading(false);
       }
+
     }
 
     fetchMessages();
@@ -384,6 +386,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   //     };
   //   }, [activeConversationId, user.userId]);
 
+
   useEffect(() => {
     if (!activeConversationId) return;
 
@@ -431,6 +434,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
     setLoading(true);
 
     const res = await fetch(
+
       `/api/admin-message/all-conversations/${activeConversationId}/send-message`,
       {
         method: "POST",
@@ -449,6 +453,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
       if (prev.some((m) => m.id === newMessage.id)) return prev;
       return [...prev, newMessage];
     });
+
     setText("");
     setLoading(false);
     // ❌ No refetch needed — realtime handles it
@@ -465,6 +470,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
     (c) => c.id === activeConversationId
   );
   if (!isClient) return null;
+
   return (
     <div className="h-full w-full p-6 bg-gray-100">
       <div className="grid grid-cols-12 gap-4 h-[90%] max-h-[90%]">
@@ -493,6 +499,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                       <AvatarFallback>
                         {conv.user?.firstName?.charAt(0) ||
                           conv.user?.email.charAt(0)}
+
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col w-full">
@@ -501,11 +508,13 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                       </p>
                       <p className="text-sm opacity-60 line-clamp-1">
                         {conv?.messages?.[0]?.text}
+
                       </p>
                     </div>
                     {conv._count?.messages > 0 && (
                       <span className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                         {conv._count?.messages}
+
                       </span>
                     )}
                   </div>
@@ -546,6 +555,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
             </ScrollArea> */}
             <div className="min-h-[70vh]  overflow-y-auto px-3 sm:px-6 py-4 space-y-4 bg-gray-50 dark:bg-gray-950">
               {messages?.map((msg) => {
+
                 const date = formatTime(msg.createdAt);
                 return (
                   <div
@@ -559,6 +569,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                     <div>
                       <div
                         className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-4 sm:pr-3 sm:py-[10px] sm:pb-1 rounded-lg text-xs sm:text-sm shadow-sm  ml-auto ${
+
                           msg.senderId === user.userId
                             ? "bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white"
                             : "dark:bg-gray-300 bg-gray-800 dark:text-gray-900 text-white"
@@ -577,6 +588,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                           {msg.senderId === user.userId && (
                             <Check
                               className={`w-4 h-4  ${
+
                                 msg.seen ? "text-blue-600" : ""
                               }`}
                             />
@@ -587,6 +599,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                   </div>
                 );
               }) || null}
+
               <div ref={bottomRef} />
             </div>
             {/* Input */}

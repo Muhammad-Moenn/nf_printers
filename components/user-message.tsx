@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Send } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
+
 export default function UserMessage({ user }: { user: any }) {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +36,7 @@ export default function UserMessage({ user }: { user: any }) {
         id: user.id + "-" + Math.random().toString(36).substr(2, 9), // add a temporary unique id for React key
       },
     ]);
+
     const res = await fetch("/api/user-message/send-message", {
       method: "POST",
       headers: {
@@ -43,6 +45,7 @@ export default function UserMessage({ user }: { user: any }) {
       body: JSON.stringify({ text }),
     });
     const data = await res.json();
+
     if (!res.ok) {
       console.error("Error:", data.error);
       return;
@@ -90,6 +93,7 @@ export default function UserMessage({ user }: { user: any }) {
       supabase.removeChannel(channel);
     };
   }, []);
+
   function formatTime(dateString: string) {
     const date = new Date(dateString);
 
@@ -102,6 +106,7 @@ export default function UserMessage({ user }: { user: any }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
 
   return (
     <div className="h-full w-full bg-gray-100 dark:bg-gray-950 transition-colors duration-300 flex items-center justify-center p-2 sm:p-4 md:p-6 md:py-0">
@@ -134,6 +139,7 @@ export default function UserMessage({ user }: { user: any }) {
                 <div>
                   <div
                     className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-4 sm:pr-3 sm:py-[10px] sm:pb-1 rounded-lg text-xs sm:text-sm shadow-sm break-words ml-auto ${
+
                       msg.senderId === user.userId
                         ? "bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white"
                         : "dark:bg-gray-300 bg-gray-800 dark:text-gray-900 text-white"
@@ -152,6 +158,7 @@ export default function UserMessage({ user }: { user: any }) {
                       {msg.senderId === user.userId && (
                         <Check
                           className={`w-4 h-4  ${
+
                             msg.seen ? "text-blue-600" : ""
                           }`}
                         />

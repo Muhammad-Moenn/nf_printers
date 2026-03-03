@@ -40,6 +40,7 @@ export async function GET(
     }
 
     return NextResponse.json(conversation);
+
   } catch (error) {
     console.error("Prisma error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

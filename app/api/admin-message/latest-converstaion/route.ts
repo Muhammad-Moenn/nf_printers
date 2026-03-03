@@ -38,6 +38,7 @@ export async function GET() {
         { error: "No conversations found" },
         { status: 404 }
       );
+
     }
 
     return NextResponse.json(latestConversation);
@@ -49,3 +50,4 @@ export async function GET() {
     );
   }
 }
+

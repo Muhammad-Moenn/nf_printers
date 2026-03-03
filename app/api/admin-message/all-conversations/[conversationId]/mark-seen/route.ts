@@ -25,6 +25,7 @@ export async function POST(req: Request, { params }: Params) {
     seen: true,
     updatedAt: new Date(),  // ensures Realtime sees a row-level change
   },
+
   });
 
   return NextResponse.json({ updatedCount: updated.count });

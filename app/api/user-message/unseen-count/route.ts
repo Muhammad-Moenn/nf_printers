@@ -9,6 +9,7 @@ export async function GET() {
     // if (!clerkUser) {
     //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // }
+
     const dbUser= await GetDBUser();
     if (!dbUser) {
       return NextResponse.json({ error: "Unauthorized, this is not exist in db" }, { status: 401 });
