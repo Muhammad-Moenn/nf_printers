@@ -21,9 +21,11 @@ import { LayoutDashboard, LogIn, LogInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import LanguageSelector from "./language-selector";
 import { useLocale, useTranslations } from "next-intl";
+import NotificationButton from "./notification-btn";
+import { GetDBUser } from "@/app/actions/user_action";
 // import Link from "next/link";
 
-export function NavBar() {
+export function NavBar({dbUuser}: any) {
   const t = useTranslations("home.header");
   const items = t.raw("navItems");
   const locale = useLocale();
@@ -57,6 +59,8 @@ export function NavBar() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const [visible, setVisible] = useState<boolean>(false);
+
+
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (latest > 100) {
       setVisible(true);
@@ -170,6 +174,7 @@ export function NavBar() {
           <NavbarLogo />
           <NavItems items={items} />
           <div className="flex items-center gap-4 z-10">
+            
             <LanguageSelector />
             <ModeToggle />
             {!user ? (
@@ -209,6 +214,7 @@ export function NavBar() {
                 </a>
               </Button>
             )}
+            <NotificationButton dbUuser={dbUuser}/>
           </div>
         </NavBody>
 
@@ -243,6 +249,7 @@ export function NavBar() {
             ))}
             <div className={`flex w-full flex-col gap-4 max ${isLocale?"items-end":"items-start"}`}>
                <LanguageSelector />
+               <NotificationButton dbUuser={dbUuser}/>
                 <ModeToggle />
                {!user ? (
               <Button

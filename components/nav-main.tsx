@@ -17,8 +17,9 @@ import {
   IconChartBar,
   IconFolder,
   IconRepeat,
-  
-    IconLayoutDashboard,
+  IconMessageCircle,
+  IconInbox,
+  IconLayoutDashboard,
   IconUsers,
   IconUserCog,
   IconShoppingCart,
@@ -42,7 +43,9 @@ const iconMap = {
   IconBriefcase: IconBriefcase,
   IconAffiliate: IconAffiliate,
   IconCurrencyDollar: IconCurrencyDollar,
-}as const;
+  IconMessageCircle: IconMessageCircle,
+  IconInbox:IconInbox
+} as const;
 type IconKey = keyof typeof iconMap;
 export function NavMain({
   items,
@@ -50,7 +53,7 @@ export function NavMain({
   items: {
     title: string;
     url: string;
-    icon: IconKey ;
+    icon: IconKey;
   }[];
 }) {
   const pathname = usePathname();
@@ -61,17 +64,23 @@ export function NavMain({
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) => {
-             const Icon = iconMap[item.icon];
+            const Icon = iconMap[item.icon];
             const url = item.url.startsWith("/") ? item.url : `/${item.url}`;
 
-            const withLocale = `/${locale}${url}`;
-            const withoutLocale = url;
+            const baseWithLocale = `/${locale}${url}`;
+            const baseWithoutLocale = url;
+
+            const normalize = (path: string) =>
+              path.split("?")[0].replace(/\/$/, "");
+
+            const current = normalize(pathname);
 
             const isActive =
-              pathname === withLocale ||
-              // pathname.startsWith(withLocale + "/") ||
-              pathname === withoutLocale 
-              // pathname.startsWith(withoutLocale + "/");
+              current === baseWithLocale ||
+              // current.startsWith(baseWithLocale + "/") ||
+              current === baseWithoutLocale 
+              // current.startsWith(baseWithoutLocale + "/");
+
             return (
               <SidebarMenuItem key={item.title} className="w-full">
                 <SidebarMenuButton

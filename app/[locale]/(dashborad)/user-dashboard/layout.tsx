@@ -37,6 +37,11 @@ export default async function UserDashboardLayout({
       icon: "reorder",
     },
     {
+      title: "Inbox",
+      url: "/user-dashboard/user-inbox",
+      icon: "IconMessageCircle",
+    },
+    {
       title: "Settings",
       url: "/user-dashboard/settings",
       icon: "settings",

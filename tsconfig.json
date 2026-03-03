@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "app/api/admin-message/all-unseen-count"  ],
   "exclude": ["node_modules"]
 }

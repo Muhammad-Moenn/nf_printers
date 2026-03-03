@@ -2,19 +2,26 @@
 
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCartStore } from "@/app/store/cart-store";
 import Link from "next/link";
 
 export function CartButton() {
+  const [mounted, setMounted] = useState(false);
+  const isClient = typeof window !== "undefined";
   const items = useCartStore((s) => s.items.length);
-  // console.log("Cart items:", items);  
+  useEffect(() => {
+  setMounted(true);
+}, []);
+
+if (!mounted) return null;
+
   return (
     <Link href="/user-dashboard/add-to-cart">
     <div
       // variant="ghost"
       
-      className="relative cursor-pointer 
+      className="relative cursor-pointer group
      
       "
     >
@@ -23,17 +30,19 @@ export function CartButton() {
       {items > 0 && (
         <span
           className="
-          absolute top-0 -right-1
-          h-4 w-4
-          rounded-full
-          bg-red-500
-          text-white
-          text-[10px]
-           font-semibold
-          flex items-center justify-center
+          absolute -top-0 right-[0px] group-hover:-top-2 group-hover:-right-[4px]
+        p-[3px] w-2 h-2 group-hover:w-[16px] group-hover:h-[16px] 
+        flex items-center justify-center
+        rounded-full bg-red-500
+        text-white font-medium text-[9px]
+        z-10
+        group-hover:flex
+        before:content-[''] 
         "
         >
-          {items}
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+          {items > 9 ? "9+" : items}
+          </span>
         </span>
       )}
     </div>
