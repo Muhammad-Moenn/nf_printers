@@ -19,7 +19,6 @@ export default function UserMessage({ user }: { user: any }) {
     const res = await fetch("/api/user-message/get-message");
     const data = await res.json();
     setMessages(data);
-    // console.log("Fetched messages:", data);
   }
 
   async function SendMessage() {
@@ -30,10 +29,11 @@ export default function UserMessage({ user }: { user: any }) {
       ...prev,
       {
         text: text,
-        senderId: user.userId, // use a different senderId to distinguish from actual messages
+        senderId: user.userId, 
         createdAt: new Date().toISOString(),
         seen: false,
-        id: user.id + "-" + Math.random().toString(36).substr(2, 9), // add a temporary unique id for React key
+        id: user.id + "-" + Math.random().toString(36).substr(2, 9), 
+
       },
     ]);
 
@@ -67,7 +67,7 @@ export default function UserMessage({ user }: { user: any }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "Message" },
         (payload) => {
-          console.log("Event:", payload.eventType);
+
 
           if (payload.eventType === "INSERT") {
             fetchMessages();

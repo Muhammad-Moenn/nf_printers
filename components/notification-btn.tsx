@@ -1,49 +1,89 @@
 "use client";
 
-import { BellRing, Flag, MessageCircle, ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { BellRing } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 
-export default function  NotificationButton({ dbUser }:any) {
-  const [notification,setnotification]=useState(0);
-   ;
-  useEffect(() => {
-  async function fetchCount() {
-    if(!dbUser){
-      return;
-    }
-    if(dbUser.role === "ADMIN") {
-      const res = await fetch("/api/admin-message/all-unseen-count");
+export default function NotificationButton({ dbUser }: any) {
+  const [notification, setNotification] = useState(0);
+
+  // ✅ Stable fetch function
+  const fetchCount = useCallback(async () => {
+    if (!dbUser?.id) return;
+
+    try {
+      const endpoint =
+        dbUser.role === "ADMIN"
+          ? "/api/admin-message/all-unseen-count"
+          : "/api/user-message/unseen-count";
+
+      const res = await fetch(endpoint);
+      if (!res.ok) return;
+
       const data = await res.json();
-      setnotification(data);
-      console.log("notification admin count:", notification); 
-    } 
-    if(dbUser.role === "CUSTOMER") {
-    const res = await fetch("/api/user-message/unseen-count");
-    const data = await res.json();
-    setnotification(data);
-    console.log("notification customer count:", notification); 
-  }
-  }
+      setNotification(data.count ?? 0);
+      // console.log("Fetched notification count:", data.count);
+    } catch (error) {
+      console.error("Fetch notification error:", error);
+    }
+  }, [dbUser]);
 
-  fetchCount();
-}, []);
+  useEffect(() => {
+    if (!dbUser?.id) return;
+
+    // 🔹 Initial load
+    fetchCount();
+
+    // 🔹 Realtime subscription
+    const channel = supabase
+      .channel(`messages-${dbUser.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "Message",
+          // filter: `receiverId=eq.${dbUser.id}`,
+        },
+        (payload) => {
+
+          // console.log("Message change detected, fetching count...");
+          fetchCount();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime status:", status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+       console.log("Realtime status closed:");
+    };
+  }, [dbUser, fetchCount]);
+
+  if (!dbUser) return null;
   return (
-    <Link href="/user-dashboard/user-inbox" className="relative group cursor-pointer">
+    <Link href={
+    dbUser.role === "ADMIN"
+      ? "/admin-dashboard/admin-inbox"
+      : "/user-dashboard/user-inbox"
+  }
+   className="relative group cursor-pointer z-10">
+
   <BellRing className="w-5 h-5" />
 
   {notification > 0 && (
     <span
       className={`
-        absolute -top-1 right-[0px] group-hover:-top-2 group-hover:-right-[4px]
+        absolute -top-[3px] right-[0px] group-hover:-top-2 group-hover:-right-[4px]
         p-[3px] w-2 h-2 group-hover:w-[16px] group-hover:h-[16px] 
         flex items-center justify-center
         rounded-full bg-red-500
         text-white font-medium text-[9px]
         z-10
         group-hover:flex
-        before:content-[''] 
+        before:content-['']  
       `}
     >
       {/* number hidden by default */}
@@ -55,4 +95,3 @@ export default function  NotificationButton({ dbUser }:any) {
 </Link>
   );
 }
-// border border-transparent hover:border-gray-300/50 hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 p-2 rounded-md flex items-center justify-center hover:shadow-sm

@@ -188,7 +188,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "Message" },
         async (payload) => {
-          console.log("Event:", payload.eventType);
+          // console.log("Event:", payload.eventType);
 
           if (payload.eventType === "INSERT") {
             if (!activeConversationId) return;

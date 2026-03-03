@@ -32,6 +32,8 @@ export async function POST(req: Request) {
         conversationId: conversation.id,
         senderId: dbUser.id,  
         text: text.trim(),
+        receiverId: process.env.ADMIN_ID!,
+
       },
     });
     return NextResponse.json(message);

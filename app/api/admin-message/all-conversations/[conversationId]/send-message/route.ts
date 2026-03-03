@@ -19,12 +19,26 @@ export async function POST(req: Request, { params }: Params) {
   if (!text || !text.trim()) {
     return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
   }
+ const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+  });
+
+  if (!conversation) {
+    return NextResponse.json(
+      { error: "Conversation not found" },
+      { status: 404 }
+    );
+  }
+
+  // 2️⃣ Receiver is the customer (since admin is sender)
+  const receiverId = conversation.userId;
 
   const message = await prisma.message.create({
     data: {
       conversationId,
       senderId: dbUser.id,
       text,
+      receiverId,
     },
   });
 

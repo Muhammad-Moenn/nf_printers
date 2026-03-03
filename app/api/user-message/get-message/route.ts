@@ -7,7 +7,8 @@ import { GetDBUser } from "@/app/actions/user_action";
 export async function GET() {
   const clerkUser = await currentUser();
   if (!clerkUser) return NextResponse.json({ error: "Unauthorized" });
- await getOrCreateConversation();
+//  await getOrCreateConversation();
+
  const dbUser = await GetDBUser();
   const conversation = await prisma.conversation.findUnique({
     where: { userId: dbUser?.id },

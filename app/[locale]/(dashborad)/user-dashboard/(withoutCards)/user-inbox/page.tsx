@@ -15,7 +15,7 @@ export default async function UserDashboardMessages() {
   };
 
   const conversation = await getOrCreateConversation()
-       console.log("Fetched conversation with messages:", conversation);
+
   if (user) {
     return (
       <div className="h-full w-full bg-gray-100  ">
