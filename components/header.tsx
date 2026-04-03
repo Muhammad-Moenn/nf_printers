@@ -11,7 +11,6 @@ import {
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { cn } from "@/lib/utils";
 import { Link } from "react-scroll";
 import { useUser } from "@clerk/nextjs";
 import { useRef, useState } from "react";
@@ -21,9 +20,10 @@ import { LayoutDashboard, LogIn, LogInIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import LanguageSelector from "./language-selector";
 import { useLocale, useTranslations } from "next-intl";
+import NotificationButton from "./notification-btn";
 // import Link from "next/link";
 
-export function NavBar() {
+export function NavBar({ dbUser }: any) {
   const t = useTranslations("home.header");
   const items = t.raw("navItems");
   const locale = useLocale();
@@ -57,6 +57,8 @@ export function NavBar() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const [visible, setVisible] = useState<boolean>(false);
+
+  const href = dbUser?.role === "ADMIN" ? "/admin-dashboard" : "/user-dashboard";
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (latest > 100) {
       setVisible(true);
@@ -70,6 +72,7 @@ export function NavBar() {
       router.push(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL!);
     }
   };
+  
   return (
     <div className="relative w-full" ref={ref}>
       {visible && (
@@ -80,6 +83,7 @@ export function NavBar() {
           transition={{ duration: 0.5, ease: "easeInOut" }}
           onMouseLeave={() => setHovered(null)}
           className="
+          
       fixed top-6 inset-x-0
       hidden lg:flex items-center
       justify-center gap-2
@@ -105,7 +109,6 @@ export function NavBar() {
               duration={500}
               key={idx}
               onMouseEnter={() => setHovered(idx)}
-              href={item.link}
               className="relative px-4 py-2 "
             >
               {hovered === idx && (
@@ -156,7 +159,7 @@ export function NavBar() {
                 className="flex items-center gap-1 text-sm leading-none"
               >
                 <LayoutDashboard className="h-4 w-4" />
-               {isLocale ? "ڈیش بورڈ" : "Dashboard"}
+                {isLocale ? "ڈیش بورڈ" : "Dashboard"}
               </a>
             </Button>
           )}
@@ -177,6 +180,7 @@ export function NavBar() {
                 onClick={handleLogin}
                 // asChild
                 className="
+                bg-transparent border-2 border-white/20 text-white hover:bg-white/10
     flex items-center justify-center
     cursor-pointer
     rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
@@ -187,21 +191,22 @@ export function NavBar() {
                 className="flex items-center gap-1 text-sm leading-none"
               > */}
                 <LogIn className="h-4 w-4" />
-                {isLocale ?  "لاگ ان" : "Login"}
-                
+                {isLocale ? "لاگ ان" : "Login"}
+
                 {/* </a> */}
               </Button>
             ) : (
               <Button
                 asChild
                 className="
+                bg-[#2563EB] text-[#FFFFFF] hover:bg-[#1D4ED8]
              flex items-center justify-center
              cursor-pointer
               rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
                "
               >
                 <a
-                  href="/user-dashboard"
+                  href={href}
                   className="flex items-center gap-1 text-sm leading-none"
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -209,6 +214,7 @@ export function NavBar() {
                 </a>
               </Button>
             )}
+            <NotificationButton dbUuser={dbUser} />
           </div>
         </NavBody>
 
@@ -225,7 +231,7 @@ export function NavBar() {
           <MobileNavMenu
             isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
-            className={`${isLocale?"text-right":"text-left"}`}
+            className={`${isLocale ? "text-right" : "text-left"}`}
           >
             {items.map((item: any, idx: number) => (
               <Link
@@ -234,70 +240,60 @@ export function NavBar() {
                 offset={400}
                 duration={500}
                 key={`mobile-link-${idx}`}
-                href={item.link}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`relative w-full text-neutral-600 dark:text-neutral-300 ${isLocale?"text-right":"text-left"}`}
+                className={`relative w-full text-neutral-600 dark:text-neutral-300 ${
+                  isLocale ? "text-right" : "text-left"
+                }`}
               >
                 <span className="block">{item.name}</span>
               </Link>
             ))}
-            <div className={`flex w-full flex-col gap-4 max ${isLocale?"items-end":"items-start"}`}>
-               <LanguageSelector />
-                <ModeToggle />
-               {!user ? (
-              <Button
-                onClick={handleLogin}
-                // asChild
-                className="
+            <div
+              className={`flex w-full flex-col gap-4 max ${
+                isLocale ? "items-end" : "items-start"
+              }`}
+            >
+              <LanguageSelector />
+              <NotificationButton dbUuser={dbUser} />
+              <ModeToggle />
+              {!user ? (
+                <Button
+                  onClick={handleLogin}
+                  // asChild
+                  className="
     flex items-center justify-center
     cursor-pointer
     rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
   "
-              >
-                {/* <a
+                >
+                  {/* <a
                 href="/"
                 className="flex items-center gap-1 text-sm leading-none"
               > */}
-                <LogIn className="h-4 w-4" />
-                {isLocale ?  "لاگ ان" : "Login"}
-                
-                {/* </a> */}
-              </Button>
-            ) : (
-              <Button
-                asChild
-                className="
+                  <LogIn className="h-4 w-4" />
+                  {isLocale ? "لاگ ان" : "Login"}
+
+                  {/* </a> */}
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="
              flex items-center justify-center
              cursor-pointer
               rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
                "
-              >
-                <a
-                  href="/user-dashboard"
-                  className="flex items-center gap-1 text-sm leading-none"
                 >
-                  <LayoutDashboard className="h-4 w-4" />
-                  {isLocale ? "ڈیش بورڈ" : "Dashboard"}
-                </a>
-              </Button>
-            )}
-             
-              {/* <NavbarButton
-                onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
-                className="w-full"
-              >
-                Login
-              </NavbarButton>
-              <NavbarButton
-                onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
-                className="w-full"
-              >
-                Book a call
-              </NavbarButton> */}
+                  <a
+                    href={href}
+                    className="flex items-center gap-1 text-sm leading-none"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    {isLocale ? "ڈیش بورڈ" : "Dashboard"}
+                  </a>
+                </Button>
+              )}
             </div>
-           
           </MobileNavMenu>
         </MobileNav>
       </Navbar>

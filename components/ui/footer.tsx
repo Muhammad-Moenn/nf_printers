@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Mail, Phone } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 
@@ -25,7 +26,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
         <footer>
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
             <div className="col-span-2 mb-8 lg:mb-0">
-              <div className="flex items-center gap-2 lg:justify-start">
+              <div className="flex items-center gap-2 lg:justify-start lg:items-start">
                 {/* <Logo url="https://shadcnblocks.com">
                   <LogoImage
                     src={logo.src}
@@ -36,11 +37,12 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
                   <LogoText className="text-xl">{logo.title}</LogoText>
                 </Logo> */}
                 <Image
-                  src={t("logo.src")}
-                  alt={t("logo.alt")}
+                  src="/nf-logo2.png"
+                  alt="nf logo"
                   priority
-                  width={100}
-                  height={80}
+                  width={150}
+                  height={70}
+                  className=" w-[180px] lg:w-[220px] h-auto dark:invert"
                 />
               </div>
               <p
@@ -50,6 +52,20 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
               >
                 {t("tagline")}
               </p>
+              <div className="mt-4 space-y-2">
+              <a href="tel:+923045033707" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors sm:text-sm">
+                <Phone className="h-4 w-4 text-amber-500" />
+                +92 304 5033707
+              </a>
+              <a href="tel:+923009774895" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors sm:text-sm">
+                <Phone className="h-4 w-4 text-amber-500" />
+                +92 300 9774895
+              </a>
+              <a href="mailto:nfprinter3610@gmail.com" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors sm:text-sm">
+                <Mail className="h-4 w-4 text-amber-500" />
+                nfprinter3610@gmail.com
+              </a>
+            </div>
             </div>
             {items.map((section: any, sectionIdx: number) => (
               <div
@@ -70,10 +86,11 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
             ))}
           </div>
           <div className="mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium text-muted-foreground dark:text-gray-300 md:flex-row md:items-center">
-            <p>{t("copyright")}</p>
+            {/* <p>{t("copyright")}</p> */}
+            <p className="text-white/70">© {new Date().getFullYear()} PrimePrint Press. All rights reserved.</p>
             <ul className="flex gap-4">
               {bottomLinks.map((link: any, linkIdx: number) => (
-                <li key={linkIdx} className="underline ">
+                <li key={linkIdx} className="underline text-white/80 hover:text-white transition-colors">
                   <a href={link.url}>{link.text}</a>
                 </li>
               ))}

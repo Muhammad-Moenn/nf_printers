@@ -10,7 +10,7 @@
         "High-quality materials",
         "Fast turnaround time",
         "Affordable pricing",
-        "Professional support"
+        "Bulk Order Discounts"
       ],
       "heading": "Reliable & Professional Printing Solutions",
       "title": "About Us"
@@ -55,6 +55,12 @@
         "name": "Ramada Hotel",
         "logo": "/Ramada_hotel.png"
       }
+    ],
+    "hero_features": [
+      "Fast Turnaround",
+      "Affordable Pricing",
+      "Bulk Order Discounts",
+      "High Quality Printing"
     ],
     "brand_title": "Brands We Work With",
     "btn_text": "Start Your Print Order",
@@ -168,23 +174,23 @@
           "links": [
             {
               "text": "Offset Printing",
-              "url": "/services/offset-printing"
+              "url": "#"
             },
             {
               "text": "Digital Printing",
-              "url": "/services/digital-printing"
+              "url": "#"
             },
             {
               "text": "Large Format Printing",
-              "url": "/services/large-format"
+              "url": "#"
             },
             {
               "text": "Packaging & Labels",
-              "url": "/services/packaging"
+              "url": "#"
             },
             {
               "text": "Binding & Finishing",
-              "url": "/services/binding"
+              "url": "#"
             }
           ]
         },
@@ -193,23 +199,23 @@
           "links": [
             {
               "text": "About Us",
-              "url": "/about"
+              "url": "#"
             },
             {
               "text": "Our Team",
-              "url": "/team"
+              "url": "#"
             },
             {
               "text": "Our Clients",
-              "url": "/clients"
+              "url": "#"
             },
             {
               "text": "Careers",
-              "url": "/careers"
+              "url": "#"
             },
             {
               "text": "Contact Us",
-              "url": "/contact"
+              "url": "#"
             }
           ]
         },
@@ -218,23 +224,23 @@
           "links": [
             {
               "text": "Get a Quote",
-              "url": "/quote"
+              "url": "#"
             },
             {
               "text": "Design Guidelines",
-              "url": "/guidelines"
+              "url": "#"
             },
             {
               "text": "FAQs",
-              "url": "/faq"
+              "url": "#"
             },
             {
               "text": "Delivery Information",
-              "url": "/delivery"
+              "url": "#"
             },
             {
               "text": "Blog",
-              "url": "/blog"
+              "url": "#"
             }
           ]
         },
@@ -262,23 +268,24 @@
       "navItems": [
         {
           "name": "About",
-          "link": "#about"
+          "link": "about"
         },
         {
           "name": "Partners",
-          "link": "#partners"
+          "link": "partners"
         },
-        {
-          "name": "Team",
-          "link": "#our-team"
-        },
+        
         {
           "name": "Services",
-          "link": "#services"
+          "link": "services"
         },
         {
           "name": "Testimonials",
-          "link": "#testimonials"
+          "link": "testimonials"
+        },
+        {
+          "name": "Contact",
+          "link": "contact"
         }
       ]
     },
@@ -574,5 +581,6 @@
       ],
       "title": "Trusted by Our Clients"
     }
-  }
+  },
+  "services":{}
 }

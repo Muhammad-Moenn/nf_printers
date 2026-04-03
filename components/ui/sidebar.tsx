@@ -533,11 +533,12 @@ function SidebarMenuButton({
   }
 
   return (
-    <Tooltip>
+    <Tooltip >
       <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent
         side="right"
         align="center"
+        className="bg-blue-600"
         hidden={state !== "collapsed" || isMobile}
         {...tooltip}
       />

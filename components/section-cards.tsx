@@ -26,6 +26,7 @@ import {
 import DonutCardChart from "./charts/section-cards-charts";
 import { Span } from "next/dist/trace";
 import { div } from "motion/react-client";
+import { color } from "motion/react";
 
 const iconMap = {
   package: IconPackage,
@@ -55,6 +56,13 @@ export interface CardData {
   current_weekPaid?:number
 }
 
+function hexToRGBA(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 export function SectionCards({ cards }: { cards: CardData[] }) {
   return (
     <>
@@ -70,9 +78,9 @@ export function SectionCards({ cards }: { cards: CardData[] }) {
               {/* Title */}
               <CardDescription className="flex items-center gap-2 text-gray-800 font-medium text-[16]">
                 {Icon && (
-                  <div className="w-8 h-8 rounded-sm flex justify-center items-center bg-blue-200/[0.3]">
+                  <div style={{ backgroundColor: hexToRGBA(card?.color ?? "#3B82F6", 0.2), }}   className="w-8 h-8 rounded-sm flex justify-center items-center bg-blue-300/30">
                     {" "}
-                    <Icon className="h-4 w-4 text-blue-500" />
+                    <Icon style={{ color: card.color }} className={`h-4 w-4  text-blue-600`} />
                   </div>
                 )}
                 {card.title}

@@ -15,7 +15,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
+import Image from "next/image";
+import Link from "next/link";
 
 
 
@@ -25,17 +28,18 @@ export function AppSidebar({ ...data }) {
     <Sidebar  collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
+          <SidebarMenuItem className="flex items-center gap-2 justify-between">
+            {/* <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
-            </SidebarMenuButton>
+            > */}
+              <Link href="/" className="flex items-center ">
+                <Image src="/dashboard-NFPrinters-logo.png" alt="Logo" width={160} height={14} className=" object-cover text-left aspect-auto my-2" />
+              </Link>
+              <SidebarTrigger className=" cursor-pointer" />
+            {/* </SidebarMenuButton> */}
           </SidebarMenuItem>
+          <hr className="w-[98%] mb-2"/>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>

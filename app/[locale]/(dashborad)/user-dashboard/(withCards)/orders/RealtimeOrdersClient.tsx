@@ -73,13 +73,13 @@ function RealtimeOrdersClient({
           <div className="flex gap-2 items-center">
             <ChartLine className="w-5 h-5 text-blue-500" />
             <h4 className="text-[20px] lg:text-[22px] font-medium text-gray-800 dark:text-gray-200 text-left   ">
-              Orders Over Time
+              Monthly Orders <span className="text-[14px] text-gray-500">(Current Year)</span>
             </h4>
           </div>
           {Is_monthlyTotalOrders ? (
             <OrdersLineChart data={monthlyOrders} />
           ) : (
-            <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground">
+            <div className="flex items-center h-full justify-center mt-4 text-sm text-muted-foreground">
               <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
               No data available
             </div>
@@ -89,16 +89,16 @@ function RealtimeOrdersClient({
           className="flex flex-col gap-6   p-6 bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
         dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/60 dark:border-gray-600/70 rounded-xl  overflow-hidden  shadow-sm h-fit "
         >
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center ">
             <ChartLine className="w-5 h-5 text-blue-500" />
             <h4 className="text-[20px] lg:text-[22px] font-medium text-gray-800 dark:text-gray-200 text-left   ">
-              Orders Over Time
+              Monthly Spending <span className="text-[14px] text-gray-500">(Current Year)</span>
             </h4>
           </div>
           {Is_monthlyTotal ? (
             <MonthlyPaidChart data={monthlyTotal} />
           ) : (
-            <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground">
+            <div className="flex  items-center justify-center mt-4 text-sm text-muted-foreground">
               <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
               No data available
             </div>

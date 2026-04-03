@@ -1,6 +1,9 @@
+import { GetDBUser } from "@/app/actions/user_action";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { getLocale } from "next-intl/server";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -37,12 +40,25 @@ export default async function UserDashboardLayout({
       icon: "reorder",
     },
     {
+      title: "Inbox",
+      url: "/user-dashboard/user-inbox",
+      icon: "IconMessageCircle",
+    },
+    {
       title: "Settings",
       url: "/user-dashboard/settings",
       icon: "settings",
     },
   ],
 };
+const locale=await getLocale();
+const dbUser = await GetDBUser();
+if (dbUser) {
+    if (dbUser?.role === "ADMIN") {
+      redirect(`/${locale}/admin-dashboard`);
+    }
+    // redirect(`/${locale}/user-dashboard`);
+  }
   return (
     <SidebarProvider
       style={

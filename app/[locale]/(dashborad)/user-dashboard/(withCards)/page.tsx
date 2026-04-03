@@ -88,7 +88,7 @@ export default async function MainPage({
           </div>
 
           {currentMonth.totalOrders ? (<OrderStatusPieChart PiChartData={currentMonth} />) :( <div className="flex items-center justify-center -mt-2 text-sm text-muted-foreground h-full">
-               <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
+               <BarChart3 className="w-10 h-10 my-10 lg:my-0 lg:mb-2 opacity-70" />
               No monthly data available
             </div>)}
         </div>

@@ -42,7 +42,7 @@ export const Spotlight = ({ className, fill }: SpotlightProps) => {
           rx="1924.71"
           ry="273.501"
           transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)"
-          fill={isDark ? "rgba(0, 70, 255,0.4)" : "#4e50e3"}
+         fill={isDark ? "rgba(245, 158, 11, 0.3)" : "rgba(78, 80, 227, 0.9)"}
           fillOpacity="0.21"
         ></ellipse>
       </g>

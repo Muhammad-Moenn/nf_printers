@@ -47,6 +47,11 @@ export default async function AdminDashboardLayout({
       icon: "IconCurrencyDollar",
     },
     {
+      title: "Inbox",
+      url: "/admin-dashboard/admin-inbox",
+      icon: "IconInbox",
+    },
+    {
       title: "Settings",
       url: "/admin-dashboard/settings",
       icon: "settings",

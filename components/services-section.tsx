@@ -73,16 +73,19 @@ export function ServicesSection() {
       { breakpoint: 640, settings: { slidesToShow: 1 } },
     ],
   };
-  const locale =  useLocale();
-  const t= useTranslations("home.servic_section");
+  const locale = useLocale();
+  const t = useTranslations("home.servic_section");
   const isLocaleUr = locale === "ur";
   const services = t.raw("services");
   return (
     <section id="services" className=" bg-gray-50 dark:bg-black">
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-20">
         {/* Header */}
         <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-gray-950 dark:text-white">
+          <span className="uppercase tracking-widest text-amber-500 sm:text-md font-medium">
+           {isLocaleUr ? "ہماری خدمات" : "What We Offer"}
+          </span>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-gray-950 dark:text-white mt-2">
             {t("heading")}
           </h2>
           <p className="mt-5 text-gray-600 dark:text-gray-300 max-w-2xl text-lg mx-auto">
@@ -92,12 +95,12 @@ export function ServicesSection() {
 
         {/* Slider */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4">
-          {services.slice(0,6).map((service:any,i:number) => (
-            <Link href={`services/${service.id}`} key={i} className="px-3 mt-2">
+          {services.slice(0, 6).map((service: any, i: number) => (
+            <Link href={`services/${service.id}`} key={i} className="md:px-3 mt-2">
               <ServiceCard {...service} />
             </Link>
           ))}
-          </div>
+        </div>
         {/* <Slider {...settings} className="py-5  ">
           {services.map((service) => (
             <div key={service.id} className="px-3 mt-2">
@@ -108,28 +111,34 @@ export function ServicesSection() {
 
         {/* CTA */}
         <Button
-               asChild
-               className="
+          asChild
+          className="
            flex items-center justify-center
            cursor-pointer max-w-[130px] h-10 rounded-full mx-auto mt-10 
              group z-10 hover:-translate-y-0.5 transition duration-200  text-center 
          "
-             >
-               <Link
-                 href="/"
-                 className={`flex items-center gap-1 text-md leading-none py-4 ${isLocaleUr ? "flex-row-reverse" : "flex-row"}`}
-               >
-                 {isLocaleUr ? "سب دیکھیں" : "View All"}
-       
-                 <MoveRight
-                   className={` ml-1
+        >
+          <Link
+            href="/services"
+            className={`flex items-center gap-1 text-md leading-none py-4 ${
+              isLocaleUr ? "flex-row-reverse" : "flex-row"
+            }`}
+          >
+            {isLocaleUr ? "سب دیکھیں" : "View All"}
+
+            <MoveRight
+              className={` ml-1
                w-4 h-4
                transition-transform duration-500 ease-out
                
-               ${isLocaleUr ? " -rotate-180 group-hover:-translate-x-2" : " group-hover:translate-x-2" }`}
-                 ></MoveRight>
-               </Link>
-             </Button>
+               ${
+                 isLocaleUr
+                   ? " -rotate-180 group-hover:-translate-x-2"
+                   : " group-hover:translate-x-2"
+               }`}
+            ></MoveRight>
+          </Link>
+        </Button>
       </div>
     </section>
   );

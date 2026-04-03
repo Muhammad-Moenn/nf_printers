@@ -10,11 +10,17 @@
         "اعلی معیار کے مواد",
         "تیز ترسیل کا وقت",
         "قابل برداشت قیمتیں",
-        "پیشہ ورانہ مدد"
+      "بلک آرڈر پر رعایت"
       ],
       "heading": "قابل اعتماد اور پیشہ ورانہ پرنٹنگ حل",
       "title": "ہمارے بارے میں"
     },
+    "hero_features": [
+      "تیز رفتار تکمیل",
+      "مناسب قیمتیں",
+      "بلک آرڈر پر رعایت",
+      "اعلیٰ معیار کی پرنٹنگ"
+],
     "actionbanner": {
       "description": "ہزاروں مطمئن کلائنٹس میں شامل ہوں جو اعلیٰ معیار کی پرنٹنگ سروسز کے لیے ہم پر اعتماد کرتے ہیں۔",
       "heading": "اپنے پرنٹنگ بزنس کو اگلے درجے تک لے جانے کے لیے تیار ہیں؟",
@@ -172,23 +178,23 @@
           "links": [
             {
               "text": "آفسٹ پرنٹنگ",
-              "url": "/services/offset-printing"
+              "url": "#"
             },
             {
               "text": "ڈیجیٹل پرنٹنگ",
-              "url": "/services/digital-printing"
+              "url": "#"
             },
             {
               "text": "لارج فارمیٹ پرنٹنگ",
-              "url": "/services/large-format"
+              "url": "#"
             },
             {
               "text": "پیکیجنگ اور لیبلز",
-              "url": "/services/packaging"
+              "url": "#"
             },
             {
               "text": "بائنڈنگ اور فینشنگ",
-              "url": "/services/binding"
+              "url": "#"
             }
           ]
         },
@@ -197,23 +203,23 @@
           "links": [
             {
               "text": "ہمارے بارے میں",
-              "url": "/about"
+              "url": "#"
             },
             {
               "text": "ہماری ٹیم",
-              "url": "/team"
+              "url": "#"
             },
             {
               "text": "ہمارے کلائنٹس",
-              "url": "/clients"
+              "url": "#"
             },
             {
               "text": "کیریئرز",
-              "url": "/careers"
+              "url": "#"
             },
             {
               "text": "ہم سے رابطہ کریں",
-              "url": "/contact"
+              "url": "#"
             }
           ]
         },
@@ -222,23 +228,23 @@
           "links": [
             {
               "text": "قیمت معلوم کریں",
-              "url": "/quote"
+              "url": "#"
             },
             {
               "text": "ڈیزائن رہنما اصول",
-              "url": "/guidelines"
+              "url": "#"
             },
             {
               "text": "عمومی سوالات",
-              "url": "/faq"
+              "url": "#"
             },
             {
               "text": "ڈلیوری کی معلومات",
-              "url": "/delivery"
+              "url": "#"
             },
             {
               "text": "بلاگ",
-              "url": "/blog"
+              "url": "#"
             }
           ]
         },
@@ -266,23 +272,20 @@
       "navItems": [
         {
           "name": "ہمارے بارے میں",
-          "link": "#about"
+          "link": "about"
         },
         {
           "name": "شراکت دار",
-          "link": "#partners"
+          "link": "partners"
         },
-        {
-          "name": "ٹیم",
-          "link": "#our-team"
-        },
+        
         {
           "name": "خدمات",
-          "link": "#services"
+          "link": "services"
         },
         {
           "name": "تعریفیں",
-          "link": "#testimonials"
+          "link": "testimonials"
         }
       ]
     },

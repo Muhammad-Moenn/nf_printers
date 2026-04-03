@@ -12,6 +12,7 @@ import {
   ClerkProvider
 } from '@clerk/nextjs'
 import { getMessages, setRequestLocale } from 'next-intl/server';
+import { ToastContainer } from 'react-toastify';
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -39,6 +40,8 @@ export default async function RootLayout({
     notFound();
   }
   setRequestLocale(locale);
+
+  ;
   return (
     <html lang={locale}  suppressHydrationWarning={true} >
       <NextIntlClientProvider >
@@ -55,6 +58,15 @@ export default async function RootLayout({
         >
           {children}
         </ThemeProvider>
+        <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="light"
+      />
       </body>
       </ClerkProvider>
       </NextIntlClientProvider>

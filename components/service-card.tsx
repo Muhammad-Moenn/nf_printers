@@ -52,8 +52,8 @@ const isLocaleUr = locale === "ur";
       className={`
         group rounded-2xl p-6 bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
         dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/100 dark:border-gray-600/70 shadow-md shadow-gray-100 dark:shadow-gray-900 dark:bg-gray-900
-        p-6 transition-all duration-300 hover:border-gray-400
-        dark:hover:border-white/20 hover:-translate-y-1 cursor-pointer hover:scale-[1.02]
+        p-6 transition-all duration-300 hover:border-blue-400
+        hover:dark:border-blue-600/70 hover:-translate-y-1 cursor-pointer hover:scale-[1.02]
         lg:min-h-[240px] flex flex-col  ${isLocaleUr ? "items-end text-right" : "items-start text-left"}
       `}
     >
@@ -75,8 +75,9 @@ const isLocaleUr = locale === "ur";
       {/* Link */}
        <Button
               className={`
+                bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600
           flex items-center justify-center
-          cursor-pointer max-w-[140px] w-full h-10 rounded-full   
+          cursor-pointer  max-w-[140px] w-full h-10 rounded-full   
             group z-10 hover:-translate-y-0.5 transition duration-200  text-center mt-6
          ${isLocaleUr ? "flex-row-reverse " : "flex-row "}`}
             >

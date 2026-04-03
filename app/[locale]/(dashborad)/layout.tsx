@@ -1,3 +1,5 @@
+import { GetDBUser } from "@/app/actions/user_action";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,7 +9,18 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  
+  const dbUser = await GetDBUser();
+     if (!dbUser) {
+    redirect("/sign-in");
+  }
+
+  // Role-based redirect
+  // if (dbUser?.role === "ADMIN") {
+  //   redirect("/admin-dashboard");
+  // }
+
+  // redirect("/user-dashboard");
+
   return (
      
         <div className="flex flex-1 flex-col">
@@ -16,15 +29,7 @@ export default async function DashboardLayout({
               <div className="flex flex-1 flex-col">{children}</div>
             </div>
           </div>
-           <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="light"
-      />
+           
         </div>
       
      
