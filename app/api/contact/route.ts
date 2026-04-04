@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
   try {
     const { name, email, subject, message } = await req.json();
@@ -10,9 +8,20 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
+      return Response.json(
+        { error: "Missing API key" },
+        { status: 500 }
+      );
+    }
+
+    const resend = new Resend(apiKey);
+
     const { data, error } = await resend.emails.send({
-      from: "Contact Form <onboarding@resend.dev>", // later replace with your domain
-      to: ["nfprinter3610@gmail.com"], // your email
+      from: "Contact Form <onboarding@resend.dev>",
+      to: ["nfprinter3610@gmail.com"],
       subject: subject || "New Message from Website",
       html: `
         <h3>New Contact Message</h3>
@@ -28,6 +37,9 @@ export async function POST(req: Request) {
 
     return Response.json({ success: true });
   } catch (err) {
-    return Response.json({ error: "Something went wrong" }, { status: 500 });
+    return Response.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
   }
 }
