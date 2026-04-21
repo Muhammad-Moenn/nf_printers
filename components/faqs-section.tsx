@@ -12,7 +12,7 @@ export default function FAQSection() {
   const locale = useLocale();
   const isLocaleUr = locale === "ur";
   return (
-    <section className=" bg-gray-50 dark:bg-gray-950 ">
+    <section id="faqs" className=" bg-gray-50 dark:bg-gray-950 ">
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-16 pb-30 flex flex-col lg:flex-row justify-between gap-4 lg:gap-12 ">
         {/* Heading */}
         <div className=" mb-12  text-center lg:text-left">

@@ -3,7 +3,7 @@ export const faqs = [
   {
     question: "What types of printing services do you offer?",
     answer:
-      "We offer a wide range of printing services including register printing, notebooks, visiting cards, brochures, flyers, letterheads, books, and customized office stationery.",
+      "We offer a wide range of printing services including books, registers, test sheets, admission forms, prospectuses, notebooks etc.",
   },
   {
     question: "Can I customize the size, paper quality, and layout?",
