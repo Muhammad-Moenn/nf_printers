@@ -1,5 +1,4 @@
-import { fetchCardsDataAndAllOrders } from "@/app/actions/order-action";
-import { CardData, SectionCards } from "@/components/section-cards";
+import { getDashboardCardsData } from "@/lib/dashboard-data";
 import type { ReactNode } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import RealtimeReordersClient from "./RealtimeSectionCardClient";
@@ -9,11 +8,10 @@ export default async function DesignDashboardLayoutWithCards({
 }: {
   children: ReactNode;
 }) {
-  const data =
-    await fetchCardsDataAndAllOrders();
+  const data = await getDashboardCardsData();
  
   return (
-    <div >
+    <div className="space-y-3">
       <RealtimeReordersClient Data={data} />
       <div className="">{children}</div>
     </div>

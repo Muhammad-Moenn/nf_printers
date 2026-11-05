@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 
 import {
-  LineChart,
-  Line,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  XAxis,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
@@ -30,86 +32,88 @@ type Props = {
 
 function MiniChart({ data }: { data: Point[] }) {
   return (
-    <div className="h-20 w-full mt-3">
+    <div className="mt-2 h-[56px] w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          
-          <Tooltip  />
-          <Line
-            type="monotone"
-            dataKey="label"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
+        <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="miniOrdersFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.01} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke="var(--primary-border)" />
+          <XAxis dataKey="label" hide />
+          <Tooltip />
+          <Area
             type="monotone"
             dataKey="total"
-            strokeWidth={2}
+            stroke="var(--primary)"
+            strokeWidth={1.8}
+            fill="url(#miniOrdersFill)"
             dot={false}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
 
 export function OrdersComparisonCard({
-  // thisWeek,
+  thisWeek,
   lastWeek,
   thisMonth,
   lastMonth,
   weekSeries,
   monthSeries,
 }: Props) {
-   const thisWeek=0
-  const weekChange =
-    lastWeek === 0 ? 0 : ((thisWeek - lastWeek) / lastWeek) * 100;
+  const weekDelta = thisWeek - lastWeek;
+  const weekChange = lastWeek === 0 ? 0 : (weekDelta / lastWeek) * 100;
 
-  const monthChange =
-    lastMonth === 0 ? 0 : ((thisMonth - lastMonth) / lastMonth) * 100;
+  const monthDelta = thisMonth - lastMonth;
+  const monthChange = lastMonth === 0 ? 0 : (monthDelta / lastMonth) * 100;
 
   const TrendIconWeek = weekChange >= 0 ? TrendingUp : TrendingDown;
   const TrendIconMonth = monthChange >= 0 ? TrendingUp : TrendingDown;
 
   return (
     
-    <div className="flex flex-col gap-6 p-6 w-full ">
+    <div className="flex w-full flex-col gap-3 p-4">
       
       {/* Header */}
-      <div className="flex gap-2 items-center">
-        <CalendarDays className="w-5 h-5 text-blue-500" />
-        <h4 className="text-[20px] lg:text-[22px] font-medium text-gray-800 dark:text-gray-200">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-soft text-primary-text dark:bg-primary/10 dark:text-primary-soft-foreground">
+          <CalendarDays className="h-5 w-5" />
+        </span>
+        <h4 className="text-lg font-semibold text-foreground dark:text-neutral-100 sm:text-xl">
           Weekly vs Monthly Orders
         </h4>
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
 
         {/* Week */}
-        <div className="rounded-lg border p-4 text-left dark:border-gray-600">
-          <p className="text-sm text-gray-500">This Week</p>
+        <div className="min-h-[160px] rounded-lg border border-primary-border bg-card/80 p-4 text-left dark:border-on-color/10 dark:bg-on-color/[0.02]">
+          <p className="text-sm text-muted-foreground">This Week</p>
           <p className="text-2xl font-semibold">{thisWeek}</p>
 
           <div className="flex items-center gap-2 mt-1">
             <TrendIconWeek
               className={`w-4 h-4 ${
-                weekChange >= 0 ? "text-green-500" : "text-red-500"
+                weekChange >= 0 ? "text-success-text" : "text-destructive-text"
               }`}
             />
             <span
               className={`text-sm font-medium ${
-                weekChange >= 0 ? "text-green-600" : "text-red-600"
+                weekChange >= 0 ? "text-success-text" : "text-destructive-text"
               }`}
             >
-              {lastWeek.toFixed(1)}
-              {" "}
-              (
+              {weekDelta.toFixed(1)} (
               {weekChange >= 0 ? "+" : ""}
               {weekChange.toFixed(1)}%
               )
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               vs last week
             </span>
           </div>
@@ -121,28 +125,26 @@ export function OrdersComparisonCard({
         </div>
 
         {/* Month */}
-        <div className="rounded-lg border p-4 dark:border-gray-600 text-left">
-          <p className="text-sm text-gray-500">This Month</p>
+        <div className="min-h-[160px] rounded-lg border border-primary-border bg-card/80 p-4 text-left dark:border-on-color/10 dark:bg-on-color/[0.02]">
+          <p className="text-sm text-muted-foreground">This Month</p>
           <p className="text-2xl font-semibold">{thisMonth}</p>
 
           <div className="flex items-center gap-2 mt-1">
             <TrendIconMonth
               className={`w-4 h-4 ${
-                monthChange >= 0 ? "text-green-500" : "text-red-500"
+                monthChange >= 0 ? "text-success-text" : "text-destructive-text"
               }`}
             />
             <span
               className={`text-sm font-medium ${
-                monthChange >= 0 ? "text-green-600" : "text-red-600"
+                monthChange >= 0 ? "text-success-text" : "text-destructive-text"
               }`}
-            >{lastMonth.toFixed(1)}
-            {" "}
-            (
+            >{monthDelta.toFixed(1)} (
               {monthChange >= 0 ? "+" : ""}
               {monthChange.toFixed(1)}%
             )
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               vs last month
             </span>
           </div>

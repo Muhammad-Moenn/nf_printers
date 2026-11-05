@@ -5,16 +5,16 @@ type OrderStatus =
   | "cancelled"
   |"processing";
 const statusStyles = {
-  pending: "bg-yellow-500/10 text-yellow-400",
-  in_progress: "bg-blue-500/10 text-blue-400",
-  completed: "bg-green-500/10 text-green-400",
-  cancelled: "bg-red-500/10 text-red-400",
-  processing: "bg-amber-500/10 text-amber-400"
+  pending: "bg-warning/10 text-warning-soft-foreground",
+  in_progress: "bg-primary/10 text-primary-soft-foreground",
+  completed: "bg-success/10 text-success-soft-foreground",
+  cancelled: "bg-destructive/10 text-destructive-soft-foreground",
+  processing: "bg-warning/10 text-warning-soft-foreground"
 };
 
 export function StatusBadge({ status }: { status: OrderStatus }) {
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyles[status]}`}>
+    <span className={`px-3 py-1 rounded-badge text-xs font-medium ${statusStyles[status]}`}>
       {status.replace("_", " ").toUpperCase()}
     </span>
   );

@@ -2,6 +2,8 @@
 
 import { CardData, SectionCards } from "@/components/section-cards";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuthUser } from "@/components/auth-provider";
+import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 const EMPTY_DATA = {
   allOrders:[],
@@ -13,6 +15,8 @@ const EMPTY_DATA = {
     currentWeekPaid:0,
 };
 function RealtimeReordersClient({ Data }: { Data: any }) {
+  const pathname = usePathname();
+  const { user } = useAuthUser();
   const [cardData, setCardData] = useState(Data ?? EMPTY_DATA);
   const {
     allOrders=[],
@@ -76,7 +80,7 @@ function RealtimeReordersClient({ Data }: { Data: any }) {
       description: "Orders currently in progress",
       icon: "package",
       shortLabel: "In Progress",
-      color: "#3B82F6", // Blue
+      color: "var(--primary)", // Blue
       is_chart: true,
        total_order:Number(allOrders.length),
     },
@@ -86,7 +90,7 @@ function RealtimeReordersClient({ Data }: { Data: any }) {
       description: "Awaiting approval",
       icon: "file-text",
       shortLabel: "Awaiting",
-      color: "#F59E0B", // Orange
+      color: "var(--warning)", // Amber
       is_chart: true,
      total_order:Number(allOrders.length),
     },
@@ -96,7 +100,7 @@ function RealtimeReordersClient({ Data }: { Data: any }) {
       description: "Successfully delivered",
       icon: "check-circle",
       shortLabel: "Delivered",
-      color: "#10B981", // Green
+      color: "var(--success)", // Green
       is_chart: true,
       total_order:Number(allOrders.length),
     },
@@ -114,9 +118,21 @@ function RealtimeReordersClient({ Data }: { Data: any }) {
     },
   ];
 
+  if (pathname.includes("/reorder")) return null;
+
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 pb-10">
-      <SectionCards cards={cards} />
+    <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 lg:px-8">
+      <header className="mb-4 flex flex-col gap-1 pt-1">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground dark:text-neutral-100 sm:text-[26px]">
+          Welcome back, {user?.fullName || user?.firstName || "there"}!
+        </h1>
+        <p className="text-sm text-muted-foreground dark:text-neutral-400 sm:text-base">
+          Track your orders, check status and manage your printing needs.
+        </p>
+      </header>
+      <div className="grid grid-cols-1 gap-3 p-1 sm:grid-cols-2 xl:grid-cols-4">
+        <SectionCards cards={cards} cardClassName="border-primary-border/80 shadow-[var(--shadow-sm)]" />
+      </div>
     </div>
   );
 }

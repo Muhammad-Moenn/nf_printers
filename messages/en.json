@@ -1,18 +1,20 @@
 {
   "home": {
     "about_us": {
-      "button_text": "Learn More",
+      "badge": "About NFPrinters",
+      "button_text": "Explore Services",
       "description": [
-        "We are a modern printing press delivering high-quality prints for businesses, institutions, and individuals. From digital printing to large-format solutions, we focus on precision, speed, and excellence.",
-        "Our mission is to combine advanced printing technology with expert craftsmanship to help brands stand out and communicate effectively."
+        "We deliver high-quality printing with precision, using premium materials and modern technology. From business cards to banners, we bring your ideas to life.",
+        "Our mission is to combine advanced printing technology with expert craftsmanship, while our vision is to be the most trusted printing partner for schools, businesses, and organizations."
       ],
       "features": [
-        "High-quality materials",
-        "Fast turnaround time",
-        "Affordable pricing",
-        "Bulk Order Discounts"
+        "15+ years of experience",
+        "Quality-first production",
+        "Reliable turnaround",
+        "Customer satisfaction"
       ],
       "heading": "Reliable & Professional Printing Solutions",
+      "image_alt": "Premium printed brochures, business cards, and marketing materials produced by NF Printers",
       "title": "About Us"
     },
     "actionbanner": {
@@ -25,7 +27,7 @@
       "showPrimary": "true",
       "showSecondary": "true"
     },
-    "brand_description": "Partnering with top brands to deliver exceptional, high-quality printing solutions tailored to every project",
+    "brand_description": "Our printing solutions are trusted by top organizations and businesses.",
     "brands": [
       {
         "name": "Multan Public",
@@ -40,11 +42,15 @@
         "logo": "/Defense_school.jpeg"
       },
       {
+        "name": "Eden School",
+        "logo": "/eden-school.jpeg"
+      },
+      {
         "name": "Laureate",
         "logo": "/Larat_school .jpeg"
       },
       {
-        "name": " Dritish International ",
+        "name": "British International",
         "logo": "/British_international_school .jpeg"
       },
       {
@@ -62,9 +68,135 @@
       "Bulk Order Discounts",
       "High Quality Printing"
     ],
-    "brand_title": "Brands We Work With",
-    "btn_text": "Start Your Print Order",
-    "description": "With modern equipment and expert staff, we provide reliable, cost-effective printing solutions tailored to your business needs.",
+    "brand_title": "Trusted by Leading Institutions",
+    "brand_items": [
+      {
+        "label": "Universities",
+        "icon": "graduationCap"
+      },
+      {
+        "label": "Schools",
+        "icon": "bookOpen"
+      },
+      {
+        "label": "Businesses",
+        "icon": "briefcase"
+      },
+      {
+        "label": "Organizations",
+        "icon": "users"
+      },
+      {
+        "label": "Government",
+        "icon": "landmark"
+      }
+    ],
+    "btn_text": "Explore Services",
+    "description": "Books, registers, business stationery, packaging, and large-format work produced with dependable color, careful finishing, and clear turnaround times.",
+    "landing": {
+      "hero_badge": "Premium Printing Services",
+      "hero_title_line1": "Professional Printing,",
+      "hero_title_line2": "Precise Quality",
+      "hero_description": "From business cards to large format prints — get high-quality printing solutions with fast delivery.",
+      "hero_cta_primary": "Create Order",
+      "hero_cta_secondary": "Learn More",
+      "hero_trust": "Trusted by 10K+ Happy Clients",
+      "hero_image_alt": "Industrial offset printing press producing full-color prints",
+      "hero_stats": [
+        {
+          "value": "15+",
+          "label": "Years of Experience",
+          "icon": "trophy"
+        },
+        {
+          "value": "500+",
+          "label": "Projects Completed",
+          "icon": "folder"
+        },
+        {
+          "value": "10K+",
+          "label": "Happy Clients",
+          "icon": "smile"
+        },
+        {
+          "value": "99%",
+          "label": "On-Time Delivery",
+          "icon": "zap"
+        }
+      ],
+      "contact_cta": "Request a Quote",
+      "production_label": "Live Production",
+      "production_title": "Print queue ready",
+      "production_jobs": [
+        "School Registers",
+        "Book Binding",
+        "Document Sets"
+      ],
+      "turnaround_label": "day turnaround",
+      "color_label": "color accuracy",
+      "partners_label": "Trusted By",
+      "services_label": "What We Offer",
+      "process_label": "Our Process",
+      "process_title": "From Upload to Delivery — Made Simple",
+      "process_description": "A smooth and easy process to get your prints, hassle-free.",
+      "process_steps": [
+        {
+          "title": "Upload Your File",
+          "description": "Share your design or let us create it."
+        },
+        {
+          "title": "Add Order Details",
+          "description": "Set size, paper & quantity."
+        },
+        {
+          "title": "Confirm Order",
+          "description": "Review and confirm."
+        },
+        {
+          "title": "Production",
+          "description": "We print with care."
+        },
+        {
+          "title": "Completed",
+          "description": "Your order is ready."
+        },
+        {
+          "title": "Delivered",
+          "description": "At your doorstep."
+        }
+      ],
+      "order_now": "Order Now",
+      "view_all": "View All Services",
+      "about_card_1_title": "Fast production",
+      "about_card_1_text": "Built for urgent academic and business jobs.",
+      "about_card_2_title": "Quality checked",
+      "about_card_2_text": "Sharp color, clean binding, reliable finishing.",
+      "contact_label": "Get In Touch",
+      "contact_title": "Let's Bring Your Ideas to Print",
+      "contact_description": "Share your printing requirements and our team will respond with clear guidance, pricing, and production timing.",
+      "press_name": "NF Printers",
+      "press_heading": "Visit or call our Multan press",
+      "call_label": "Call Us",
+      "email_label": "Email Us",
+      "visit_label": "Visit Us",
+      "map_title": "NF Printers location map",
+      "name_label": "Name *",
+      "email_form_label": "Email *",
+      "subject_label": "Subject *",
+      "message_label": "Message *",
+      "name_placeholder": "Your name",
+      "email_placeholder": "your@email.com",
+      "subject_placeholder": "Book printing, registers, binding...",
+      "message_placeholder": "Tell us about quantity, paper, size, finishing, and deadline...",
+      "sent_label": "Sent",
+      "send_message": "Send Message",
+      "form_error": "Please fix the errors in the form",
+      "form_success": "Message sent successfully!",
+      "form_failed": "Failed to send message",
+      "form_unknown": "Something went wrong",
+      "faq_label": "FAQ",
+      "cta_contact": "Contact Us"
+    },
     "employees": [
       {
         "id": 1,
@@ -120,6 +252,10 @@
           "answer": "We offer a wide range of printing services including books, registers, test sheets, admission forms, prospectuses, notebooks etc."
         },
         {
+          "question": "Which file formats do you accept for printing?",
+          "answer": "We accept PDF, AI, PSD, INDD, DOC/DOCX, and high-resolution JPG/PNG files. PDF files with CMYK color and 3 mm bleed are preferred for the best print results."
+        },
+        {
           "question": "Can I customize the size, paper quality, and layout?",
           "answer": "Yes, all our printing services are fully customizable. You can choose page size (A4, A3, custom), paper quality (80gsm, 100gsm, etc.), ruling style, cover type, and layout according to your requirements."
         },
@@ -128,7 +264,7 @@
           "answer": "Our minimum order quantity depends on the product type. For registers and notebooks, bulk orders are preferred, but small orders can also be discussed."
         },
         {
-          "question": "How long does printing and delivery take?",
+          "question": "How long does order processing and delivery take?",
           "answer": "Standard orders usually take 3–7 working days. Large or customized orders may take longer depending on quantity and specifications."
         },
         {
@@ -161,7 +297,9 @@
           "url": "#"
         }
       ],
-      "copyright": "© 2024 PrimePrint Press. All rights reserved.",
+      "copyright": "© 2026 NF Printers. All rights reserved.",
+      "moreServices": "See More Services",
+      "backToHome": "Back to home",
       "logo": {
         "alt": "blocks for shadcn/ui",
         "src": "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
@@ -249,15 +387,18 @@
           "links": [
             {
               "text": "Twitter",
-              "url": "#"
+              "url": "#",
+              "icon": "twitter"
             },
             {
               "text": "Instagram",
-              "url": "#"
+              "url": "#",
+              "icon": "instagram"
             },
             {
               "text": "LinkedIn",
-              "url": "#"
+              "url": "#",
+              "icon": "linkedin"
             }
           ]
         }
@@ -266,26 +407,24 @@
     },
     "header": {
       "navItems": [
-       
         {
-          "name": "Partners",
-          "link": "partners"
+          "name": "Home",
+          "link": "home"
         },
-         {
-          "name": "About",
-          "link": "about"
-        },
-        
         {
           "name": "Services",
           "link": "services"
+        },
+        {
+          "name": "About",
+          "link": "about"
         },
         {
           "name": "Testimonials",
           "link": "testimonials"
         },
         {
-          "name": "FAQs",
+          "name": "FAQ",
           "link": "faqs"
         },
         {
@@ -294,15 +433,17 @@
         }
       ]
     },
-    "hero_title": "High-Quality Printing Solutions That Bring Your Ideas to Life",
+    "hero_title": "Professional printing, precise from proof to finish.",
     "servic_section": {
       "description": "We provide reliable and professional printing solutions for individuals, businesses, and institutions.",
       "heading": "Our Printing Services",
+      "heading_lead": "Our",
+      "heading_highlight": "Printing Services",
       "services": [
         {
           "id": 1,
           "title": "Register Printing",
-          "description": "School, college, and office registers printed with durable paper and clean formatting.",
+          "description": "School, college, and office registers printed with durable paper.",
           "icon": "notebookPen",
           "iconColor": "text-blue-500",
           "iconBg": "bg-blue-500/10",
@@ -329,7 +470,7 @@
         {
           "id": 2,
           "title": "Book Printing",
-          "description": "High-quality book printing including textbooks, novels, manuals, and magazines.",
+          "description": "High-quality book printing including textbooks, novels, manuals.",
           "icon": "bookOpen",
           "iconColor": "text-blue-500",
           "iconBg": "bg-blue-500/10",
@@ -355,7 +496,7 @@
         {
           "id": 3,
           "title": "Title & Cover Printing",
-          "description": "Attractive book titles and covers printed with premium paper and sharp colors.",
+          "description": "Attractive book titles and covers with premium paper.",
           "icon": "layers",
           "iconColor": "text-orange-500",
           "iconBg": "bg-orange-500/10",

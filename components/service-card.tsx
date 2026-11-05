@@ -1,24 +1,22 @@
 "use client";
+
 import { ServiceProps } from "@/data/services";
-
-
 import {
-  BookOpen,
-  FileText,
-  Layers,
-  Printer,
-  NotebookPen,
   Archive,
-  Image,
-  Receipt,
-  Sticker,
+  BookOpen,
   CalendarDays,
+  FileText,
+  Image,
+  Layers,
+  MoveRight,
+  NotebookPen,
+  Printer,
+  Receipt,
   Scissors,
   ShieldCheck,
-  MoveRight,
+  Sticker,
 } from "lucide-react";
-import { Button } from "./ui/button";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 const serviceIconMap = {
   bookOpen: BookOpen,
@@ -34,64 +32,54 @@ const serviceIconMap = {
   scissors: Scissors,
   shieldCheck: ShieldCheck,
 };
+
 type ServiceIconKey = keyof typeof serviceIconMap;
 export type ServiceCardProps = Omit<ServiceProps, "id">;
-export  function ServiceCard({
+
+export function ServiceCard({
   title,
   description,
   icon,
-  link,
-  iconColor,
-  iconBg,
 }: ServiceCardProps) {
   const Icon = serviceIconMap[icon as ServiceIconKey] ?? NotebookPen;
- const locale = useLocale();
-const isLocaleUr = locale === "ur";
+  const locale = useLocale();
+  const landing = useTranslations("home.landing");
+  const isRTL = locale === "ur";
+
   return (
     <div
-      className={`
-        group rounded-2xl p-6 bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-        dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/100 dark:border-gray-600/70 shadow-md shadow-gray-100 dark:shadow-gray-900 dark:bg-gray-900
-        p-6 transition-all duration-300 hover:border-blue-400
-        hover:dark:border-blue-600/70 hover:-translate-y-1 cursor-pointer hover:scale-[1.02]
-        lg:min-h-[240px] flex flex-col  ${isLocaleUr ? "items-end text-right" : "items-start text-left"}
-      `}
+      className={`group relative flex min-h-[250px] w-full flex-col overflow-hidden rounded-lg border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-border hover:shadow-xl hover:shadow-primary/10 dark:border-on-color/10 dark:bg-[var(--neutral-900)] dark:hover:border-primary/40 ${
+        isRTL ? "items-end text-right" : "items-start text-left"
+      }`}
     >
-      {/* Icon */}
-      <div
-        className={`flex items-center justify-center w-12 h-12 rounded-xl mb-4 ${iconBg}`}
-      >
-        <Icon className={`w-6 h-6 ${iconColor}`} />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-info opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-soft text-primary-text shadow-sm transition-transform duration-300 group-hover:scale-105 dark:bg-primary/10 dark:text-primary-soft-foreground">
+        <Icon className="h-6 w-6" />
       </div>
 
-      {/* Title */}
-      <h3 className="text-lg xl:text-xl font-semibold text-gray-800  dark:text-white mb-2">
+      <h3 className="text-xl font-semibold text-foreground dark:text-on-color">
         {title}
       </h3>
 
-      {/* Description */}
-      <p className="text-sm text-gray-400 mb-4 line-clamp-2">{description}</p>
+      <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground dark:text-neutral-300">
+        {description}
+      </p>
 
-      {/* Link */}
-       <Button
-              className={`
-                bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600
-          flex items-center justify-center
-          cursor-pointer  max-w-[140px] w-full h-10 rounded-full   
-            group z-10 hover:-translate-y-0.5 transition duration-200  text-center mt-6
-         ${isLocaleUr ? "flex-row-reverse " : "flex-row "}`}
-            >
-              
-                {isLocaleUr ? "سب دیکھیں" : "Order Now"}
-      
-                <MoveRight
-                  className={` ml-1
-              w-4 h-4
-              transition-transform duration-500 ease-out
-              
-              ${isLocaleUr ? " -rotate-180 group-hover:-translate-x-2" : " group-hover:translate-x-2" }`}
-                ></MoveRight>
-            </Button>
+      <span
+        className={`mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-on-color transition-colors group-hover:bg-primary dark:bg-primary dark:group-hover:bg-primary ${
+          isRTL ? "flex-row-reverse" : "flex-row"
+        }`}
+      >
+        {landing("order_now")}
+        <MoveRight
+          className={`h-4 w-4 transition-transform duration-500 ${
+            isRTL
+              ? "rotate-180 group-hover:-translate-x-1.5"
+              : "group-hover:translate-x-1.5"
+          }`}
+        />
+      </span>
     </div>
   );
 }

@@ -9,10 +9,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  User, Mail, Building2, Phone, MapPin, CreditCard, ShieldCheck, Trash2, KeyRound, Ban, CheckCircle,
+  User, Mail, Building2, Phone, MapPin, CreditCard, ShieldCheck,
 } from "lucide-react";
 import type { MockUser } from "@/data/mockUsers";
-import { toast } from "sonner";
 
 interface UserDetailDialogProps {
   user: MockUser | null;
@@ -22,8 +21,9 @@ interface UserDetailDialogProps {
 
 const orderStatusColor: Record<string, string> = {
   completed: "border-success text-success",
-  processing: "border-accent text-accent",
-  shipped: "border-primary text-primary",
+  processing: "border-violet text-violet",
+  in_progress: "border-primary text-primary",
+  pending: "border-warning text-warning-text",
   cancelled: "border-destructive text-destructive",
 };
 
@@ -33,19 +33,21 @@ const subStatusColor: Record<string, string> = {
   cancelled: "border-muted-foreground text-muted-foreground",
 };
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-PK", {
+    style: "currency",
+    currency: "PKR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
 const UserDetailDialog = ({ user, open, onClose }: UserDetailDialogProps) => {
   const [tab, setTab] = useState("profile");
 
   if (!user) return null;
 
-  const handleAction = (action: string) => {
-    toast.success(`${action} action triggered for ${user.name}`);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] max-w-3xl w-full overflow-y-auto bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-              dark:from-[#0b0e12]/90 dark:via-[#1e232a]/90 dark:to-[#0b0b0e]/90 justify-center items-center border border-gray-200 dark:border-gray-600/70">
+      <DialogContent className="max-h-[90vh] max-w-3xl w-full overflow-y-auto border border-border bg-gradient-to-t from-primary-soft/70 via-primary-soft/60 to-surface-2/90 dark:border-[var(--border)] dark:from-[var(--surface-1)] dark:via-[var(--surface-3)] dark:to-[var(--surface-3)]">
         <DialogHeader>
           <DialogTitle className="font-heading text-xl">{user.name}</DialogTitle>
           <DialogDescription>{user.company} · {user.email}</DialogDescription>
@@ -55,7 +57,6 @@ const UserDetailDialog = ({ user, open, onClose }: UserDetailDialogProps) => {
           <TabsList className="w-full justify-start">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="actions">Actions</TabsTrigger>
           </TabsList>
 
@@ -69,13 +70,13 @@ const UserDetailDialog = ({ user, open, onClose }: UserDetailDialogProps) => {
               <InfoRow icon={MapPin} label="Address" value={user.address} />
               <InfoRow icon={ShieldCheck} label="Role" value={user.role} />
             </div>
-            <div className="flex items-center gap-3 rounded-lg border p-4">
+            <div className="flex items-center gap-3 rounded-lg border p-4 dark:border-[var(--input)] dark:bg-[var(--surface-2)]">
               <span className="text-sm text-muted-foreground">Account Status</span>
               <Badge variant="outline" className={user.status === "active" ? "border-success text-success" : "border-destructive text-destructive"}>
                 {user.status}
               </Badge>
               <span className="ml-auto text-sm text-muted-foreground">
-                {user.orders} orders · ${user.totalSpent.toLocaleString()} total spent
+                {user.orders} orders - {formatCurrency(user.totalSpent)} total spent
               </span>
             </div>
           </TabsContent>
@@ -104,7 +105,7 @@ const UserDetailDialog = ({ user, open, onClose }: UserDetailDialogProps) => {
                         {o.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>${o.total.toLocaleString()}</TableCell>
+                    <TableCell>{formatCurrency(o.total)}</TableCell>
                     <TableCell>{new Date(o.date).toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}
@@ -112,60 +113,12 @@ const UserDetailDialog = ({ user, open, onClose }: UserDetailDialogProps) => {
             </Table>
           </TabsContent>
 
-          {/* Subscription */}
-          <TabsContent value="subscription" className="mt-4 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InfoRow icon={CreditCard} label="Plan" value={user.subscription.plan} />
-              <InfoRow icon={CreditCard} label="Billing Cycle" value={user.subscription.billingCycle} />
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant="outline" className={`capitalize ${subStatusColor[user.subscription.status] ?? ""}`}>
-                  {user.subscription.status.replace("_", " ")}
-                </Badge>
-              </div>
-              <InfoRow icon={CreditCard} label="Renewal Date" value={new Date(user.subscription.renewalDate).toLocaleDateString()} />
-            </div>
-            <div>
-              <h4 className="mb-2 font-heading text-sm font-semibold text-foreground">Payment History</h4>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {user.subscription.paymentHistory.map((p, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{new Date(p.date).toLocaleDateString()}</TableCell>
-                      <TableCell>${p.amount}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={`capitalize ${p.status === "paid" ? "border-success text-success" : "border-destructive text-destructive"}`}>
-                          {p.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
           {/* Actions */}
           <TabsContent value="actions" className="mt-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <ActionButton icon={User} label="View Profile" onClick={() => handleAction("View profile")} />
-              <ActionButton icon={Mail} label="Edit User Details" onClick={() => handleAction("Edit user")} />
-              <ActionButton icon={KeyRound} label="Reset Password" onClick={() => handleAction("Reset password")} />
-              <ActionButton
-                icon={user.status === "active" ? Ban : CheckCircle}
-                label={user.status === "active" ? "Suspend Account" : "Activate Account"}
-                onClick={() => handleAction(user.status === "active" ? "Suspend" : "Activate")}
-                destructive={user.status === "active"}
-              />
+              <ActionButton icon={User} label="View Profile" onClick={() => setTab("profile")} />
+              <ActionButton icon={Mail} label="Email User" onClick={() => { window.location.href = `mailto:${user.email}`; }} />
               <ActionButton icon={CreditCard} label="View Order History" onClick={() => { setTab("orders"); }} />
-              <ActionButton icon={Trash2} label="Delete Account" onClick={() => handleAction("Delete account")} destructive />
             </div>
           </TabsContent>
         </Tabs>

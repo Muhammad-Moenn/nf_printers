@@ -1,304 +1,244 @@
 "use client";
-import {
-  Navbar,
-  NavBody,
-  NavItems,
-  MobileNav,
-  NavbarLogo,
-  NavbarButton,
-  MobileNavHeader,
-  MobileNavToggle,
-  MobileNavMenu,
-} from "@/components/ui/resizable-navbar";
-import { motion, useMotionValueEvent, useScroll } from "motion/react";
-import { Link } from "react-scroll";
-import { useUser } from "@clerk/nextjs";
-import { useRef, useState } from "react";
-import { ModeToggle } from "./ui/mode-toggle";
-import { Button } from "./ui/button";
-import { LayoutDashboard, LogIn, LogInIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import LanguageSelector from "./language-selector";
+
+import { useAuthUser } from "@/components/auth-provider";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
+import { ArrowRight, LayoutDashboard, LogIn, Menu, X } from "lucide-react";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
+
+import { Link, usePathname } from "@/i18n/navigation";
+import LanguageSelector from "./language-selector";
 import NotificationButton from "./notification-btn";
-// import Link from "next/link";
+import { Button } from "./ui/button";
+import { ModeToggle } from "./ui/mode-toggle";
 
-export function NavBar({ dbUser }: any) {
+type HeaderUser = {
+  id?: string;
+  role?: string;
+} | null;
+
+type NavItem = {
+  name: string;
+  link: string;
+};
+
+export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
   const t = useTranslations("home.header");
-  const items = t.raw("navItems");
+  const items = t.raw("navItems") as NavItem[];
   const locale = useLocale();
-  const isLocale = locale === "ur";
-  // const navItems = [
-  //   {
-  //     name: "About",
-  //     link: "#about",
-  //   },
-  //   {
-  //     name: "Partners",
-  //     link: "#partners",
-  //   },
-  //   {
-  //     name: " Team",
-  //     link: "#our-team",
-  //   },
-  //   {
-  //     name: "Services",
-  //     link: "#services",
-  //   },
-  //   {
-  //     name: "Testimonials",
-  //     link: "#testimonials",
-  //   },
-  // ];
-  const { user } = useUser();
-  const router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [hovered, setHovered] = useState<number | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const isUrdu = locale === "ur";
+  const { user } = useAuthUser();
   const { scrollY } = useScroll();
-  const [visible, setVisible] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const href = dbUser?.role === "ADMIN" ? "/admin-dashboard" : "/user-dashboard";
+  const dashboardHref =
+    dbUser?.role === "ADMIN" ? "/admin-dashboard" : "/user-dashboard";
+  const createOrderHref = user ? dashboardHref : "/sign-in";
+
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (latest > 100) {
-      setVisible(true);
-    } else {
-      setVisible(false);
-    }
+    setIsScrolled(latest > 12);
   });
 
-  const handleLogin = () => {
-    if (!user) {
-      router.push(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL!);
-    }
+  const getNavHref = (item: NavItem) => {
+    if (item.link === "home") return "/";
+    // if (item.link === "services") return "/services";
+    return `/#${item.link}`;
   };
-  
-  return (
-    <div className="relative w-full" ref={ref}>
-      {visible && (
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -30 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-          onMouseLeave={() => setHovered(null)}
-          className="
-          
-      fixed top-6 inset-x-0
-      hidden lg:flex items-center
-      justify-center gap-2
-      text-sm font-medium
-      dark:text-gray-900
-      text-white
-      bg-black/90
-      dark:bg-gray-100
-      backdrop-blur-md
-      max-w-[630px]
-      mx-auto
-      px-6
-      rounded-3xl
-      h-[42px]
-      z-50
-    "
-        >
-          {items.map((item: any, idx: number) => (
-            <Link
-              to={item.link}
-              smooth={true}
-              offset={400}
-              duration={500}
-              key={idx}
-              onMouseEnter={() => setHovered(idx)}
-              className="relative px-4 py-2 "
-            >
-              {hovered === idx && (
-                <motion.div
-                  layoutId="hovered"
-                  className="absolute inset-0 rounded-full bg-blue-200/[0.2]  dark:bg-[rgba(0,0,0,0.06)] h-[32px] top-1/2 -translate-y-1/2"
-                />
-              )}
-              <span className="relative z-20  ">{item.name}</span>
-            </Link>
-          ))}
 
-          {!user ? (
+  const isActive = (item: NavItem) => {
+    if (item.link === "home") return pathname === "/";
+    if (item.link === "services") return pathname.startsWith("/services");
+    return false;
+  };
+
+  return (
+    <motion.header
+      initial={{ y: -16, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className={`sticky top-0 z-50 w-full border-b transition-[background-color,border-color,box-shadow] duration-300 ${
+        isScrolled
+          ? "border-border bg-card/95 shadow-[var(--shadow-md)] backdrop-blur-xl dark:border-on-color/10 dark:bg-background/95"
+          : "border-transparent bg-transparent dark:border-transparent dark:bg-transparent"
+      }`}
+    >
+      <div
+        dir={isUrdu ? "rtl" : "ltr"}
+        className="mx-auto flex h-[76px] w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
+      >
+        <Link
+          href="/"
+          aria-label="NF Printers home"
+          className="flex shrink-0 items-center"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <Image
+            src="/dashboard-NFPrinters-logo.png"
+            alt="NF Printers"
+            priority
+            width={190}
+            height={72}
+            className="h-auto w-[138px] sm:w-[156px] lg:w-[164px]"
+          />
+        </Link>
+
+        <nav className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
+          <ul className="flex items-center gap-0.5 xl:gap-1">
+            {items.map((item) => (
+              <li key={item.link}>
+                <Link
+                  href={getNavHref(item)}
+                  aria-current={isActive(item) ? "page" : undefined}
+                  className={`relative flex h-10 items-center px-2.5 text-sm font-semibold transition-colors after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-primary after:transition-transform after:duration-200 hover:text-primary-text hover:after:scale-x-100 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px] xl:after:inset-x-3 ${
+                    isActive(item)
+                      ? "text-primary-text after:scale-x-100 dark:text-primary-soft-foreground"
+                      : "text-muted-foreground after:scale-x-0 dark:text-neutral-300"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="hidden shrink-0 items-center gap-2 lg:flex">
+          <div className="hidden xl:block">
+            <LanguageSelector />
+          </div>
+          <ModeToggle variant="icon" />
+          <NotificationButton dbUser={dbUser} />
+
+          {user ? (
             <Button
               asChild
-              className="
-    flex items-center justify-center
-    max-h-[32px] max-w-[100px] w-full
-    rounded-2xl
-   
-  "
+              className="h-10 rounded-full bg-primary !px-4.5 font-semibold text-on-color shadow-none hover:bg-primary-hover ml-1"
             >
-              <a
-                href="/sign-in"
-                className=" group flex items-center justify-center h-full gap-1 text-sm leading-none"
-              >
-                Login
-                <LogIn
-                  className="
-        w-4 h-4
-        transition-transform duration-500 ease-out
-        group-hover:translate-x-2
-      "
-                />
-              </a>
+              <Link href={dashboardHref} className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                {isUrdu ? "ڈیش بورڈ" : "Dashboard"}
+              </Link>
             </Button>
           ) : (
-            <Button
-              asChild
-              className="
-             flex items-center justify-center
-             cursor-pointer text-sm leading-none
-                z-10 hover:-translate-y-0.5 transition duration-200  text-center rounded-2xl
-               "
-            >
-              <a
-                href="/user-dashboard"
-                className="flex items-center gap-1 text-sm leading-none"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                {isLocale ? "ڈیش بورڈ" : "Dashboard"}
-              </a>
-            </Button>
-          )}
-        </motion.div>
-      )}
-
-      <Navbar>
-        {/* Desktop Navigation */}
-
-        <NavBody>
-          <NavbarLogo />
-          <NavItems items={items} />
-          <div className="flex items-center gap-4 z-10">
-            <LanguageSelector />
-            <ModeToggle />
-            {!user ? (
-              <Button
-                onClick={handleLogin}
-                // asChild
-                className="
-                bg-transparent border-2 border-white/20 text-white hover:bg-white/10
-    flex items-center justify-center
-    cursor-pointer
-    rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
-  "
-              >
-                {/* <a
-                href="/"
-                className="flex items-center gap-1 text-sm leading-none"
-              > */}
-                <LogIn className="h-4 w-4" />
-                {isLocale ? "لاگ ان" : "Login"}
-
-                {/* </a> */}
-              </Button>
-            ) : (
+            <>
+              
               <Button
                 asChild
-                className="
-                bg-[#2563EB] text-[#FFFFFF] hover:bg-[#1D4ED8]
-             flex items-center justify-center
-             cursor-pointer
-              rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
-               "
+                className="group h-10 rounded-full bg-primary !px-5 font-semibold text-on-color shadow-[var(--shadow-sm)] hover:bg-primary-hover "
               >
-                <a
-                  href={href}
-                  className="flex items-center gap-1 text-sm leading-none"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  {isLocale ? "ڈیش بورڈ" : "Dashboard"}
-                </a>
+                <Link href={createOrderHref} className="flex items-center gap-2">
+                  {isUrdu ? "لاگ ان" : "Login"}
+                  <LogIn className="h-5 w-5" />
+                </Link>
               </Button>
-            )}
-            <NotificationButton dbUuser={dbUser} />
-          </div>
-        </NavBody>
+            </>
+          )}
+        </div>
 
-        {/* Mobile Navigation */}
-        <MobileNav>
-          <MobileNavHeader>
-            <NavbarLogo />
-            <MobileNavToggle
-              isOpen={isMobileMenuOpen}
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            />
-          </MobileNavHeader>
-
-          <MobileNavMenu
-            isOpen={isMobileMenuOpen}
-            onClose={() => setIsMobileMenuOpen(false)}
-            className={`${isLocale ? "text-right" : "text-left"}`}
+        <div className="flex items-center gap-1.5 lg:hidden">
+          <ModeToggle variant="icon" />
+          <button
+            suppressHydrationWarning
+            type="button"
+            aria-label={isMobileMenuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-surface-2 dark:border-on-color/10 dark:text-neutral-200 dark:hover:bg-on-color/[0.06]"
           >
-            {items.map((item: any, idx: number) => (
-              <Link
-                to={item.link}
-                smooth={true}
-                offset={400}
-                duration={500}
-                key={`mobile-link-${idx}`}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`relative w-full text-neutral-600 dark:text-neutral-300 ${
-                  isLocale ? "text-right" : "text-left"
-                }`}
-              >
-                <span className="block">{item.name}</span>
-              </Link>
-            ))}
-            <div
-              className={`flex w-full flex-col gap-4 max ${
-                isLocale ? "items-end" : "items-start"
-              }`}
-            >
-              <LanguageSelector />
-              <NotificationButton dbUuser={dbUser} />
-              <ModeToggle />
-              {!user ? (
-                <Button
-                  onClick={handleLogin}
-                  // asChild
-                  className="
-    flex items-center justify-center
-    cursor-pointer
-    rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
-  "
-                >
-                  {/* <a
-                href="/"
-                className="flex items-center gap-1 text-sm leading-none"
-              > */}
-                  <LogIn className="h-4 w-4" />
-                  {isLocale ? "لاگ ان" : "Login"}
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </button>
+        </div>
+      </div>
 
-                  {/* </a> */}
-                </Button>
-              ) : (
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden border-t border-border bg-card dark:border-on-color/10 dark:bg-background lg:hidden"
+          >
+            <div
+              dir={isUrdu ? "rtl" : "ltr"}
+              className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6"
+            >
+              <div className="mb-4">
+                <LanguageSelector />
+              </div>
+              <nav>
+                <ul className="grid gap-1 sm:grid-cols-2">
+                  {items.map((item) => (
+                    <li key={item.link}>
+                      <Link
+                        href={getNavHref(item)}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex min-h-11 items-center border-l-2 px-3 text-sm font-semibold transition-colors rtl:border-l-0 rtl:border-r-2 ${
+                          isActive(item)
+                            ? "border-primary bg-primary-soft text-primary-text dark:border-primary dark:bg-primary/10 dark:text-primary-soft-foreground"
+                            : "border-transparent text-foreground hover:border-border-strong hover:bg-surface-2 dark:text-neutral-200 dark:hover:border-on-color/20 dark:hover:bg-on-color/[0.05]"
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              <div className="mt-4 flex items-center gap-2 border-t border-border pt-4 dark:border-on-color/10">
+                <NotificationButton dbUser={dbUser} />
+                {!user && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="h-10 flex-1 rounded-full border-primary-border bg-card font-semibold text-primary-text shadow-none hover:bg-primary-soft dark:border-primary/25 dark:bg-transparent dark:text-primary-soft-foreground"
+                  >
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      {isUrdu ? "لاگ ان" : "Login"}
+                    </Link>
+                  </Button>
+                )}
                 <Button
                   asChild
-                  className="
-             flex items-center justify-center
-             cursor-pointer
-              rounded-md  z-10 hover:-translate-y-0.5 transition duration-200  text-center 
-               "
+                  className="h-10 flex-1 rounded-full bg-primary font-semibold text-on-color shadow-none hover:bg-primary-hover"
                 >
-                  <a
-                    href={href}
-                    className="flex items-center gap-1 text-sm leading-none"
+                  <Link
+                    href={user ? dashboardHref : createOrderHref}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2"
                   >
-                    <LayoutDashboard className="h-4 w-4" />
-                    {isLocale ? "ڈیش بورڈ" : "Dashboard"}
-                  </a>
+                    {user ? (
+                      <LayoutDashboard className="h-4 w-4" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+                    )}
+                    {user
+                      ? isUrdu
+                        ? "ڈیش بورڈ"
+                        : "Dashboard"
+                      : isUrdu
+                        ? "آرڈر بنائیں"
+                        : "Create Order"}
+                  </Link>
                 </Button>
-              )}
+              </div>
             </div>
-          </MobileNavMenu>
-        </MobileNav>
-      </Navbar>
-
-      {/* Navbar */}
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
 }

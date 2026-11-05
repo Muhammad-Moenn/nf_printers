@@ -11,7 +11,7 @@ export default async function MainLayout({ children }: { children: ReactNode }) 
     console.log("No user found, but not redirecting to sign-in page.");
     }
   return (
-    <div>
+    <div className="landing-page-background">
       <NavBar dbUser={dbUser}/>
       {children}
       <Footer  />

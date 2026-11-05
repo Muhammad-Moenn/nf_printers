@@ -12,13 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  ArrowDownUp,
   ChevronLeft,
   ChevronRight,
   Download,
-  Pencil,
-  Trash2,
+  ListFilter,
+  Search,
 } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 /* ================= TYPES ================= */
 
@@ -28,6 +30,7 @@ export interface Column<T> {
   sortable?: boolean;
   render?: (value: T[keyof T], row: T) => React.ReactNode;
   hideOnMobile?: boolean;
+  hideBelow?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
 interface CustomTableProps<T extends { id: string | number }> {
@@ -35,11 +38,30 @@ interface CustomTableProps<T extends { id: string | number }> {
   columns: Column<T>[];
   pageSizeOptions?: number[];
   defaultPageSize?: number;
+  searchPlaceholder?: string;
+  tableClassName?: string;
+  compactSpacing?: boolean;
+  darkPalette?: "default" | "services";
   // onEdit?: (row: T) => void;
   // onDelete?: (row: T) => void;
   renderActions?: (row: T) => React.ReactNode;
+  serverState?: ServerTableState;
 }
-type SortMode = "az" | "za" | "latest" | "oldest";
+export type SortMode = "az" | "za" | "latest" | "oldest";
+
+export type ServerTableState = {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
+  sortKey: string | null;
+  sortMode: SortMode;
+  onSortKeyChange: (key: string) => void;
+  onSortModeChange: (mode: SortMode) => void;
+};
 /* ================= COMPONENT ================= */
 type BaseRow = {
   id: string | number;
@@ -50,9 +72,14 @@ export default function CustomTable<T extends BaseRow>({
   columns,
   pageSizeOptions = [5, 10, 20],
   defaultPageSize = 5,
+  searchPlaceholder = "Search...",
+  tableClassName,
+  compactSpacing = false,
+  darkPalette = "default",
   // onEdit,
   // onDelete,
   renderActions,
+  serverState,
 }: CustomTableProps<T>) {
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(defaultPageSize);
@@ -61,9 +88,18 @@ export default function CustomTable<T extends BaseRow>({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const [sortMode, setSortMode] = useState<SortMode>("az");
+
+  const columnVisibilityClass = (column: Column<T>) => {
+    if (column.hideBelow) {
+      return `hidden ${column.hideBelow}:table-cell`;
+    }
+
+    return column.hideOnMobile ? "hidden lg:table-cell" : "";
+  };
   /* ================= FILTER ================= */
 
   const filteredData = useMemo(() => {
+    if (serverState) return data;
     if (!search) return data;
 
     return data.filter((row) =>
@@ -75,11 +111,12 @@ export default function CustomTable<T extends BaseRow>({
             .includes(search.toLowerCase())
       )
     );
-  }, [data, search, columns]);
+  }, [data, search, columns, serverState]);
 
   /* ================= SORT ================= */
 
   const sortedData = useMemo(() => {
+    if (serverState) return filteredData;
     if (!sortKey) return filteredData;
     return [...filteredData].sort((a, b) => {
       const aVal = a[sortKey];
@@ -109,37 +146,60 @@ export default function CustomTable<T extends BaseRow>({
       }
       return 0;
     });
-  }, [filteredData, sortKey, sortMode]);
+  }, [filteredData, sortKey, sortMode, serverState]);
 
   /* ================= PAGINATION ================= */
 
-  const pageCount = Math.ceil(sortedData.length / pageSize);
+  const activePage = serverState?.page ?? currentPage;
+  const activePageSize = serverState?.pageSize ?? pageSize;
+  const totalResults = serverState?.total ?? sortedData.length;
+  const pageCount = serverState
+    ? Math.max(1, Math.ceil(serverState.total / activePageSize))
+    : Math.ceil(sortedData.length / activePageSize);
 
   const paginatedData = useMemo(() => {
+    if (serverState) return sortedData;
     const start = (currentPage - 1) * pageSize;
     return sortedData.slice(start, start + pageSize);
-  }, [sortedData, currentPage, pageSize]);
+  }, [sortedData, currentPage, pageSize, serverState]);
 
   /* ================= UI ================= */
 
   return (
-    <div className="flex flex-col gap-4 w-full px-6">
+    <div className="flex min-w-0 w-full flex-col gap-6 px-4 pb-5 sm:px-6 sm:pb-6">
       {/* Controls */}
-      <div className="flex flex-wrap gap-3 justify-between">
-        <Input
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="max-w-sm "
-        />
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="relative w-full xl:max-w-[405px]">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Input
+            placeholder={searchPlaceholder}
+            value={serverState ? serverState.search : search}
+            onChange={(e) => {
+              if (serverState) {
+                serverState.onSearchChange(e.target.value);
+                return;
+              }
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+          className={`h-9 w-full border-border bg-card pl-10 text-sm shadow-sm placeholder:text-neutral-400 dark:text-[var(--foreground)] dark:placeholder:text-muted-foreground ${darkPalette === "services" ? "dark:border-[var(--input)] dark:bg-[var(--surface-1)]" : "dark:border-[var(--border-strong)] dark:bg-[var(--surface-4)]"}`}
+          />
+        </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           {/* Sort Column */}
-          <Select onValueChange={(v) => setSortKey(v as keyof T)}>
-            <SelectTrigger className="w-[160px] cursor-pointer">
+          <Select
+            value={serverState?.sortKey ?? undefined}
+            onValueChange={(v) => {
+              if (serverState) {
+                serverState.onSortKeyChange(v);
+                return;
+              }
+              setSortKey(v as keyof T);
+            }}
+          >
+          <SelectTrigger className={`h-9 w-full cursor-pointer border-border bg-card sm:w-[185px] dark:text-[var(--foreground)] ${darkPalette === "services" ? "dark:border-[var(--input)] dark:bg-[var(--surface-4)]" : "dark:border-[var(--border-strong)] dark:bg-[var(--surface-4)]"}`}>
+              <ListFilter className="mr-2 h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -156,8 +216,18 @@ export default function CustomTable<T extends BaseRow>({
           </Select>
 
           {/* Sort Order */}
-          <Select onValueChange={(v) => setSortMode(v as SortMode)}>
-            <SelectTrigger className="w-[180px] cursor-pointer">
+          <Select
+            value={serverState?.sortMode}
+            onValueChange={(v) => {
+              if (serverState) {
+                serverState.onSortModeChange(v as SortMode);
+                return;
+              }
+              setSortMode(v as SortMode);
+            }}
+          >
+          <SelectTrigger className={`h-9 w-full cursor-pointer border-border bg-card sm:w-[185px] dark:text-[var(--foreground)] ${darkPalette === "services" ? "dark:border-[var(--input)] dark:bg-[var(--surface-4)]" : "dark:border-[var(--border-strong)] dark:bg-[var(--surface-4)]"}`}>
+              <ArrowDownUp className="mr-2 h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Sort order" />
             </SelectTrigger>
             <SelectContent>
@@ -170,13 +240,19 @@ export default function CustomTable<T extends BaseRow>({
 
           {/* Page Size */}
           <Select
-            value={String(pageSize)}
-            onValueChange={(v) => setPageSize(Number(v))}
+            value={String(activePageSize)}
+            onValueChange={(v) => {
+              if (serverState) {
+                serverState.onPageSizeChange(Number(v));
+                return;
+              }
+              setPageSize(Number(v));
+            }}
           >
-            <SelectTrigger className="w-[130px] cursor-pointer">
+            <SelectTrigger className={`h-9 w-full cursor-pointer border-border bg-card sm:w-[150px] dark:text-[var(--foreground)] ${darkPalette === "services" ? "dark:border-[var(--input)] dark:bg-[var(--surface-4)]" : "dark:border-[var(--border-strong)] dark:bg-[var(--surface-4)]"}`}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="dark:text-gray-100">
+            <SelectContent className="dark:text-neutral-100">
               {pageSizeOptions.map((size) => (
                 <SelectItem className="" key={size} value={String(size)}>
                   {size} / page
@@ -188,19 +264,18 @@ export default function CustomTable<T extends BaseRow>({
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border-2">
-        <table className="w-full table-auto">
+      <div className={`w-full max-w-full overscroll-x-contain overflow-x-auto rounded-lg border border-border/90 bg-card [scrollbar-width:thin] ${darkPalette === "services" ? "dark:border-[var(--border)] dark:bg-[var(--surface-2)]" : "dark:border-[var(--border-strong)] dark:bg-[var(--surface-4)]"}`}>
+        <table className={cn("w-full min-w-[940px] table-auto", tableClassName)}>
           <thead
-            // dark:bg-[linear-gradient(135deg,rgba(59,130,246,0.8),rgba(37,99,235,0.6))]
-            className="bg-blue-100/[0.9]  dark:bg-blue-700/[0.9]
- text-[14px] md:text-[16px] text-gray-800 dark:text-gray-50 "
+            // dark:bg-[linear-gradient(135deg,color-mix(in_oklab,var(--primary)_80%,transparent),color-mix(in_oklab,var(--primary)_60%,transparent))]
+            className={`border-b border-border-subtle bg-surface-2/80 text-muted-foreground dark:text-neutral-300 ${darkPalette === "services" ? "dark:border-[var(--border)] dark:bg-[var(--surface-1)]" : "dark:border-[var(--border-strong)] dark:bg-[var(--surface-4)]"}`}
           >
             <tr>
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className={`px-4 py-4 text-left text-sm font-medium ${
-                    col.hideOnMobile ? "hidden lg:table-cell" : ""
+                  className={`whitespace-nowrap ${compactSpacing ? "px-3 2xl:px-4" : "px-4"} py-4 text-left text-[11px] font-bold uppercase tracking-wide ${
+                    columnVisibilityClass(col)
                   }`}
                 >
                   {col.label}
@@ -215,7 +290,7 @@ export default function CustomTable<T extends BaseRow>({
                 return (
                   <tr
                     key={row.id}
-                    className="border-b hover:bg-blue-50/[0.4] dark:hover:bg-blue-400/[0.1] dark:border-gray-500/[0.7] cursor-pointer"
+                    className={`border-b border-border-subtle transition-colors last:border-b-0 hover:bg-primary-soft/40 ${darkPalette === "services" ? "dark:border-[var(--border)] dark:hover:bg-[var(--surface-4)]" : "dark:border-on-color/[0.07] dark:hover:bg-primary/[0.06]"}`}
                   >
                     {columns.map((col) => {
                       // 🔹 Extract design URL safely (only when needed)
@@ -231,8 +306,8 @@ export default function CustomTable<T extends BaseRow>({
                       return (
                         <td
                           key={String(col.key)}
-                          className={`px-4 py-3 text-[10px] md:text-sm ${
-                            col.hideOnMobile ? "hidden lg:table-cell" : ""
+                          className={`${compactSpacing ? "px-3 2xl:px-4" : "px-4"} py-5 align-middle text-xs md:text-sm ${
+                            columnVisibilityClass(col)
                           }`}
                         >
                           {col.key === "actions" ? (
@@ -259,7 +334,7 @@ export default function CustomTable<T extends BaseRow>({
                 absolute inset-0
                 flex items-center justify-center
                 rounded-md
-                bg-black/50
+                bg-overlay
                 opacity-0
                 transition-opacity duration-200
                 group-hover:opacity-100
@@ -270,11 +345,11 @@ export default function CustomTable<T extends BaseRow>({
                                   }
                                   title="Download"
                                 >
-                                  <Download className="w-4 h-4 text-white" />
+                                  <Download className="w-4 h-4 text-on-color" />
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-gray-400">No design</span>
+                              <span className="text-neutral-400">No design</span>
                             )
                           ) : col.render ? (
                             col.render(row[col.key as keyof T], row)
@@ -308,25 +383,40 @@ export default function CustomTable<T extends BaseRow>({
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-between items-center">
-        <span className="text-sm px-2">
-          Page {currentPage} of {pageCount}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <span className="px-1 text-sm text-muted-foreground">
+          {totalResults} result{totalResults === 1 ? "" : "s"} | Page{" "}
+          {activePage} of {Math.max(pageCount, 1)}
         </span>
 
         <div className="flex gap-2">
           <Button
             size="icon"
             // variant="outline"
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
+            onClick={() => {
+              if (serverState) {
+                serverState.onPageChange(Math.max(serverState.page - 1, 1));
+                return;
+              }
+              setCurrentPage((p) => Math.max(p - 1, 1));
+            }}
+            disabled={activePage === 1}
           >
             <ChevronLeft />
           </Button>
           <Button
             size="icon"
             // variant="outline"
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, pageCount))}
-            disabled={currentPage === pageCount}
+            onClick={() => {
+              if (serverState) {
+                serverState.onPageChange(
+                  Math.min(serverState.page + 1, pageCount)
+                );
+                return;
+              }
+              setCurrentPage((p) => Math.min(p + 1, pageCount));
+            }}
+            disabled={pageCount === 0 || activePage === pageCount}
           >
             <ChevronRight />
           </Button>

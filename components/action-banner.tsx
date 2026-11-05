@@ -1,32 +1,32 @@
 "use client";
-import { Link as ScrollLink } from "react-scroll";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import {
-  MoveRight,
-  Sparkles,
-  Printer,
-  NotebookPen,
-  FileText,
-  LogInIcon,
-} from "lucide-react";
-import { motion } from "framer-motion";
-import { useLocale, useTranslations } from "use-intl";
-import { useUser } from "@clerk/nextjs";
-export const iconMap = {
-  printer: Printer,
-  notebook: NotebookPen,
-  file: FileText,
-  login: LogInIcon,
-};
 
-export type IconName = keyof typeof iconMap;
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Link as ScrollLink } from "react-scroll";
+import { LayoutDashboard, LogInIcon, MoveRight, Sparkles } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useAuthUser } from "@/components/auth-provider";
+import { useLocale, useTranslations } from "next-intl";
+
+import { Badge } from "@/components/ui/badge";
+import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function ActionBanner() {
   const locale = useLocale();
   const isRTL = locale === "ur";
-
   const t = useTranslations("home.actionbanner");
+  const landing = useTranslations("home.landing");
+  const { user } = useAuthUser();
+  const prefersReducedMotion = useReducedMotion();
+  const [hasMounted, setHasMounted] = useState(false);
+  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const heading = t("heading");
   const description = t("description");
@@ -34,109 +34,186 @@ export default function ActionBanner() {
   const primaryHref = t("primaryHref");
   const secondaryText = t("secondaryText");
   const secondaryHref = t("secondaryHref");
-
   const showPrimary = t("showPrimary") === "true";
-  const showSecondary = t("showSecondary") === "true";
-  const {user} = useUser();
+
+  const reveal = (delay = 0) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "-60px" },
+    transition: reduceMotion
+      ? { duration: 0 }
+      : {
+          duration: 0.5,
+          delay,
+          ease: [0.22, 1, 0.36, 1] as const,
+        },
+  });
+
+  const buttonClassName = cn(
+    "h-[var(--space-12)] w-full rounded-full! px-[var(--space-6)]",
+    "text-[length:var(--font-size-sm)] font-semibold",
+    "transition-all duration-300 motion-reduce:transition-none",
+    "hover:-translate-y-0.5 motion-reduce:hover:translate-y-0",
+    "sm:w-auto",
+  );
+
   return (
-    <section 
-    style={{
-  background: "linear-gradient(135deg, #0d1b2a 0%, #0f2540 50%, #1a2f4a 100%)"
-}} className="py-30 xl:py-32 bg-gradient-to-br from-[#0d1b2a] via-[#0f2540] to-[#1a2f4a]">
-      <div className="max-w-6xl mx-auto px-6 text-center">
-        {/* Animated Icon */}
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          whileInView={{ scale: 1, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2, type: "spring" }}
-          className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 sm:h-16 sm:w-16"
+    <section
+      id="cta"
+      aria-labelledby="action-banner-heading"
+      dir={isRTL ? "rtl" : "ltr"}
+      className="relative overflow-hidden py-[var(--space-12)] scroll-mt-24 sm:py-[var(--space-16)]"
+    >
+      <div className="mx-auto max-w-7xl px-[var(--space-4)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-[var(--radius-2xl)]",
+            "bg-gradient-to-br from-primary to-primary-hover",
+            "px-[var(--space-6)] py-[var(--space-10)] shadow-[var(--shadow-lg)]",
+            "sm:px-[var(--space-8)] sm:py-[var(--space-12)]",
+            "lg:px-[var(--space-12)] lg:py-[var(--space-16)]",
+          )}
         >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 overflow-hidden"
           >
-            <Sparkles className="h-6 w-6 text-amber-500 sm:h-7 sm:w-7" />
-          </motion.div>
-        </motion.div>
+            <Image
+              src="/03-testimonial-print-materials.png"
+              alt=""
+              width={720}
+              height={390}
+              sizes="(max-width: 640px) 74vw, (max-width: 1024px) 56vw, 46vw"
+              className="absolute bottom-0 end-0 w-[74%] max-w-none object-contain opacity-20 mix-blend-luminosity sm:w-[56%] sm:opacity-30 lg:w-[46%]"
+            />
+            <div
+              className={cn(
+                "absolute inset-0",
+                isRTL
+                  ? "bg-gradient-to-l from-primary via-primary/85 to-primary/35"
+                  : "bg-gradient-to-r from-primary via-primary/85 to-primary/35",
+              )}
+            />
+          </div>
 
-        {/* Heading */}
-        <h2 className="text-4xl md:text-[60px] font-semibold text-white/90 w-full max-w-[800px] mx-auto">
-          {heading}
-        </h2>
-
-        {/* Description */}
-        <p className="mt-5 text-[18px] text-gray-200 max-w-2xl mx-auto">
-          {description}
-        </p>
-
-        {/* Buttons */}
-        <div className="mt-10 flex justify-center gap-4">
-          {showPrimary && (
-            <Button
-              asChild
-              className="min-w-[166px] h-[44px] bg-[#F97316] hover:bg-[#EA580C] text-white rounded-full px-6 text-[16px] hover:-translate-y-0.5 transition duration-200 group font-medium"
-            >
-              <Link
-                href={primaryHref}
-                className={`flex items-center gap-2 ${
-                  isRTL ? "flex-row-reverse" : "flex-row"
-                }`}
+          <div className="relative z-10 mx-auto max-w-2xl text-center lg:mx-0 lg:text-start">
+            <motion.div {...reveal()}>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "inline-flex items-center gap-[var(--space-2)] rounded-full!",
+                  "border-on-color/25 bg-on-color/10 px-[var(--space-3)] py-[var(--space-1)]",
+                  "text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.18em]",
+                  "text-on-color shadow-[var(--shadow-sm)]",
+                  "[&>svg]:size-[var(--space-4)]",
+                )}
               >
-                {primaryText}
+                <Sparkles aria-hidden="true" />
+                {landing("contact_cta")}
+              </Badge>
+            </motion.div>
 
-                <MoveRight
-                  className={`w-4 h-4 transition-transform duration-500 ${
-                    isRTL
-                      ? "-rotate-180 group-hover:-translate-x-2"
-                      : "group-hover:translate-x-2"
-                  }`}
-                />
-              </Link>
-            </Button>
-          )}
-
-          { !user ? (
-            <Button
-              asChild
-              className="bg-white/90 hover:bg-gray-100 dark:bg-white/90 border border-blue-700 dark:hover:bg-white text-gray-900 dark:text-gray-800 rounded-full px-6 text-[16px] hover:-translate-y-0.5 transition duration-200 group min-w-[130px] h-[42px] font-medium border-2 border-[#F97316] text-[#F97316] hover:bg-transparent  flex justify-center items-center max-w-[140px]  ${"
+            <motion.h2
+              id="action-banner-heading"
+              {...reveal(0.06)}
+              className="mt-[var(--space-4)] text-2xl font-bold leading-tight tracking-tight text-on-color sm:text-3xl lg:text-4xl xl:text-5xl"
             >
-              <Link
-                href={secondaryHref}
-                className={`flex items-center gap-2 ${
-                  isRTL ? "flex-row-reverse" : "flex-row"
-                }`}
-              >
-                {secondaryText}
+              {highlightLastWord(heading, "text-sky-200")}
+            </motion.h2>
 
-                <LogInIcon
-                  className={`w-4 h-4 transition-transform duration-500 ${
-                    isRTL
-                      ? "-rotate-180 group-hover:-translate-x-2"
-                      : "group-hover:translate-x-2"
-                  }`}
-                />
-              </Link>
-            </Button>
-          ) : (
-            <Button
-              asChild
-              // size="lg"
-              className={`group text-[14px] border-2 bg-transparent  text-[#F59E0B] border-[#F59E0B] hover:bg-transparent lg:text-[16px]  hover:-translate-y-0.5 transition duration-200 font-medium text-center   flex justify-center items-center max-w-[150px] rounded-4xl py-5 ${
-                locale === "ur" ? "flex-row-reverse" : "flex-row"
-              }`}
+            <motion.p
+              {...reveal(0.12)}
+              className="mx-auto mt-[var(--space-3)] max-w-xl text-[length:var(--font-size-sm)] leading-6 text-on-color/80 sm:text-[length:var(--font-size-base)] sm:leading-7 lg:mx-0"
             >
-              <ScrollLink
-                to="contact"
-                smooth={true}
-                offset={-70}
-                duration={500}
-                className="cursor-pointer"
-              >
-                {locale === "ur" ? "ہم سے رابطہ کریں" : "Contact Us"}
-              </ScrollLink>
-            </Button>
-          )}
+              {description}
+            </motion.p>
+
+            <motion.div
+              {...reveal(0.18)}
+              className="mt-[var(--space-8)] flex flex-col justify-center gap-[var(--space-3)] sm:flex-row lg:justify-start"
+            >
+              {showPrimary && (
+                <Button
+                  asChild
+                  className={cn(
+                    buttonClassName,
+                    "group bg-on-color text-primary-text shadow-[var(--shadow-md)]",
+                    "hover:bg-primary-soft hover:shadow-[var(--shadow-lg)]",
+                  )}
+                >
+                  <Link
+                    href={primaryHref}
+                    className={cn(
+                      "flex items-center gap-[var(--space-2)]",
+                      isRTL && "flex-row-reverse",
+                    )}
+                  >
+                    {primaryText}
+                    <MoveRight
+                      className={cn(
+                        "h-[var(--space-4)] w-[var(--space-4)] transition-transform duration-300",
+                        isRTL
+                          ? "rotate-180 group-hover:-translate-x-1"
+                          : "group-hover:translate-x-1",
+                      )}
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </Button>
+              )}
+
+              {!user ? (
+                <Button
+                  asChild
+                  className={cn(
+                    buttonClassName,
+                    "border border-on-color/30 bg-on-color/10 text-on-color",
+                    "hover:border-on-color/40 hover:bg-on-color/20",
+                  )}
+                >
+                  <Link
+                    href={secondaryHref}
+                    className={cn(
+                      "flex items-center gap-[var(--space-2)]",
+                      isRTL && "flex-row-reverse",
+                    )}
+                  >
+                    {secondaryText}
+                    <LogInIcon
+                      className="h-[var(--space-4)] w-[var(--space-4)]"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className={cn(
+                    buttonClassName,
+                    "border border-on-color/30 bg-on-color/10 text-on-color",
+                    "hover:border-on-color/40 hover:bg-on-color/20",
+                  )}
+                >
+                  <ScrollLink
+                    to="contact"
+                    smooth={true}
+                    offset={-70}
+                    duration={500}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-[var(--space-2)]",
+                      isRTL && "flex-row-reverse",
+                    )}
+                  >
+                    {landing("cta_contact")}
+                    <LayoutDashboard
+                      className="h-[var(--space-4)] w-[var(--space-4)]"
+                      aria-hidden="true"
+                    />
+                  </ScrollLink>
+                </Button>
+              )}
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>

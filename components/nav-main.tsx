@@ -1,7 +1,6 @@
 "use client";
-import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react";
+import { IconCirclePlusFilled, IconHome } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -12,9 +11,6 @@ import {
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import {
-  IconDashboard,
-  IconListDetails,
-  IconChartBar,
   IconFolder,
   IconRepeat,
   IconMessageCircle,
@@ -30,9 +26,9 @@ import {
 } from "@tabler/icons-react";
 
 const iconMap = {
-  dashboard: IconDashboard,
-  orders: IconListDetails,
-  newOrder: IconChartBar,
+  dashboard: IconHome,
+  orders: IconShoppingCart,
+  newOrder: IconCirclePlusFilled,
   designs: IconFolder,
   reorder: IconRepeat,
   settings: IconSettings,
@@ -60,9 +56,9 @@ export function NavMain({
   const locale = useLocale();
 
   return (
-    <SidebarGroup>
+    <SidebarGroup className="px-4">
       <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
+        <SidebarMenu className="gap-1">
           {items.map((item) => {
             const Icon = iconMap[item.icon];
             const url = item.url.startsWith("/") ? item.url : `/${item.url}`;
@@ -87,15 +83,15 @@ export function NavMain({
                   tooltip={item.title}
                   className={`${
                     isActive &&
-                    "bg-blue-600 cursor-pointer text-white flex  hover:text-white hover:bg-blue-600"
-                  }`}
+                    "bg-primary cursor-pointer text-on-color flex  hover:text-on-color hover:bg-primary"
+                  } h-11 w-full rounded-lg px-3 transition-colors ${!isActive ? "text-foreground hover:bg-primary-soft hover:text-primary-text dark:text-neutral-200 dark:hover:bg-on-color/[0.06]" : "shadow-sm"}`}
                 >
                   <Link
                     href={item.url}
-                    className="flex gap-3 justify-center items-center cursor-pointer "
+                    className="flex w-full items-center justify-start gap-3 cursor-pointer"
                   >
-                    {item.icon && <Icon className="w-5 h-5" />}
-                    <span>{item.title}</span>
+                    {item.icon && <Icon className="h-5 w-5 shrink-0 " />}
+                    <span className="truncate text-sm font-medium">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

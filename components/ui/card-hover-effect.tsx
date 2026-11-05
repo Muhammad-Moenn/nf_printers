@@ -37,7 +37,7 @@ export const HoverEffect = ({
           <AnimatePresence>
             {hoveredIndex === idx && (
               <motion.span
-                className="absolute inset-0 h-full w-full bg-blue-400/[0.2] dark:bg-[#2176ff]/[0.3] block  rounded-3xl"
+                className="absolute inset-0 h-full w-full bg-primary/[0.2] dark:bg-[var(--primary)]/[0.3] block  rounded-3xl"
                 layoutId="hoverBackground"
                 initial={{ opacity: 0 }}
                 animate={{
@@ -70,7 +70,7 @@ export const Card = ({
   return (
     <div
       className={cn(
-        "relative z-20 overflow-hidden rounded-2xl bg-white shadow-lg shadow-blue-50 dark:shadow-gray-950  dark:bg-gray-950 border border-neutral-300 dark:border-neutral-600 transition py-2  ",
+        "relative z-20 overflow-hidden rounded-lg bg-card shadow-lg shadow-primary dark:shadow-neutral-950  dark:bg-neutral-950 border border-border-strong dark:border-border transition py-2  ",
         className
       )}
     >
@@ -86,7 +86,7 @@ export const Card = ({
 
       {/* Profile Image */}
       <div className={ ` ${user.image ? "-mt-12":"-mt-20" }  flex justify-center`}>
-        <div className="h-24 w-24 xl:h-26 xl:w-26 overflow-hidden rounded-full border-4 border-white dark:border-neutral-900 bg-white ">
+        <div className="h-24 w-24 xl:h-26 xl:w-26 overflow-hidden rounded-full border-4 border-on-color dark:border-border bg-card ">
           <Image
             src={user.profileImage}
             alt={user.name}
@@ -99,14 +99,14 @@ export const Card = ({
 
       {/* Content */}
       <div className="px-6 pb-6 pt-4 text-center">
-        <h3 className="text-xl lg:text-2xl font-semibold text-neutral-900 dark:text-white">
+        <h3 className="text-xl lg:text-2xl font-semibold text-foreground dark:text-on-color">
           {user.name}
         </h3>
-        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">
+        <p className="text-sm text-foreground dark:text-neutral-200 font-medium">
           {user.position}
         </p>
 
-        <p className="mt-3 text-sm leading-6 text-neutral-600 dark:text-neutral-400 line-clamp-2">
+        <p className="mt-3 text-sm leading-6 text-muted-foreground dark:text-neutral-400 line-clamp-2">
           {user.description}
         </p>
 

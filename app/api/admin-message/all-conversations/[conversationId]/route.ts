@@ -46,3 +46,33 @@ export async function GET(
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ conversationId: string }> }
+) {
+  const dbUser = await GetDBUser();
+  if (!dbUser || dbUser.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { conversationId } = await params;
+  if (!conversationId) {
+    return NextResponse.json({ error: "Missing conversation ID" }, { status: 400 });
+  }
+
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: { id: true },
+  });
+  if (!conversation) {
+    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+  }
+
+  await prisma.$transaction([
+    prisma.message.deleteMany({ where: { conversationId } }),
+    prisma.conversation.delete({ where: { id: conversationId } }),
+  ]);
+
+  return NextResponse.json({ success: true, conversationId });
+}

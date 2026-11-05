@@ -61,7 +61,7 @@ export default function RecentActivities() {
   return (
     <div>
       
-      <h4 className="text-[20px] lg:text-[22px] font-medium text-gray-800 dark:text-gray-200 text-left  p-6 py-5 -pt-10">
+      <h4 className="text-[20px] lg:text-[22px] font-medium text-foreground dark:text-neutral-200 text-left  p-6 py-5 -pt-10">
         Recently Activities
       </h4>
       <CustomTable data={recentActivities} columns={columns} />

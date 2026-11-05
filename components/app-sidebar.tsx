@@ -1,12 +1,6 @@
 "use client"
 
 import * as React from "react"
-import {
-  
-   IconInnerShadowTop,
-} from "@tabler/icons-react";
-
-import {  } from "lucide-react";
 import { NavMain } from "@/components/nav-main"
 import {
   Sidebar,
@@ -26,25 +20,18 @@ export function AppSidebar({ ...data }) {
 
   return (
     <Sidebar  collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-primary-border/80 px-3 py-3 dark:border-on-color/10">
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2 justify-between">
-            {/* <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            > */}
-              <Link href="/" className="flex items-center ">
-                <Image src="/dashboard-NFPrinters-logo.png" alt="Logo" width={160} height={14} className=" object-cover text-left aspect-auto my-2" />
+          <SidebarMenuItem className="flex h-12 items-center justify-between gap-2">
+              <Link href="/" className="flex min-w-0 items-center">
+                <Image src="/dashboard-NFPrinters-logo.png" alt="NF Printers" width={160} height={40} className="my-1 h-9 w-[142px] object-contain object-left" />
               </Link>
-              <SidebarTrigger className=" cursor-pointer" />
-            {/* </SidebarMenuButton> */}
+              <SidebarTrigger className="shrink-0 cursor-pointer rounded-full hover:bg-gray-100/50 hover:text-gray-800" />
           </SidebarMenuItem>
-          <hr className="w-[98%] mb-2"/>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="py-2">
         <NavMain items={data.navMain} />
-        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       
     </Sidebar>

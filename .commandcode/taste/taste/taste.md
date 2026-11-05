@@ -1,0 +1,9 @@
+# Taste
+- Wants styling driven by semantic design tokens — reusable CSS variables in the global stylesheet (`--color-primary`, `--color-heading`, `--font-family`, `--font-size-xl`, `--font-weight-bold`, spacing, radii, shadows) — and considers hardcoded colors, font families, font sizes or other tokenizable values in components unacceptable; existing global variables should be reused rather than duplicated or overwritten. Confidence: 0.9
+- Prefers minimal, tightly scoped changes: when adding a feature, preserve the existing (e.g. light-mode) implementation and behavior exactly, don't duplicate components, and don't touch unrelated sections. Confidence: 0.6
+- Wants newly built/redesigned sections to visually match the sections already redesigned — same font sizes, colors and color scheme (shared badge/heading/card tokens) — instead of introducing a new visual style. Confidence: 0.7
+- Wants a single, shared section-heading style across all landing sections — identical font size scale, font weight, leading/tracking and color — instead of per-section variations; flags it when headings differ between sections. Confidence: 0.75
+- Wants one key word (or phrase) of each section heading highlighted in the hero's brand blue accent color, applied consistently across all sections' headings. Confidence: 0.65
+- Wants sections fully animated on scroll: reveal animations trigger when the section first enters the viewport (`whileInView` with `once: true`), not only on mount. Confidence: 0.65
+- Expects every section to be fully responsive across mobile/desktop breakpoints and correctly styled in both light and dark mode, and treats interactive UI (e.g. a slider with prev/next controls, autoplay, dots) as incomplete unless it actually works. Confidence: 0.6
+- Prefers imagery displayed directly on the page surface — no surrounding card/box/panel frame — and scaled up larger, as long as the layout stays unbroken and responsive. Confidence: 0.6

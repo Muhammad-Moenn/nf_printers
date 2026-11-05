@@ -25,16 +25,22 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { saveDesign } from "@/app/actions/designs-action";
+import { toast } from "react-toastify";
 
 type UploadedImage = {
   url: string;
   key: string;
+  size?: number | null;
+  name?: string | null;
+  type?: string | null;
 };
 
 interface OrderFieldsProps {
   orderDraft: Order;
   setorderDraft: React.Dispatch<React.SetStateAction<Order>>;
   prevdesigns?: UploadedImage[];
+  children?: React.ReactNode;
 }
 
 const PaperSizes = [
@@ -81,6 +87,7 @@ function OrderFields({
   orderDraft,
   setorderDraft,
   prevdesigns=[],
+  children,
 }: OrderFieldsProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -88,15 +95,28 @@ function OrderFields({
   const uploadedImages = (orderDraft.designs ?? []) as UploadedImage[];
 
   // When user uploads a new design
-  function handleUpload(newImages: UploadedImage | UploadedImage[]) {
+  async function handleUpload(newImages: UploadedImage | UploadedImage[]) {
     const updatedImages = Array.isArray(newImages)
       ? [...newImages]
       : [newImages];
-    // Replace previous image because only 1 upload allowed
     setorderDraft((prev) => ({
       ...prev,
       designs: updatedImages,
     }));
+
+    const designsToSave = updatedImages.filter(
+      (design) => !prevdesigns.some((savedDesign) => savedDesign.key === design.key)
+    );
+    if (!designsToSave.length) return;
+
+    const saved = await Promise.allSettled(designsToSave.map((design) => saveDesign(design)));
+    const failures = saved.filter((result) => result.status === "rejected");
+    if (failures.length) {
+      console.error("Failed to save uploaded order designs:", failures);
+      toast.error("The file is attached to this order, but could not be saved to My Designs.");
+    } else {
+      toast.success("Design saved to My Designs.");
+    }
   }
 
   const toggleFinishing = (option: string) => {
@@ -328,7 +348,7 @@ function OrderFields({
                 setorderDraft({ ...orderDraft, colorMode: v })
               }
             >
-              <SelectTrigger className="w-full focus:outline-none focus:ring-2 focus:ring-primary">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select color mode" />
               </SelectTrigger>
               <SelectContent>
@@ -374,7 +394,7 @@ function OrderFields({
             name="requirements"
             placeholder="Tell us exactly what you need (size, colors, quantity, deadline, references, etc.)"
             rows={6}
-            className="w-full resize-none rounded-md border border-gray-400 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary mt-1 "
+            className="mt-1 w-full resize-none rounded-control border border-input bg-transparent px-3.5 py-2 text-sm outline-none transition-[color,border-color,box-shadow] hover:border-primary/50 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
           />
         </div>
       </div>
@@ -390,7 +410,10 @@ function OrderFields({
                   checked={orderDraft.finishingOptions?.includes(item)}
                   onCheckedChange={() => toggleFinishing(item)}
                 />
-                <span onClick={() => toggleFinishing(item)} className="text-sm">
+                <span
+                  onClick={() => toggleFinishing(item)}
+                  className="cursor-pointer text-sm transition-colors hover:text-primary"
+                >
                   {item}
                 </span>
               </label>
@@ -402,15 +425,15 @@ function OrderFields({
       <div className="flex gap-4 justify-start items-start mt-4">
         <div className=" flex flex-col items-start">
           <UploadButton
-            className="ut-button:bg-slate-300/80
-             ut-button:hover:bg-slate-300/100 
-              ut-button:text-black
+            className="ut-button:bg-border-strong/80
+             ut-button:hover:bg-border-strong/100 
+              ut-button:text-foreground
              ut-button:flex-ut-button:items-center
              ut-button:px-6 ut-button:py-5
              ut-button:rounded-md
              ut-button:flex ut-button:items-center ut-button:gap-4
-             dark:ut-button:bg-slate-300/100
-             dark:ut-button:hover:bg-slate-400
+             dark:ut-button:bg-border-strong/100
+             dark:ut-button:hover:bg-neutral-400
              ut-button:relative
 ut-button:pl-10
 ut-button:w-[150px]
@@ -436,6 +459,9 @@ ut-button:before:bg-no-repeat
                 return {
                   url: file.ufsUrl,
                   key: file.key,
+                  size: file.size,
+                  name: file.name,
+                  type: file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image",
                 };
               });
 
@@ -452,14 +478,14 @@ ut-button:before:bg-no-repeat
         <div className="w-full flex flex-col items-start">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className=" p-5  bg-slate-300/80 hover:bg-slate-300/100 text-gray-600 dark:bg-slate-300/100 dark:hover:bg-slate-400 cursor-pointer px-7">
+              <Button className=" p-5  bg-border-strong/80 hover:bg-border-strong/100 text-muted-foreground dark:bg-border-strong/100 dark:hover:bg-neutral-400 cursor-pointer px-7">
                 {" "}
                 <Images className="w-4 h-4" /> Use Existing Design
               </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[550px] px-0 bg-gray-100 text-gray-800  dark:text-gray-100  dark:bg-gray-900 border border-gray-600 w-full  ">
-              <DialogHeader className="px-4 md:px-6 pb-4 border-b border-gray-300 border-gray-500/60">
+            <DialogContent className="sm:max-w-[550px] px-0 bg-muted text-foreground  dark:text-neutral-100  dark:bg-neutral-900 border border-border w-full  ">
+              <DialogHeader className="px-4 md:px-6 pb-4 border-b border-border-strong border-border/60">
                 <DialogTitle className="text-[20px] md:text-2xl font-semibold">
                   Select a Design
                 </DialogTitle>
@@ -491,8 +517,8 @@ ut-button:before:bg-no-repeat
                         className={`absolute inset-0 flex items-center justify-center text-sm font-medium
                 ${
                   selected
-                    ? "bg-primary/50 text-white"
-                    : "bg-black/40 text-white opacity-0 hover:opacity-100"
+                    ? "bg-primary/50 text-on-color"
+                    : "bg-overlay text-on-color opacity-0 hover:opacity-100"
                 }`}
                       >
                         {selected ? "Selected ✓" : "Click to Select"}
@@ -501,14 +527,14 @@ ut-button:before:bg-no-repeat
                   );
                 })}
               </div>
-              <div className=" border-t  border-gray-300 dark:border-gray-500/60">
+              <div className=" border-t  border-border-strong dark:border-border/60">
                 <DialogFooter className=" px-4 md:px-6 mt-6   flex justify-center gap-4 items-center w-full  ">
                   <div className="w-full">
                     <DialogClose asChild>
                       <Button
                         type="button"
                         variant="outline"
-                        className=" w-full cursor-pointer border-gray-400 bg-gray-200/60 dark:bg-gray-800/50 py-5 "
+                        className=" w-full cursor-pointer border-border-strong bg-surface-4/60 dark:bg-neutral-800/50 py-5 "
                         onClick={() => {
                           setSelectedKey(null);
                         }}
@@ -556,21 +582,22 @@ ut-button:before:bg-no-repeat
                 alt={`Uploaded Design ${index + 1}`}
                 className="w-full h-28 object-cover border rounded-md"
               />
-              <div className="w-full h-full absolute  justify-end hidden  group-hover:flex cursor-pointer z-40 bg-[rgba(0,0,0,0.5)] top-0 left-0 p-3 transition-all duration-500">
+              <div className="w-full h-full absolute  justify-end hidden  group-hover:flex cursor-pointer z-40 bg-overlay top-0 left-0 p-3 transition-all duration-500">
                 <Trash
-                  className="w-4 h-4 text-red-600 opacity-100 "
+                  className="h-4 w-4 cursor-pointer text-destructive-text opacity-100 transition-opacity hover:opacity-70"
                   onClick={() => deleteImage(url.key)}
                 />
               </div>
               {deletingKey === url.key && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-md">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className="absolute inset-0 bg-overlay flex items-center justify-center rounded-md">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-on-color border-t-transparent" />
                 </div>
               )}
             </div>
           ))}
         </div>
       )}
+      {children}
     </div>
   );
 }

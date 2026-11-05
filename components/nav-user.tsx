@@ -1,11 +1,7 @@
 "use client"
 
 import {
-  IconCreditCard,
-  IconDotsVertical,
   IconLogout,
-  IconNotification,
-  IconUserCircle,
 } from "@tabler/icons-react"
 
 import {
@@ -16,7 +12,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -24,11 +19,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { SignOutButton } from "@clerk/nextjs"
+import { useClerk } from "@clerk/nextjs"
 
 export function NavUser({
   user,
@@ -40,23 +34,28 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const { signOut } = useClerk()
+
+  async function handleSignOut() {
+    await signOut({ redirectUrl: "/" })
+  }
 
   return (
     <SidebarMenu className="w-8">
       <SidebarMenuItem>
-        <DropdownMenu >
+        <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {/* <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            > */}
+            <button
+              id="dashboard-user-menu-trigger"
+              type="button"
+              aria-label="Open user menu"
+              className="rounded-full outline-none ring-offset-background transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
               <Avatar className="h-8 w-8 rounded-full cursor-pointer">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={user.avatar} alt={user.name ?? "User"} />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
-              
-              
-            {/* </SidebarMenuButton> */}
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
@@ -79,17 +78,18 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-           
-            <DropdownMenuSeparator />
-               <SignOutButton redirectUrl="/">
-            <DropdownMenuItem>
-              <IconLogout />
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                void handleSignOut();
+              }}
+            >
+              <IconLogout className="hover:text-white" />
               Log out
             </DropdownMenuItem>
-              </SignOutButton>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

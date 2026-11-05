@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useTheme } from "next-themes";
+
 
 interface Props {
   data: {
@@ -19,9 +19,7 @@ interface Props {
 }
 
 export default function MonthlyPaidChart({ data }: Props) {
-  const { theme } = useTheme();
-
-  const tickColor = theme ==="dark" ? "rgb(226,225,225)": "hsl(var(--muted-foreground))";
+  const tickColor = "var(--muted-foreground)";
 
   return (
     <div className="h-[320px] min-h-[320px] w-full min-w-0">
@@ -29,12 +27,12 @@ export default function MonthlyPaidChart({ data }: Props) {
   <AreaChart data={data}>
     <defs>
       <linearGradient id="paidGradient" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
       </linearGradient>
     </defs>
 
-    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
     <XAxis dataKey="month" tick={{ fill: tickColor }} />
     <YAxis tick={{ fill: tickColor }} />
 
@@ -49,7 +47,7 @@ export default function MonthlyPaidChart({ data }: Props) {
     <Area
       type="monotone"
       dataKey="total"
-      stroke="#3B82F6"
+      stroke="var(--primary)"
       fill="url(#paidGradient)"
       strokeWidth={2.5}
     />
@@ -64,12 +62,12 @@ export default function MonthlyPaidChart({ data }: Props) {
         <AreaChart data={data}>
           <defs>
             <linearGradient id="paidGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22C55E" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+              <stop offset="5%" stopColor="var(--success)" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
             </linearGradient>
           </defs>
 
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="month" tick={{ fill: tickColor }} />
           <YAxis tick={{ fill: tickColor }} />
           <Tooltip
@@ -82,7 +80,7 @@ export default function MonthlyPaidChart({ data }: Props) {
           <Area
             type="monotone"
             dataKey="total"
-            stroke="#22C55E"
+            stroke="var(--success)"
             fill="url(#paidGradient)"
             strokeWidth={2.5}
           />

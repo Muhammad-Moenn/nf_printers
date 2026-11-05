@@ -1,18 +1,19 @@
-import { GetDBUser } from "@/app/actions/user_action";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export default async function DashboardLayout({
   children,
+  params,
 }: {
   children: ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
-  const dbUser = await GetDBUser();
-     if (!dbUser) {
-    redirect("/sign-in");
-  }
+  const { locale } = await params;
+  const user = await getCurrentUser();
+  if (!user) redirect({ href: "/sign-in", locale });
 
   // Role-based redirect
   // if (dbUser?.role === "ADMIN") {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTheme } from "next-themes";
+
 import { useEffect } from "react";
 import {
   LineChart,
@@ -28,20 +28,14 @@ export default function OrdersLineChart({
   data,
   xDataKey = "label",
 }: OrdersLineChartProps) {
-  const { theme } = useTheme();
-
-  // Dynamic color based on theme
-    const axisColor =
-    theme === "dark"
-      ? "rgb(226,225,225)"
-      : "hsl(var(--muted-foreground))";
+  const axisColor = "var(--muted-foreground)";
 
   return (
-    <div className="h-[320px] min-h-[320px] w-full min-w-0">
+    <div className="h-full min-h-0 w-full min-w-0">
       <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
         <LineChart data={data}>
           {/* Grid */}
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))"  />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"  />
 
           {/* X Axis */}
           <XAxis
@@ -72,18 +66,18 @@ export default function OrdersLineChart({
           {/* Tooltip */}
           <Tooltip
             contentStyle={{
-              backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
-              color: theme === "dark" ? "#f9fafb" : "#000000",
+              backgroundColor: "var(--card)",
+              color: "var(--foreground)",
               borderRadius: 8,
-              border: `1px solid ${theme === "dark" ? "#3B82F6" : "#3B82F6"}`,
+              border: "1px solid var(--primary)",
             }}
           />
 
           {/* Lines */}
-          <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2.5} dot={{ r: 4 }} />
-          <Line type="monotone" dataKey="completed" stroke="#22C55E" strokeWidth={2} dot={{ r: 3 }} />
-          <Line type="monotone" dataKey="pending" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} />
-          <Line type="monotone" dataKey="cancelled" stroke="#EF4444" strokeWidth={2} dot={{ r: 3 }} />
+          <Line type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 4 }} />
+          <Line type="monotone" dataKey="completed" stroke="var(--success)" strokeWidth={2} dot={{ r: 3 }} />
+          <Line type="monotone" dataKey="pending" stroke="var(--warning)" strokeWidth={2} dot={{ r: 3 }} />
+          <Line type="monotone" dataKey="cancelled" stroke="var(--destructive)" strokeWidth={2} dot={{ r: 3 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>

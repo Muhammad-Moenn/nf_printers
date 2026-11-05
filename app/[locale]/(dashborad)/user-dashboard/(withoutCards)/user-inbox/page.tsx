@@ -1,26 +1,35 @@
 import { getOrCreateConversation } from "@/app/actions/user-message";
 import { GetDBUser } from "@/app/actions/user_action";
 import UserMessage from "@/components/user-message";
-import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function UserDashboardMessages() {
-  const user = await currentUser();
+  const user = await getCurrentUser();
   const dbUuser = await GetDBUser();
   const userInfo = {
-    name: user?.fullName ?? undefined,
-    email: user?.emailAddresses[0]?.emailAddress || "No email",
-    imageUrl: user?.imageUrl || "/default-avatar.png",
-    username: user?.username || "user",
+    name: [user?.firstName, user?.lastName].filter(Boolean).join(" ") || undefined,
+    email: user?.email || "No email",
+    imageUrl: user?.avatarUrl || "/default-avatar.png",
+    username: user?.email.split("@")[0] || "user",
     userId: dbUuser?.id || "unknown",
   };
 
-  const conversation = await getOrCreateConversation()
+  const conversation = user ? await getOrCreateConversation() : null;
 
-  if (user) {
+  if (user && conversation) {
     return (
-      <div className="h-full w-full bg-gray-100  ">
-        <UserMessage user={userInfo} />
+      <div className="w-full min-h-0 px-3 pb-4 sm:px-5 lg:px-6">
+        <UserMessage
+          user={userInfo}
+          conversationId={conversation.id}
+          initialMessages={conversation.messages.map((message) => ({
+            ...message,
+            createdAt: message.createdAt.toISOString(),
+          }))}
+        />
       </div>
     );
   }
+
+  return <div className="mx-3 rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground sm:mx-5">Your inbox is unavailable right now. Please refresh the page.</div>;
 }

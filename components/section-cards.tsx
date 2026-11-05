@@ -1,16 +1,13 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardAction,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PieChart, Pie, Cell, Label, Line, ResponsiveContainer, LineChart } from "recharts";
+import { PieChart, Pie, Cell, Label } from "recharts";
 import {
   IconPackage,
   IconFileText,
@@ -23,10 +20,8 @@ import {
   IconCircleX,
   IconCurrencyDollar,
 } from "@tabler/icons-react";
+import { CheckCircle2, ChevronRight, Clock3, Hourglass } from "lucide-react";
 import DonutCardChart from "./charts/section-cards-charts";
-import { Span } from "next/dist/trace";
-import { div } from "motion/react-client";
-import { color } from "motion/react";
 
 const iconMap = {
   package: IconPackage,
@@ -50,75 +45,132 @@ export interface CardData {
   description: string;
   is_chart?: boolean;
   shortLabel?: string;
+  href?: string;
   color?: string;
   total_order?: number;
   current_monthPaid?:number;
   current_weekPaid?:number
 }
 
-function hexToRGBA(hex: string, alpha: number) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+function withAlpha(color: string, alpha: number) {
+  return `color-mix(in oklab, ${color} ${alpha * 100}%, transparent)`;
 }
-export function SectionCards({ cards }: { cards: CardData[] }) {
+export function SectionCards({
+  cards,
+  cardClassName,
+}: {
+  cards: CardData[];
+  cardClassName?: string;
+}) {
   return (
     <>
       {cards.map((card, i) => {
         const Icon = iconMap[card.icon];
         const value = Number(card.value);
-        return (
+        const FooterIcon =
+          card.title === "Pending Quotes"
+            ? Hourglass
+            : card.title === "Completed Orders"
+              ? CheckCircle2
+              : Clock3;
+        const cardContent = (
           <Card
-            key={i}
-            className="@container/card w-full bg-transparent flex flex-col gap-1 cursor-pointer hover:scale-[1.04] transition-all duration-300 dark:bg-gray-900"
+            className={`@container/card flex h-full min-h-[168px] w-full flex-col justify-between gap-3 overflow-hidden border-border/80 bg-card px-3 py-4 shadow-sm transition-all duration-200 dark:border-on-color/10 dark:bg-card sm:px-4 ${cardClassName ?? ""} ${
+              card.href ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md" : ""
+            }`}
           >
-            <CardHeader className="relative">
-              {/* Title */}
-              <CardDescription className="flex items-center gap-2 text-gray-800 font-medium text-[16]">
+            <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 p-0">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
                 {Icon && (
-                  <div style={{ backgroundColor: hexToRGBA(card?.color ?? "#3B82F6", 0.2), }}   className="w-8 h-8 rounded-sm flex justify-center items-center bg-blue-300/30">
-                    {" "}
-                    <Icon style={{ color: card.color }} className={`h-4 w-4  text-blue-600`} />
+                  <div
+                    style={{
+                      backgroundColor: withAlpha(card?.color ?? "var(--primary)", 0.2),
+                    }}
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10"
+                  >
+                    <Icon style={{ color: card.color }} className="h-5 w-5" />
                   </div>
                 )}
-                {card.title}
-              </CardDescription>
-
-              {/* Value */}
-              <div className="flex  justify-between items-center w-full ">
-                <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-4xl">
-                  {card.value}{" "}
-                  {card.shortLabel && (
-                    <span className="text-[12px]">{card.shortLabel}</span>
-                  )}
-                </CardTitle>
-                {card.is_chart && (
-                  <div className="-mt-3 -mr-3">
+                <div className="min-w-0">
+                  <CardDescription className="line-clamp-2 text-[13px] font-semibold leading-tight text-foreground dark:text-neutral-100 sm:text-sm">
+                    {card.title}
+                  </CardDescription>
+                  <CardTitle className="mt-1 flex min-w-0 flex-wrap items-baseline gap-x-1 text-lg font-bold leading-tight tabular-nums sm:text-xl @[260px]/card:text-[22px]">
+                    <span className="break-words">{card.value}</span>
+                    {card.shortLabel && (
+                      <span className="text-xs font-medium text-muted-foreground dark:text-neutral-400">
+                        {card.shortLabel}
+                      </span>
+                    )}
+                  </CardTitle>
+                </div>
+              </div>
+              {card.is_chart ? (
+                <div className="flex-shrink-0">
                   <DonutCardChart
                     total={card.total_order ?? 0}
                     value={value}
                     color={card.color}
+                    size={64}
                   />
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : card.href ? (
+                  <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary-text dark:bg-primary/10 dark:text-primary-soft-foreground">
+                  <ChevronRight className="h-4 w-4" />
+                </span>
+              ) : null}
             </CardHeader>
 
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-              <div className={`text-gray-500 dark:text-gray-200 ${card.title==="Total Paid" && "mt-1"}`}>
+            <CardFooter
+              className={`flex min-w-0 ${
+                card.title === "Total Paid"
+                  ? "flex-col items-start gap-1"
+                  : "flex-row items-center gap-2"
+              } border-t border-primary-border px-0 pb-0 text-[13px] leading-[1.15rem] dark:border-on-color/10 [.border-t]:pt-3 sm:text-sm`}
+            >
+              {card.title !== "Total Paid" && (
+                <FooterIcon
+                  className={`h-4 w-4 shrink-0 ${
+                    card.title === "Pending Quotes"
+                      ? "text-warning-text"
+                      : card.title === "Completed Orders"
+                        ? "text-success-text"
+                        : "text-primary-text"
+                  }`}
+                />
+              )}
+              <div className="min-w-0 break-words text-muted-foreground dark:text-neutral-300">
                 {card.description}
               </div>
-              {card.title==="Total Paid" &&(<div className="text-slate-500/70 dark:text-slate-300/70 flex flex-col text-xs mt-2">
-                <span>Current Week <span className="text-slate-600 font-medium dark:text-gray-300">: Rs {card.current_weekPaid}</span></span>
-                <span>Current Month <span className="text-slate-600 font-medium dark:text-gray-300">: Rs {card.current_monthPaid}</span></span>
-              </div>)}
-              
+              {card.title === "Total Paid" && (
+                <div className="flex flex-col gap-0.5 text-xs text-muted-foreground dark:text-neutral-300">
+                  <span>
+                    Current Week{" "}
+                    <span className="font-medium text-muted-foreground dark:text-neutral-300">
+                      : Rs {card.current_weekPaid}
+                    </span>
+                  </span>
+                  <span>
+                    Current Month{" "}
+                    <span className="font-medium text-muted-foreground dark:text-neutral-300">
+                      : Rs {card.current_monthPaid}
+                    </span>
+                  </span>
+                </div>
+              )}
             </CardFooter>
-             
           </Card>
         );
+
+        if (card.href) {
+          return (
+            <Link key={i} href={card.href} className="block h-full">
+              {cardContent}
+            </Link>
+          );
+        }
+
+        return <div key={i} className="h-full">{cardContent}</div>;
       })}
     </>
   );
@@ -132,7 +184,7 @@ type Props = {
 
 export default function DonutProgressChart({
   value,
-  color = "#3B82F6",
+  color = "var(--primary)",
   size = 200,
 }: Props) {
   const data = [
@@ -153,7 +205,7 @@ export default function DonutProgressChart({
           stroke="none"
         >
           <Cell fill={color} />
-          <Cell fill="#E5E7EB" />
+          <Cell fill="var(--border)" />
           <Label
             value={`${value}%`}
             position="center"

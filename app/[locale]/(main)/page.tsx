@@ -1,9 +1,5 @@
-import { GetDBUser } from '@/app/actions/user_action';
-import { redirect } from 'next/navigation';
 import { HeroSection } from "@/components/ui/Hero";
-import { Spotlight } from "@/components/ui/spotlight";
-import Testimonials from '@/components/testimonial';
-import BrandSlider from "@/components/BrandSlider";
+import TrustedBySection from "@/components/trusted-by-section";
 import { ServicesSection } from "@/components/services-section";
 import ActionBanner from "@/components/action-banner";
 import About from "@/components/about";
@@ -11,7 +7,7 @@ import FAQSection from "@/components/faqs-section";
 import { setRequestLocale } from "next-intl/server";
 import ContactSection from '@/components/contact-section';
 import Testimonials2Section from '@/components/testimonial2-section';
-import StatsSection from '@/components/stats-section';
+import PrintProcessSection from '@/components/print-process-section';
 
 
 export default async function Home({
@@ -31,17 +27,12 @@ export default async function Home({
   
   // If not authenticated, show the home page
   return (
-    <div className="w-full overflow-x-hidden ">
+    <div className=" w-full overflow-x-hidden">
       <HeroSection/>
-      <StatsSection/>
-      <BrandSlider/>
-      <Spotlight
-        className="-top-40 right-0 md:-top-20 md:right-0  absolute"
-      />
+      <TrustedBySection/>
       <About/>
-      {/* <EmployeeSection/> */}
+      <PrintProcessSection/>
       <ServicesSection/>
-      {/* <Testimonials/> */}
       <Testimonials2Section/>
       <FAQSection/>
       < ContactSection/>

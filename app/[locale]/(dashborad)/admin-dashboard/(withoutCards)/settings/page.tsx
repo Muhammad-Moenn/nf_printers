@@ -15,6 +15,10 @@ if(!user){
           firstName: user.firstName ?? "",
           lastName: user.lastName ?? "",
           email: user.email,
+          role: user.role,
+          createdAt: user.createdAt.toISOString(),
+          emailNotifications: user.emailNotifications,
+          marketingEmails: user.marketingEmails,
         }} />
     </div>
   )

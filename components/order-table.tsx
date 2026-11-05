@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import CustomTable, { Column } from "@/components/custom-table";
 import { StatusBadge } from "@/components/status-badge";
 import { toast } from "react-toastify";
@@ -9,6 +9,7 @@ import { Order } from "@/types/order";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import OrderFields from "./order-fields";
 import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useCartStore } from "@/app/store/cart-store";
 
 /* ================= TYPES ================= */
@@ -101,6 +102,10 @@ const orderColumns: Column<Order>[] = [
 const viewOrder = (id: string) => {};
 
 export default function OrderTable({ordersData}: {ordersData: Order[]}) {
+  const [statusFilter, setStatusFilter] = useState("all");
+  const visibleOrders = useMemo(() => statusFilter === "all"
+    ? ordersData
+    : ordersData.filter((order) => order.status === statusFilter), [ordersData, statusFilter]);
   const addToCart = useCartStore((state) => state.addToCart);
   const [isLoading, setIsLoading] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -259,14 +264,30 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
       };
   return (
     <div className="">
+      <div className="mb-3 flex flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+        <span className="mr-auto text-sm text-muted-foreground">Filter orders by status</span>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-full border-border bg-card sm:w-[185px]">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="processing">Processing</SelectItem>
+            <SelectItem value="in_progress">In progress</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <CustomTable
-        data={ordersData}
+        data={visibleOrders}
         columns={orderColumns}
         defaultPageSize={10}
        renderActions={(order) => (
           <div className="flex gap-2">
             <button
-              className="bg-blue-500 text-white px-2  py-1 cursor-pointer rounded"
+              className="bg-primary text-on-color px-2  py-1 cursor-pointer rounded"
               // onClick={() => viewOrder(order.id)}
             >
               View
@@ -274,7 +295,7 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
 
             {order.status === "completed" && (
               <button
-                className="bg-yellow-500 text-white cursor-pointer px-2 py-1 rounded"
+                className="bg-warning text-on-color cursor-pointer px-2 py-1 rounded"
                 onClick={() => reorder(order.id)}
               >
                 Reorder
@@ -286,13 +307,13 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild></DialogTrigger>
       
-              <DialogContent className="sm:max-w-[550px] px-0 bg-gray-100 text-gray-800  dark:text-gray-100  dark:bg-gray-900 border border-gray-600 w-full ">
+              <DialogContent className="sm:max-w-[550px] px-0 bg-muted text-foreground  dark:text-neutral-100  dark:bg-neutral-900 border border-border w-full ">
                 <form>
                   <DialogHeader className="px-4 md:px-6">
                     <DialogTitle className="text-[20px] md:text-2xl font-semibold">
                       Place New Order
                     </DialogTitle>
-                    <DialogDescription className="text-[14px] text-gray-700 dark:text-gray-300">
+                    <DialogDescription className="text-[14px] text-foreground dark:text-neutral-300">
                       Fill in printing details to place your order.
                     </DialogDescription>
                   </DialogHeader>

@@ -14,8 +14,8 @@ const severityStyles: Record<string, string> = {
 
 const AlertsNotifications = () => {
   return (
-    <div className="w-full  flex-col bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-              dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e] justify-center items-center border-2 border-gray-200 dark:border-gray-600/70 rounded-xl overflow-hidden p-4  shadow  ">
+    <div className="w-full  flex-col bg-gradient-to-t from-primary-soft/70 via-primary-soft/60 to-surface-2/90
+              dark:from-[var(--surface-1)] dark:via-surface-2/90 dark:to-[var(--surface-3)] justify-center items-center border-2 border-border dark:border-border/70 rounded-lg overflow-hidden p-4  shadow  ">
       <div className="mb-5">
         <h2 className="text-lg font-semibold text-foreground">Alerts</h2>
         <p className="stat-label mt-1">Items needing attention</p>

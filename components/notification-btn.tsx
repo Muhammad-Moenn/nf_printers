@@ -79,8 +79,8 @@ export default function NotificationButton({ dbUser }: any) {
         absolute -top-[3px] right-[0px] group-hover:-top-2 group-hover:-right-[4px]
         p-[3px] w-2 h-2 group-hover:w-[16px] group-hover:h-[16px] 
         flex items-center justify-center
-        rounded-full bg-red-500
-        text-white font-medium text-[9px]
+        rounded-full bg-destructive
+        text-on-color font-medium text-[9px]
         z-10
         group-hover:flex
         before:content-['']  

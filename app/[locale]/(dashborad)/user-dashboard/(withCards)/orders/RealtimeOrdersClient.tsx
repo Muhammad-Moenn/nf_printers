@@ -1,21 +1,41 @@
 "use client";
-import { getMonthlyPaidAmount } from "@/app/actions/monthly-amount";
+
+import { useEffect, useMemo, useState } from "react";
 import {
-  fetchCardsDataAndAllOrders,
-  getMonthlyOrdersAction,
-} from "@/app/actions/order-action";
-import OrdersLineChart from "@/components/charts/line-chart";
-import MonthlyPaidChart from "@/components/charts/simple-areaChart";
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  ChartNoAxesColumn,
+  Lightbulb,
+  ShoppingBag,
+  Wallet,
+} from "lucide-react";
 import OrderTable from "@/components/order-table";
 import { supabase } from "@/lib/supabaseClient";
-import { BarChart3, ChartLine } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Order } from "@/types/order";
+
+type MonthlyOrder = { label: string; total: number };
+type MonthlyPaid = { month: string; total: number };
 type Props = {
-  initialMonthlyTotal: any[];
-  initialMonthlyOrders: any[];
-  initialOrders: any[];
+  initialMonthlyTotal: MonthlyPaid[];
+  initialMonthlyOrders: MonthlyOrder[];
+  initialOrders: Order[];
 };
-function RealtimeOrdersClient({
+
+const money = (amount: number) =>
+  `Rs ${Math.round(amount).toLocaleString("en-PK")}`;
+
+export default function RealtimeOrdersClient({
   initialMonthlyTotal,
   initialMonthlyOrders,
   initialOrders,
@@ -24,100 +44,133 @@ function RealtimeOrdersClient({
   const [monthlyOrders, setMonthlyOrders] = useState(initialMonthlyOrders);
   const [orders, setOrders] = useState(initialOrders);
 
-  const refetch = async () => {
-    const res = await fetch("/api/orders/realtime");
-    const data = await res.json();
-
-    setMonthlyTotal(data.monthlyTotal);
-    setMonthlyOrders(data.monthlyOrders);
-    setOrders(data.allOrders);
-  };
-  const Is_monthlyTotal=Array.isArray(monthlyTotal)
-  ? monthlyTotal.reduce((sum, day) => sum + (day.total || 0), 0)
-  : 0;
-  const Is_monthlyTotalOrders=Array.isArray(monthlyOrders)
-  ? monthlyOrders.reduce((sum, day) => sum + (day.total || 0), 0)
-  : 0;
   useEffect(() => {
+    let mounted = true;
+    const refetch = async () => {
+      try {
+        const response = await fetch("/api/orders/realtime");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!mounted) return;
+        setMonthlyTotal(data.monthlyTotal ?? []);
+        setMonthlyOrders(data.monthlyOrders ?? []);
+        setOrders(data.allOrders ?? []);
+      } catch (error) {
+        console.error("Unable to refresh orders", error);
+      }
+    };
     const channel = supabase
       .channel("orders-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Order", // <-- IMPORTANT
-        },
-        (payload) => {
-          // console.log("🔥 Realtime Event:", payload);
-          refetch();
-        }
-      )
-      .subscribe((status) => {
-        // console.log("Subscription status:", status);
-      });
-
+      .on("postgres_changes", { event: "*", schema: "public", table: "Order" }, refetch)
+      .subscribe();
     return () => {
-      channel.unsubscribe();
+      mounted = false;
+      void channel.unsubscribe();
     };
   }, []);
 
+  const orderChart = useMemo(() => monthlyOrders.map((item) => ({
+    month: item.label,
+    total: Number(item.total) || 0,
+  })), [monthlyOrders]);
+  const spendChart = useMemo(() => monthlyTotal.map((item, index) => ({
+    month: item.month,
+    current: Number(item.total) || 0,
+    previous: index > 0 ? Number(monthlyTotal[index - 1]?.total) || 0 : 0,
+  })), [monthlyTotal]);
+
+  const latestOrderMonth = orderChart[new Date().getMonth()]?.total ?? 0;
+  const previousOrderMonth = orderChart[(new Date().getMonth() + 11) % 12]?.total ?? 0;
+  const latestSpendMonth = spendChart[new Date().getMonth()]?.current ?? 0;
+  const previousSpendMonth = spendChart[(new Date().getMonth() + 11) % 12]?.current ?? 0;
+  const percent = (current: number, previous: number) =>
+    previous === 0 ? (current > 0 ? 100 : 0) : ((current - previous) / previous) * 100;
+  const totalOrders = orderChart.reduce((sum, item) => sum + item.total, 0);
+
   return (
-    <div className="">
-      {/* <SectionCards cards={cards}/> */}
-      <div className="px-4  md:px-6 grid grid-cols-1 lg:grid-cols-2  overflow-hidden  gap-4">
-        <div
-          className="flex flex-col gap-6   p-6 bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-        dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/60 dark:border-gray-600/70 rounded-xl  overflow-hidden  shadow-sm h-fit "
-        >
-          <div className="flex gap-2 items-center">
-            <ChartLine className="w-5 h-5 text-blue-500" />
-            <h4 className="text-[20px] lg:text-[22px] font-medium text-gray-800 dark:text-gray-200 text-left   ">
-              Monthly Orders <span className="text-[14px] text-gray-500">(Current Year)</span>
-            </h4>
-          </div>
-          {Is_monthlyTotalOrders ? (
-            <OrdersLineChart data={monthlyOrders} />
-          ) : (
-            <div className="flex items-center h-full justify-center mt-4 text-sm text-muted-foreground">
-              <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
-              No data available
+    <main className="min-w-0 space-y-5 px-4 pb-8 pt-4 md:px-6 lg:space-y-5">
+      <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
+        <article className="min-w-0 rounded-lg border border-primary-border bg-card p-4 shadow-[var(--shadow-md)] sm:p-5">
+          <header className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text"><BarChart3 className="h-5 w-5" /></span>
+              <h2 className="truncate text-lg font-semibold text-[var(--heading)]">Monthly Orders <span className="font-normal text-muted-foreground text-xs">(Current Year)</span></h2>
             </div>
-          )}
-        </div>
-        <div
-          className="flex flex-col gap-6   p-6 bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-        dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]  w-full     border-1 border-gray-300/60 dark:border-gray-600/70 rounded-xl  overflow-hidden  shadow-sm h-fit "
-        >
-          <div className="flex gap-2 items-center ">
-            <ChartLine className="w-5 h-5 text-blue-500" />
-            <h4 className="text-[20px] lg:text-[22px] font-medium text-gray-800 dark:text-gray-200 text-left   ">
-              Monthly Spending <span className="text-[14px] text-gray-500">(Current Year)</span>
-            </h4>
-          </div>
-          {Is_monthlyTotal ? (
-            <MonthlyPaidChart data={monthlyTotal} />
-          ) : (
-            <div className="flex  items-center justify-center mt-4 text-sm text-muted-foreground">
-              <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
-              No data available
+           
+          </header>
+          <div className="mb-5 grid grid-cols-1 gap-4 rounded-lg bg-primary-soft/80 p-4 sm:grid-cols-[1fr_1px_1fr] sm:items-center sm:px-6 sm:py-5">
+            <div className="flex items-center gap-4 sm:justify-center">
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary-soft text-primary-text"><ShoppingBag className="h-8 w-8" /></span>
+              <div><p className="text-3xl font-bold leading-none text-[var(--heading)]">{totalOrders}</p><p className="mt-1 text-sm text-muted-foreground">Total Orders</p></div>
             </div>
-          )}
+            <span className="hidden h-full min-h-16 w-px bg-primary-soft sm:block" />
+            <div className="flex items-center gap-3 border-t border-primary-border pt-3 sm:justify-center sm:border-0 sm:pt-0">
+              <div className={`flex items-center gap-2 text-2xl font-bold ${percent(latestOrderMonth, previousOrderMonth) >= 0 ? "text-success-text" : "text-destructive-text"}`}>
+                {percent(latestOrderMonth, previousOrderMonth) >= 0 ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
+                {percent(latestOrderMonth, previousOrderMonth) > 0 ? "+" : ""}{percent(latestOrderMonth, previousOrderMonth).toFixed(0)}%
+              </div>
+              <p className="text-sm text-muted-foreground">vs last month</p>
+            </div>
+          </div>
+          <div className="h-[245px] min-w-0 sm:h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={orderChart} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                  <defs><linearGradient id="ordersAreaFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity={0.24} /><stop offset="100%" stopColor="var(--primary)" stopOpacity={0.02} /></linearGradient></defs>
+                  <CartesianGrid stroke="var(--primary-border)" vertical />
+                  <XAxis dataKey="month" tick={{ fill: "var(--border-strong)", fontSize: 12 }} axisLine={{ stroke: "var(--muted-foreground)" }} tickLine={false} interval={0} />
+                  <YAxis tick={{ fill: "var(--border-strong)", fontSize: 12 }} axisLine={{ stroke: "var(--muted-foreground)" }} tickLine={false} width={34} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 12, borderColor: "var(--primary-border)", fontSize: 12 }} />
+                  <Area type="monotone" dataKey="total" name="Orders" stroke="var(--primary)" strokeWidth={2.5} fill="url(#ordersAreaFill)" activeDot={{ r: 5 }} dot={{ r: 3, fill: "white", stroke: "var(--primary)", strokeWidth: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="min-w-0 rounded-lg border border-primary-border bg-card p-4 shadow-[var(--shadow-md)] sm:p-5">
+          <header className="mb-4 flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-text"><Wallet className="h-5 w-5" /></span>
+            <h2 className="truncate text-lg font-semibold text-[var(--heading)]">Monthly Spending <span className="font-normal text-muted-foreground text-xs">(Current Year)</span></h2>
+          </header>
+          <div className="mb-5 grid grid-cols-1 gap-4 rounded-lg bg-primary-soft/80 p-4 sm:grid-cols-[1fr_1px_1fr] sm:items-center sm:px-6 sm:py-5">
+            <div className="flex items-center gap-4 sm:justify-center">
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary-soft text-primary-text"><Wallet className="h-8 w-8" /></span>
+              <div><p className="text-3xl font-bold leading-none text-[var(--heading)] ">{money(latestSpendMonth)}</p><p className="mt-1 text-sm text-muted-foreground">Total Spending</p></div>
+            </div>
+            <span className="hidden h-full min-h-16 w-px bg-primary-soft sm:block" />
+            <div className="flex items-center gap-3 border-t border-primary-border pt-3 sm:justify-center sm:border-0 sm:pt-0">
+              <div className={`flex items-center gap-2 text-2xl font-bold ${percent(latestSpendMonth, previousSpendMonth) >= 0 ? "text-success-text" : "text-destructive-text"}`}>
+                {percent(latestSpendMonth, previousSpendMonth) >= 0 ? <ArrowUpRight className="h-6 w-6" /> : <ArrowDownRight className="h-6 w-6" />}
+                {percent(latestSpendMonth, previousSpendMonth) > 0 ? "+" : ""}{percent(latestSpendMonth, previousSpendMonth).toFixed(0)}%
+              </div>
+              <p className="text-sm text-muted-foreground">vs last month</p>
+            </div>
+          </div>
+          <div className="h-[245px] min-w-0 sm:h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={spendChart.slice(0, 6)} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+                <defs><linearGradient id="monthlySpendFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity={0.28} /><stop offset="100%" stopColor="var(--primary)" stopOpacity={0.03} /></linearGradient></defs>
+                <CartesianGrid stroke="var(--primary-border)" vertical />
+                <XAxis dataKey="month" tick={{ fill: "var(--border-strong)", fontSize: 12 }} axisLine={{ stroke: "var(--muted-foreground)" }} tickLine={false} />
+                <YAxis tick={{ fill: "var(--border-strong)", fontSize: 11 }} axisLine={{ stroke: "var(--muted-foreground)" }} tickLine={false} width={42} tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} />
+                <Tooltip formatter={(value) => typeof value === "number" ? money(value) : value} contentStyle={{ borderRadius: 12, borderColor: "var(--primary-border)", fontSize: 12 }} />
+                <Area type="monotone" dataKey="current" name="Spending" stroke="var(--primary-hover)" strokeWidth={3} fill="url(#monthlySpendFill)" activeDot={{ r: 6 }} dot={{ r: 5, fill: "white", stroke: "var(--primary-hover)", strokeWidth: 3 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+      </section>
+
+      <section className="overflow-hidden rounded-lg border border-primary-border bg-card shadow-[var(--shadow-md)]">
+        <div className="border-b border-primary-border px-4 py-4 sm:px-5">
+          <div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-soft text-primary-text"><ChartNoAxesColumn className="h-5 w-5" /></span><h2 className="text-lg font-semibold text-[var(--heading)]">My Orders</h2></div>
         </div>
-      </div>
-      <h2 className="px-6 text-2xl font-semibold mb-4 mt-10 text-gray-800 dark:text-gray-200">
-        My Orders
-      </h2>
-      {orders ? (
-        <OrderTable ordersData={orders} />
-      ) : (
-        <div className="flex items-center justify-center mt-4 text-sm text-muted-foreground">
-          <BarChart3 className="w-10 h-10 mb-2 opacity-70" />
-          No data available
-        </div>
-      )}
-    </div>
+        <div className="min-w-0 pt-4"><OrderTable ordersData={orders} /></div>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-lg border border-primary-border bg-gradient-to-r from-primary-soft to-violet-soft/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-card text-warning-text shadow-sm"><Lightbulb className="h-6 w-6" /></span><div><h2 className="font-semibold text-[var(--heading)]">A smoother way to print</h2><p className="mt-1 text-sm text-muted-foreground">Place an order and follow its progress from your dashboard.</p></div></div>
+        <a href="/user-dashboard/new-order" className="inline-flex h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-on-color shadow-md shadow-primary transition hover:bg-primary">Start new order <ArrowRight className="h-4 w-4" /></a>
+      </section>
+    </main>
   );
 }
-
-export default RealtimeOrdersClient;

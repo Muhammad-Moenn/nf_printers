@@ -9,20 +9,23 @@ datasource db {
 }
 
 model User {
-  id                String         @id @default(cuid())
-  clerkUserId       String         @unique
-  email             String         @unique
-  role              Role           @default(CUSTOMER)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  avatarUrl         String?
-  firstName         String?
-  lastName          String?
-  password          String?
+  id                 String   @id @default(cuid())
+  clerkUserId        String?  @unique
+  email              String   @unique
+  role               Role     @default(CUSTOMER)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  avatarUrl          String?
+  firstName          String?
+  lastName           String?
+  emailNotifications Boolean  @default(true)
+  marketingEmails    Boolean  @default(false)
 
   // Relations
-  orders            Order[]
-  designs           Designs[]
+  orders        Order[]
+  designs       Designs[]
+  expenses      Expense[]
+  uploadedFiles UploadedFile[]
 
   // Conversations where this user is the regular user
   userConversations Conversation[] @relation("UserConversations")
@@ -31,12 +34,20 @@ model User {
   adminConversations Conversation[] @relation("AdminConversations")
 
   // All messages sent by this user
-  messages           Message[]
+  messages Message[]
 
   @@index([clerkUserId])
   @@index([email])
 }
 
+model UploadedFile {
+  key       String   @id
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
 
 model Payment {
   id        String        @id @default(cuid())
@@ -50,29 +61,84 @@ model Payment {
   order     Order         @relation(fields: [orderId], references: [id])
 }
 
+model Service {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  slug          String   @unique
+  category      String
+  description   String   @db.Text
+  details       String?  @db.Text
+  features      String[] @default([])
+  options       String[] @default([])
+  idealFor      String[] @default([])
+  icon          String   @default("notebookPen")
+  imageUrl      String?
+  pricingMethod String   @default("FIXED")
+  basePrice     Decimal  @default(0) @db.Decimal(12, 2)
+  minPrice      Decimal? @db.Decimal(12, 2)
+  maxPrice      Decimal? @db.Decimal(12, 2)
+  priceUnit     String   @default("service")
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive, displayOrder])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  category    String   @default("General")
+  description String?
+  expenseDate DateTime @default(now())
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([expenseDate])
+  @@index([category])
+}
+
 model Order {
-  id               String      @id @default(cuid())
-  userId           String
-  product          String
-  quantity         String
-  amount           String
-  status           OrderStatus @default(pending)
-  orderDate        DateTime?   @default(now())
-  deliveryDate     DateTime?
-  paperType        String?
-  size             String?
-  gsm              String?
-  colorMode        String?
-  sides            String?
-  finishingOptions String[]
-  requirements     String?
-  isReorder        Boolean?    @default(false)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
-  service          String
-  designs          Json?
-  user             User        @relation(fields: [userId], references: [id])
-  payment          Payment?
+  id                  String             @id @default(cuid())
+  userId              String
+  product             String
+  quantity            String
+  amount              String
+  quantityValue       Int?
+  estimatedAmount     Decimal?           @db.Decimal(12, 2)
+  finalAmount         Decimal?           @db.Decimal(12, 2)
+  pricingSource       PricingSource?
+  pricingConfidence   PricingConfidence?
+  pricingStatus       PricingStatus      @default(PENDING_REVIEW)
+  pricingBreakdown    Json?
+  pricingFeatures     Json?
+  pricingModelVersion String?
+  adminAdjusted       Boolean            @default(false)
+  adjustmentReason    String?
+  priceReviewedById   String?
+  priceEstimatedAt    DateTime?
+  priceReviewedAt     DateTime?
+  status              OrderStatus        @default(pending)
+  orderDate           DateTime?          @default(now())
+  deliveryDate        DateTime?
+  paperType           String?
+  size                String?
+  gsm                 String?
+  colorMode           String?
+  sides               String?
+  finishingOptions    String[]
+  requirements        String?
+  isReorder           Boolean?           @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  service             String
+  designs             Json?
+  user                User               @relation(fields: [userId], references: [id])
+  payment             Payment?
 
   @@index([userId])
   @@index([status])
@@ -112,6 +178,24 @@ enum OrderStatus {
   processing
 }
 
+enum PricingSource {
+  RULE_BASED
+  ML_MODEL
+  MANUAL
+}
+
+enum PricingConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PricingStatus {
+  PENDING_REVIEW
+  APPROVED
+  OVERRIDDEN
+}
+
 model Conversation {
   id String @id @default(cuid())
 
@@ -128,7 +212,7 @@ model Conversation {
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   // @@index([userId])
   @@index([adminId])
@@ -141,16 +225,15 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   senderId String
-  sender   User   @relation(fields: [senderId], references: [id])
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
-  receiverId    String  
+  receiverId String
 
   text String
   seen Boolean @default(false)
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt @default(now())
-
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([conversationId])
   @@index([senderId])

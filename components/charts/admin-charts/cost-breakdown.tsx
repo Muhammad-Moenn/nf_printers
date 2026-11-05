@@ -3,11 +3,11 @@ import { Wallet } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 const costData = [
-  { name: "Paper", value: 4200, color: "hsl(36 90% 55%)" },
-  { name: "Ink", value: 2800, color: "hsl(210 80% 60%)" },
-  { name: "Machine Maintenance", value: 1500, color: "hsl(152 60% 45%)" },
-  { name: "Labor", value: 6200, color: "hsl(280 60% 55%)" },
-  { name: "Packaging / Delivery", value: 1800, color: "hsl(0 72% 55%)" },
+  { name: "Paper", value: 4200, color: "var(--accent)" },
+  { name: "Ink", value: 2800, color: "var(--info)" },
+  { name: "Machine Maintenance", value: 1500, color: "var(--success)" },
+  { name: "Labor", value: 6200, color: "var(--violet)" },
+  { name: "Packaging / Delivery", value: 1800, color: "var(--destructive)" },
 ];
 
 const totalCost = costData.reduce((sum, d) => sum + d.value, 0);
@@ -28,17 +28,17 @@ const CostBreakdown = () => {
       <div className="relative mx-auto mb-4 h-48 w-48">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={costData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" strokeWidth={2} stroke="hsl(220 22% 14%)">
+            <Pie data={costData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" strokeWidth={2} stroke="var(--popover)">
               {costData.map((entry, index) => (
                 <Cell key={index} fill={entry.color} />
               ))}
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(220 22% 14%)",
-                border: "1px solid hsl(220 18% 22%)",
+                backgroundColor: "var(--popover)",
+                border: "1px solid var(--border)",
                 borderRadius: "8px",
-                color: "hsl(210 20% 92%)",
+                color: "var(--popover-foreground)",
               }}
               // formatter={(value: number) => [`$${value.toLocaleString()}`, "Cost"]}
             />

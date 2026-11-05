@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 import { usePathname, useRouter } from "@/i18n/navigation";
+import { useEffect, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 const languages = [
   { code: "en", label: "English", flag: "/us-flag.png" },
@@ -17,58 +20,85 @@ const languages = [
 ];
 
 export default function LanguageSelector() {
+  const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const currentLocale = useLocale();
 
   const current = languages.find((l) => l.code === currentLocale);
 
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   const switchLocale = (nextLocale: "en" | "ur") => {
     if (nextLocale === currentLocale) return;
 
     router.push(pathname, { locale: nextLocale });
   };
+
+  if (!hasMounted) {
+    return (
+      <div
+        aria-hidden="true"
+        className="h-9 w-[88px] shrink-0 rounded-full border border-primary-border/60 bg-card/80 backdrop-blur-md"
+      />
+    );
+  }
+
   return (
     <Select
       value={currentLocale}
       onValueChange={(value) => switchLocale(value as "en" | "ur")}
     >
-      <SelectTrigger className="w-[100px] gap-2 cursor-pointer border border-gray-400.">
+      <SelectTrigger
+        aria-label="Select language"
+        className={cn(
+          "h-9 w-[88px] cursor-pointer gap-1.5 rounded-full px-2.5",
+          "border border-primary-border/60 bg-card/80 text-heading backdrop-blur-md",
+          "shadow-[0_2px_10px_-2px_rgba(18,101,233,0.25)]",
+          "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-border hover:bg-card",
+          "hover:shadow-[0_6px_18px_-4px_rgba(18,101,233,0.4)]",
+          "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-0",
+          "data-[state=open]:border-primary data-[state=open]:bg-card",
+          "[&>svg]:text-primary-text/70!",
+          "dark:border-on-color/15 dark:bg-on-color/[0.08] dark:text-neutral-100 dark:hover:bg-on-color/[0.12] dark:[&>svg]:text-primary-soft-foreground!",
+        )}
+      >
         <SelectValue>
           <div className="flex items-center gap-2">
-            <div className="rounded-full w-5 h-5 ">
+            <div className="h-4 w-6 overflow-hidden rounded-[3px] ring-1 ring-black/10 dark:ring-white/15">
               {current?.flag && (
                 <Image
                   src={current?.flag}
                   alt="flag"
                   priority
-                  width={20}
-                  height={20}
-                  className="w-full h-full"
+                  width={24}
+                  height={16}
+                  className="h-full w-full object-cover"
                 />
               )}
             </div>
-            <span className="text-sm font-medium uppercase">
+            <span className="text-sm font-semibold uppercase text-primary-text">
               {current?.code}
             </span>
           </div>
         </SelectValue>
       </SelectTrigger>
 
-      <SelectContent>
+      <SelectContent className="rounded-md border-border dark:border-on-color/10">
         {languages.map((l) => (
           <SelectItem key={l.code} value={l.code}>
             <div className="flex items-center gap-3 cursor-pointer">
-              {/* <span className="text-lg">{l.flag}</span> */}
-              <div className="rounded-full w-5 h-5 ">
+              <div className="h-4 w-6 overflow-hidden rounded-sm">
                 {l.flag && (
                   <Image
                     src={l.flag}
                     alt="flag"
                     priority
-                    width={20}
-                    height={20}
-                    className="w-full h-full"
+                    width={24}
+                    height={16}
+                    className="h-full w-full object-cover"
                   />
                 )}
               </div>
@@ -141,7 +171,7 @@ export default function LanguageSelector() {
 //       value={currentLocale}
 //       onValueChange={(value) => switchLocale(value as "en" | "ur")}
 //     >
-//       <SelectTrigger className="w-[100px] gap-2 cursor-pointer border border-gray-400.">
+//       <SelectTrigger className="w-[100px] gap-2 cursor-pointer border border-border-strong.">
 //         <SelectValue>
 //           <div className="flex items-center gap-2">
 //             <div className="rounded-full w-5 h-5 ">

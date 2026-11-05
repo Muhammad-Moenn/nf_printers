@@ -1,5 +1,10 @@
 "use client";
-import { TrendingUp, DollarSign } from "lucide-react";
+import {
+  BarChart3,
+  DollarSign,
+  RefreshCw,
+  TrendingUp,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -10,95 +15,163 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const revenueData = [
-  { month: "Jan", revenue: 18500 },
-  { month: "Feb", revenue: 22300 },
-  { month: "Mar", revenue: 19800 },
-  { month: "Apr", revenue: 27600 },
-  { month: "May", revenue: 31200 },
-  { month: "Jun", revenue: 28900 },
-  { month: "Jul", revenue: 34500 },
-  { month: "Aug", revenue: 36700 },
-  { month: "Sep", revenue: 35200 },
-  { month: "Oct", revenue: 38900 },
-  { month: "Nov", revenue: 42100 },
-  { month: "Dec", revenue: 46800 },
-];
+type RevenuePoint = {
+  month: string;
+  revenue: number;
+};
 
-const revenueByProduct = [
-  { name: "Flyers", revenue: 12400 },
-  { name: "Brochures", revenue: 9800 },
-  { name: "Banners", revenue: 7200 },
-  { name: "Business Cards", revenue: 5100 },
-];
+type RevenueAnalyticsProps = {
+  data: RevenuePoint[];
+  todayRevenue: number;
+  weekRevenue: number;
+  monthRevenue: number;
+  totalRevenue?: number;
+  showTotalRevenue?: boolean;
+  isRefreshing?: boolean;
+  error?: string | null;
+  onRefresh?: () => void;
+};
 
-const RevenueAnalytics = () => {
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-PK", {
+    style: "currency",
+    currency: "PKR",
+    maximumFractionDigits: 0,
+  }).format(value);
+
+const RevenueAnalytics = ({
+  data,
+  todayRevenue,
+  weekRevenue,
+  monthRevenue,
+  totalRevenue,
+  showTotalRevenue = false,
+  isRefreshing = false,
+  error = null,
+  onRefresh,
+}: RevenueAnalyticsProps) => {
+  const hasRevenue = data.some((point) => point.revenue > 0);
+
   return (
     <div className=" ">
-      <div className="mb-5 flex items-center  gap-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-          <DollarSign className="h-5 w-5 text-primary" />
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <DollarSign className="h-5 w-5 text-primary" />
+          </div>
+          <div className="text-left">
+            <h2 className="text-xl font-semibold text-foreground">
+              Revenue Analytics
+            </h2>
+            <p className="stat-label">Completed order revenue</p>
+          </div>
         </div>
-        <div className="text-left">
-          <h2 className="text-xl font-semibold text-foreground">
-            Revenue Analytics
-          </h2>
-          <p className="stat-label ">Performance overview</p>
-        </div>
+
+        {onRefresh && (
+          <button
+            type="button"
+            aria-label="Refresh revenue analytics"
+            title="Refresh revenue analytics"
+            disabled={isRefreshing}
+            onClick={onRefresh}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border-strong bg-card text-muted-foreground transition-colors hover:border-primary-border hover:text-primary-text disabled:cursor-wait disabled:opacity-60 dark:border-[var(--input)] dark:bg-[var(--surface-4)] dark:text-neutral-300 dark:hover:border-primary dark:hover:text-primary-soft-foreground"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+          </button>
+        )}
       </div>
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
-        <div className="rounded-lg bg-slate-200/70 dark:gray-200/70 p-3 dark:bg-gray-800/90 border-1 border-slate-300/70 shadow-sm invert-0 dark:border-gray-600/70">
+      {error && (
+        <p className="mb-4 text-sm font-medium text-destructive-text dark:text-destructive-soft-foreground">
+          {error}
+        </p>
+      )}
+
+      <div
+        className={`mb-5 grid gap-3 ${
+          showTotalRevenue ? "grid-cols-2 xl:grid-cols-4" : "grid-cols-3"
+        }`}
+      >
+        {showTotalRevenue && totalRevenue !== undefined && (
+          <div className="rounded-lg border border-border-strong/70 bg-surface-4/70 p-3 shadow-sm dark:border-[var(--input)] dark:bg-[var(--surface-3)]">
+            <p className="stat-label">All Time</p>
+            <p className="stat-value text-lg">{formatCurrency(totalRevenue)}</p>
+          </div>
+        )}
+        <div className="rounded-lg bg-surface-4/70 p-3 dark:bg-[var(--surface-3)] border border-border-strong/70 shadow-sm invert-0 dark:border-[var(--input)]">
           <p className="stat-label">Today</p>
-          <p className="stat-value text-lg">$1,240</p>
+          <p className="stat-value text-lg">{formatCurrency(todayRevenue)}</p>
         </div>
-        <div className="rounded-lg bg-slate-200/70 p-3 dark:bg-gray-200/70 dark:bg-gray-800/90 border-1 border-slate-300/70 shadow-sm invert-0 dark:border-gray-600/70">
+        <div className="rounded-lg bg-surface-4/70 p-3 dark:bg-[var(--surface-3)] border border-border-strong/70 shadow-sm invert-0 dark:border-[var(--input)]">
           <p className="stat-label">This Week</p>
-          <p className="stat-value text-lg">$8,420</p>
+          <p className="stat-value text-lg">{formatCurrency(weekRevenue)}</p>
         </div>
-        <div className="rounded-lg bg-slate-200/70 p-3 dark:bg-gray-200/70 dark:bg-gray-800/90 border-1 border-slate-300/70 shadow-sm invert-0 dark:border-gray-600/70">
+        <div className="rounded-lg bg-surface-4/70 p-3 dark:bg-[var(--surface-3)] border border-border-strong/70 shadow-sm invert-0 dark:border-[var(--input)]">
           <p className="stat-label">This Month</p>
-          <p className="stat-value text-lg">$34,500</p>
+          <p className="stat-value text-lg">{formatCurrency(monthRevenue)}</p>
         </div>
       </div>
 
       <div className="mb-2 flex items-center gap-2">
         <TrendingUp className="h-4 w-4 text-success" />
-        <span className="text-sm font-medium text-success">+12.5%</span>
-        <span className="text-xs text-muted-foreground">vs last month</span>
+        <span className="text-sm font-medium text-success">
+          {formatCurrency(monthRevenue)}
+        </span>
+        <span className="text-xs text-muted-foreground">this month</span>
       </div>
 
       <div className="h-52">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={revenueData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 18% 22%)" />
-            <XAxis
-              dataKey="month"
-              tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(220 22% 14%)",
-                border: "1px solid hsl(220 18% 22%)",
-                borderRadius: "8px",
-                color: "hsl(210 20% 92%)",
-              }}
-              // formatter={(value: number) => [`$${value.toLocaleString()}`, "Revenue"]}
-            />
-            <Bar
-              dataKey="revenue"
-              fill="hsl(36 90% 55%)"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        {hasRevenue ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border)"
+              />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  color: "var(--popover-foreground)",
+                }}
+                formatter={(value) => [
+                  formatCurrency(Number(value ?? 0)),
+                  "Revenue",
+                ]}
+              />
+              <Bar
+                dataKey="revenue"
+                fill="var(--accent)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center border-t border-border-strong/70 text-center dark:border-[var(--input)]">
+            <BarChart3 className="h-8 w-8 text-neutral-400 dark:text-muted-foreground" />
+            <p className="mt-3 text-sm font-semibold text-foreground dark:text-neutral-200">
+              No completed revenue yet
+            </p>
+            <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+              Revenue appears here when a completed order has a value greater
+              than zero.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

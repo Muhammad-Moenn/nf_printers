@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, Send } from "lucide-react";
+import { Check, CheckCheck, FileText, Inbox, LoaderCircle, Paperclip, Search, Send, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { decodeChatMessage, isImageAttachment, type ChatAttachment } from "@/lib/chat-message";
+import { useUploadThing } from "@/utils/uploadthing";
 
 export default function AdminDashboardMessages({ user }: { user: any }) {
   const [isClient, setIsClient] = useState(false);
@@ -18,32 +20,46 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   const [messages, setMessages] = useState<any[]>([]);
   const [newmessage, setNewMessage] = useState<any[]>([]);
   const [text, setText] = useState("");
+  const [conversationSearch, setConversationSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [sendError, setSendError] = useState("");
+  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { startUpload, isUploading } = useUploadThing("imageUploader", {
+    onUploadError: (error) => setSendError(error.message || "File upload failed."),
+  });
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const refreshConversations = useCallback(async (selectFirst = false) => {
+    try {
+      const response = await fetch("/api/admin-message/all-conversations", {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!Array.isArray(data)) return;
+
+      setConversations(data);
+      setActiveConversationId((currentId) => {
+        if (currentId && data.some((conversation) => conversation.id === currentId)) {
+          return currentId;
+        }
+        return selectFirst ? data[0]?.id ?? null : null;
+      });
+    } catch (error) {
+      console.error("Fetch conversations error:", error);
+    }
+  }, []);
+
   // Load all conversations
   useEffect(() => {
-    async function fetchConversations() {
-      const res = await fetch("/api/admin-message/all-conversations");
-      const data = await res.json();
-      setConversations(data);
-
-      if (data.length > 0) {
-        setActiveConversationId(data[0].id);
-        await fetch(
-          `/api/admin-message/all-conversations/${data[0].id}/mark-seen`,
-          { method: "POST" }
-        );
-
-      }
-    }
-
-    fetchConversations();
-  }, []);
+    void refreshConversations(true);
+  }, [refreshConversations]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -92,6 +108,40 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
     }
 
     fetchMessages();
+  }, [activeConversationId]);
+
+  // Keep outgoing read receipts current even when Supabase Realtime is not
+  // available in the deployment. This endpoint only returns id/seen pairs.
+  useEffect(() => {
+    if (!activeConversationId) return;
+    let stopped = false;
+    let requestInFlight = false;
+    const refreshReadStatus = async () => {
+      if (requestInFlight || document.visibilityState !== "visible") return;
+      requestInFlight = true;
+      try {
+        const response = await fetch(
+          `/api/admin-message/all-conversations/${activeConversationId}/read-status`,
+          { cache: "no-store" },
+        );
+        if (!response.ok || stopped) return;
+        const statuses = await response.json() as { id: string; seen: boolean }[];
+        const statusById = new Map(statuses.map((message) => [message.id, message.seen]));
+        setMessages((current) => current.map((message) => statusById.has(message.id)
+          ? { ...message, seen: statusById.get(message.id)! }
+          : message));
+      } catch (error) {
+        console.error("Refresh message read status error:", error);
+      } finally {
+        requestInFlight = false;
+      }
+    };
+    void refreshReadStatus();
+    const interval = window.setInterval(() => void refreshReadStatus(), 5000);
+    return () => {
+      stopped = true;
+      window.clearInterval(interval);
+    };
   }, [activeConversationId]);
 
   // ✅ SUPABASE REALTIME SUBSCRIPTION
@@ -225,7 +275,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                 return [...prev, latestMessage];
               });
 
-              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+              messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: "smooth" });
 
               // 🔹 Mark seen only if from other user
               if (latestMessage.senderId !== user.userId) {
@@ -250,23 +300,19 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
 
           if (payload.eventType === "UPDATE") {
             if (!activeConversationId) return;
-            const updatedMessage = payload.new as any;
-
-            // Only update if the updated message is in the active conversation
-            // if (updatedMessage.conversationId !== activeConversationId) return;
-            setMessages((prev) => [
-              // First update old messages
-              ...prev.map((msg) => ({
-                ...msg,
-                seen: msg.seen === false ? true : msg.seen,
-              })),
-
-             
-            ]);
+            const updatedMessage = payload.new as { id: string; conversationId: string; seen: boolean };
+            if (updatedMessage.conversationId !== activeConversationId) return;
+            setMessages((previous) => previous.map((message) => message.id === updatedMessage.id
+              ? { ...message, seen: updatedMessage.seen }
+              : message));
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void refreshConversations(true);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -428,35 +474,93 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
     };
   }, []);
 
-  async function sendMessage() {
-    if (!text.trim() || !activeConversationId) return;
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-new-conversation-listener")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "Conversation",
+        },
+        () => {
+          void refreshConversations(true);
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void refreshConversations(true);
+        }
+      });
 
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshConversations]);
+
+  async function sendMessage(attachment?: ChatAttachment) {
+    const messageText = text.trim();
+    if ((!messageText && !attachment) || !activeConversationId || loading) return;
+
+    const optimisticId = `pending-${Date.now()}`;
+    const optimisticMessage = {
+      id: optimisticId, text: messageText, attachment, senderId: user.userId,
+      createdAt: new Date().toISOString(), seen: false,
+    };
+    const targetConversationId = activeConversationId;
     setLoading(true);
+    setSendError("");
+    setText("");
+    setMessages((previous) => [...previous, optimisticMessage]);
 
-    const res = await fetch(
-
-      `/api/admin-message/all-conversations/${activeConversationId}/send-message`,
-      {
+    try {
+      const response = await fetch(`/api/admin-message/all-conversations/${targetConversationId}/send-message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      }
-    );
-    if (!res.ok) {
-      throw new Error("Failed to send message");
+        body: JSON.stringify({ text: messageText, attachment }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to send message.");
+      setMessages((previous) => previous.some((message) => message.id === data.id)
+        ? previous.filter((message) => message.id !== optimisticId)
+        : previous.map((message) => message.id === optimisticId ? data : message));
+    } catch (error) {
+      setMessages((previous) => previous.filter((message) => message.id !== optimisticId));
+      setText((current) => current || messageText);
+      setSendError(error instanceof Error ? error.message : "Failed to send message.");
+    } finally {
+      setLoading(false);
     }
+  }
 
-    const newMessage = await res.json(); // <-- get actual data
-
-    setMessages((prev) => {
-      // prevent duplicate messages
-      if (prev.some((m) => m.id === newMessage.id)) return prev;
-      return [...prev, newMessage];
-    });
-
-    setText("");
-    setLoading(false);
-    // ❌ No refetch needed — realtime handles it
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const allowedTypes = [
+      "image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "application/pdf",
+      "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain", "text/csv", "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ];
+    if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setSendError("Attach an image, PDF, Word, or spreadsheet file up to 10 MB.");
+      return;
+    }
+    setSendError("");
+    try {
+      const uploaded = await startUpload([file]);
+      const uploadedFile = uploaded?.[0];
+      if (!uploadedFile) return;
+      await sendMessage({
+        url: uploadedFile.ufsUrl, key: uploadedFile.key, name: uploadedFile.name,
+        type: uploadedFile.type, size: uploadedFile.size,
+        uploadedBy: uploadedFile.serverData.uploadedBy,
+      });
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : "File upload failed.");
+    }
   }
 
   function formatTime(dateString: string) {
@@ -469,94 +573,191 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   const activeConversation = conversations.find(
     (c) => c.id === activeConversationId
   );
+  const visibleConversations = conversations.filter((conversation) => {
+    const query = conversationSearch.trim().toLowerCase();
+    if (!query) return true;
+
+    return [
+      conversation.user?.firstName,
+      conversation.user?.lastName,
+      conversation.user?.email,
+      conversation.messages?.[0]?.text ? decodeChatMessage(conversation.messages[0].text).text : "",
+    ].some((value) => value?.toLowerCase().includes(query));
+  });
+
+  async function deleteConversation(conversationId: string) {
+    const conversation = conversations.find((item) => item.id === conversationId);
+    const name = conversation?.user
+      ? `${conversation.user.firstName ?? ""} ${conversation.user.lastName ?? ""}`.trim()
+      : "this conversation";
+    if (!window.confirm(`Delete the conversation with ${name || "this user"} and all its messages?`)) {
+      return;
+    }
+
+    setDeletingConversationId(conversationId);
+    try {
+      const response = await fetch(
+        `/api/admin-message/all-conversations/${conversationId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error ?? "Unable to delete conversation.");
+      }
+
+      const remaining = conversations.filter((item) => item.id !== conversationId);
+      setConversations(remaining);
+      if (activeConversationId === conversationId) {
+        setActiveConversationId(remaining[0]?.id ?? null);
+        setMessages([]);
+      }
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Unable to delete conversation.");
+    } finally {
+      setDeletingConversationId(null);
+    }
+  }
   if (!isClient) return null;
 
   return (
-    <div className="h-full w-full p-6 bg-gray-100">
-      <div className="grid grid-cols-12 gap-4 h-[90%] max-h-[90%]">
+    <div className="flex h-[calc(100dvh-5rem)] max-h-screen min-h-[500px] w-full min-w-0 flex-col p-3 sm:p-5 lg:p-6">
+      <header className="mb-5 -mt-6 flex items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary-text dark:bg-primary/15 dark:text-primary-soft-foreground">
+          <Inbox className="h-5 w-5" />
+        </span>
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground dark:text-neutral-100">Inbox</h1>
+          <p className="text-sm text-muted-foreground dark:text-neutral-400">View and reply to customer conversations</p>
+        </div>
+      </header>
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(140px,0.7fr)_minmax(260px,1.3fr)] gap-3 sm:gap-4 lg:grid-cols-12 lg:grid-rows-1">
         {/* Sidebar */}
-        <Card className="col-span-4 flex flex-col h-full bg-white dark:bg-gray-800">
-          <CardContent className="p-2 flex flex-col gap-2 h-full">
+        <Card className="flex min-h-0 flex-col overflow-hidden rounded-lg border-border bg-card p-0 shadow-sm dark:border-[var(--border)] dark:bg-[var(--surface-2)] lg:col-span-4">
+          <div className="flex items-center justify-between border-b border-border-subtle px-4 py-4 dark:border-[var(--border)] dark:bg-[var(--surface-3)]">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground dark:text-neutral-100">Conversations</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground dark:text-neutral-400">{conversations.length} total</p>
+            </div>
+            <span className="rounded-badge bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-text dark:bg-primary/15 dark:text-primary-soft-foreground">
+              {conversations.reduce((count, conversation) => count + (conversation._count?.messages ?? 0), 0)} unread
+            </span>
+          </div>
+          <CardContent className="flex h-full min-h-0 flex-col gap-2 p-3 sm:p-4">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <Input
+              value={conversationSearch}
+              onChange={(event) => setConversationSearch(event.target.value)}
               placeholder="Search conversations..."
-              className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="h-9 border-border bg-card pl-9 text-sm dark:border-[var(--input)] dark:bg-[var(--surface-1)] dark:text-neutral-100 dark:placeholder:text-muted-foreground"
             />
-            <ScrollArea className="flex-1 min-h-0 mt-2">
-              {conversations.map((conv) => {
+            </div>
+            <ScrollArea aria-label="Conversation list" className="mt-1 min-h-0 w-full flex-1">
+              <div className="space-y-1">
+              {visibleConversations.map((conv) => {
                 return (
                   <div
                     key={conv.id}
                     onClick={() => setActiveConversationId(conv.id)}
-                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer 
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors 
                     ${
                       activeConversationId === conv.id
-                        ? "bg-gray-200 dark:bg-gray-700"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                        ? "border-primary-border bg-primary-soft dark:border-primary/30 dark:bg-[var(--surface-4)]"
+                        : "border-transparent hover:bg-surface-2 dark:hover:bg-[var(--surface-3)]"
                     }`}
                   >
                     <Avatar>
                       <AvatarImage src={conv.user?.avatarUrl || ""} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary-soft font-semibold text-primary-text dark:bg-[var(--surface-4)] dark:text-primary-soft-foreground">
                         {conv.user?.firstName?.charAt(0) ||
-                          conv.user?.email.charAt(0)}
+                          conv.user?.email?.charAt(0)}
 
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col w-full">
-                      <p className="font-medium line-clamp-1">
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <p className="line-clamp-1 text-sm font-semibold text-foreground dark:text-neutral-100">
                         {conv.user?.firstName} {conv.user?.lastName}
                       </p>
-                      <p className="text-sm opacity-60 line-clamp-1">
-                        {conv?.messages?.[0]?.text}
+                      <p className="line-clamp-1 text-xs text-muted-foreground dark:text-neutral-400">
+                        {conv?.messages?.[0]?.text
+                          ? decodeChatMessage(conv.messages[0].text).text || (decodeChatMessage(conv.messages[0].text).attachment ? "Attachment" : "")
+                          : ""}
 
                       </p>
                     </div>
-                    {conv._count?.messages > 0 && (
-                      <span className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                        {conv._count?.messages}
-
-                      </span>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {conv._count?.messages > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-badge bg-primary px-1.5 text-[10px] font-bold text-on-color">
+                          {conv._count?.messages}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={`Delete conversation with ${conv.user?.firstName ?? "user"}`}
+                        title="Delete conversation"
+                        disabled={deletingConversationId === conv.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void deleteConversation(conv.id);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-destructive-soft hover:text-destructive-text disabled:opacity-50 dark:text-muted-foreground dark:hover:bg-destructive/10 dark:hover:text-destructive-soft-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
+              {!visibleConversations.length && (
+                <p className="px-3 py-8 text-center text-sm text-muted-foreground dark:text-neutral-400">No conversations found.</p>
+              )}
+              </div>
             </ScrollArea>
           </CardContent>
         </Card>
 
         {/* Chat Area */}
-        <Card className="col-span-8 flex flex-col h-full bg-white dark:bg-gray-800">
-          <CardContent className="flex flex-col h-full p-0">
+        <Card className="flex min-h-0 flex-col overflow-hidden rounded-lg border-border bg-card p-0 shadow-sm dark:border-[var(--border)] dark:bg-[var(--surface-2)] lg:col-span-8">
+          <CardContent className="flex h-full min-h-0 flex-col p-0">
             {/* Header */}
-            <div className="p-4 border-b border-gray-300 dark:border-gray-700">
-              <p className="font-semibold">
+            <div className="flex min-h-[72px] items-center gap-3 border-b border-border-subtle bg-card px-4 py-3 dark:border-[var(--border)] dark:bg-[var(--surface-3)] sm:px-5">
+              {activeConversation && (
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={activeConversation.user?.avatarUrl || ""} />
+                  <AvatarFallback className="bg-primary-soft font-semibold text-primary-text dark:bg-[var(--surface-4)] dark:text-primary-soft-foreground">
+                    {activeConversation.user?.firstName?.charAt(0) || activeConversation.user?.email?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground dark:text-neutral-100">
                 {activeConversation?.user.firstName}{" "}
                 {activeConversation?.user.lastName}
               </p>
-              <p className="text-sm opacity-60">
+              <p className="truncate text-xs text-muted-foreground dark:text-neutral-400">
                 {activeConversation?.user.email}
               </p>
+              </div>
             </div>
 
             {/* Messages */}
-            {/* <ScrollArea className="flex-1 min-h-0 px-4 py-4 space-y-4 bg-gray-50 dark:bg-gray-950 scroll-y-auto max-h-[60vh]">
-              {messages.map(msg => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.senderId === activeConversation?.user.id ? "justify-start" : "justify-end"}`}
-                >
-                  <div className={`p-4 rounded-2xl max-w-md shadow ${msg.senderId === activeConversation?.user.id ? "bg-gray-200 dark:bg-gray-700" : "bg-blue-600 text-white"}`}>
-                    <p>{msg.text}</p>
-                    <span className="text-xs opacity-60 block mt-1">{formatTime(msg.createdAt)}</span>
-                  </div>
+            <div ref={messagesContainerRef} tabIndex={0} aria-label="Conversation messages" className="custom-scrollbar min-h-0 flex-1 space-y-4 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-y-contain bg-surface-2/70 px-3 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring dark:bg-[var(--surface-1)] sm:px-6">
+              {!activeConversation && (
+                <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary-text dark:bg-primary/15 dark:text-primary-soft-foreground">
+                    <Inbox className="h-5 w-5" />
+                  </span>
+                  <p className="mt-3 text-sm font-semibold text-foreground dark:text-neutral-200">Select a conversation</p>
+                  <p className="mt-1 text-xs text-muted-foreground dark:text-neutral-400">Choose a customer from the list to view messages.</p>
                 </div>
-              ))}
-              <div ref={bottomRef} />
-            </ScrollArea> */}
-            <div className="min-h-[70vh]  overflow-y-auto px-3 sm:px-6 py-4 space-y-4 bg-gray-50 dark:bg-gray-950">
+              )}
               {messages?.map((msg) => {
 
                 const date = formatTime(msg.createdAt);
+                const content = msg.attachment
+                  ? { text: msg.text, attachment: msg.attachment }
+                  : decodeChatMessage(msg.text);
                 return (
                   <div
                     key={msg.id}
@@ -571,28 +772,32 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                         className={`max-w-[85%] min-w-[150px] sm:max-w-md px-3 py-[8px] pb-1 sm:px-4 sm:pr-3 sm:py-[10px] sm:pb-1 rounded-lg text-xs sm:text-sm shadow-sm  ml-auto ${
 
                           msg.senderId === user.userId
-                            ? "bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-white"
-                            : "dark:bg-gray-300 bg-gray-800 dark:text-gray-900 text-white"
+                            ? "bg-primary text-on-color dark:bg-primary"
+                            : "border border-border bg-card text-foreground dark:border-[var(--input)] dark:bg-[var(--surface-4)] dark:text-neutral-100"
                         }`}
                       >
-                        <p className="text-[16px]">{msg.text}</p>
+                        {content.attachment && (isImageAttachment(content.attachment) ? (
+                          <a href={content.attachment.url} target="_blank" rel="noreferrer" className="mb-2 block overflow-hidden rounded-lg">
+                            <img src={content.attachment.url} alt={content.attachment.name} className="max-h-72 max-w-full rounded-lg object-contain" loading="lazy" />
+                          </a>
+                        ) : (
+                          <a href={content.attachment.url} target="_blank" rel="noreferrer" className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2 text-xs underline-offset-2 hover:underline">
+                            <FileText className="h-4 w-4 shrink-0" /><span className="truncate">{content.attachment.name}</span>
+                          </a>
+                        ))}
+                        {content.text && <p className="whitespace-pre-wrap break-words text-[16px]">{content.text}</p>}
 
                         <span
                           className={`text-[10px] opacity-70 flex block  ml-auto justify-end gap-1 text-right ${
                             msg.senderId === user.userId
-                              ? "text-gray-600 dark:text-gray-200"
-                              : "text-gray-200 dark:text-gray-800"
+                              ? "text-primary-soft-foreground"
+                              : "text-muted-foreground dark:text-neutral-400"
                           }`}
                         >
                           {date}
-                          {msg.senderId === user.userId && (
-                            <Check
-                              className={`w-4 h-4  ${
-
-                                msg.seen ? "text-blue-600" : ""
-                              }`}
-                            />
-                          )}
+                          {msg.senderId === user.userId && (msg.seen
+                            ? <CheckCheck className="h-4 w-4 text-primary-foreground" aria-label="Seen by user" />
+                            : <Check className="h-4 w-4 text-primary-foreground/70" aria-label="Sent" />)}
                         </span>
                       </div>
                     </div>
@@ -600,22 +805,29 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                 );
               }) || null}
 
-              <div ref={bottomRef} />
             </div>
             {/* Input */}
-            <div className="p-4 border-t flex gap-3 border-gray-300 dark:border-gray-700">
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Write a message..."
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-              <Button onClick={sendMessage} disabled={loading}>
-                {" "}
-                <Send size={18} />{" "}
-              </Button>
-            </div>
+            <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="border-t border-border-subtle bg-card p-3 dark:border-[var(--border)] dark:bg-[var(--surface-3)] sm:p-4">
+              {sendError && <p role="alert" className="mb-2 text-xs text-destructive">{sendError}</p>}
+              <div className="flex gap-2">
+                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf" className="hidden" onChange={(event) => void handleFileSelected(event)} />
+                <Button type="button" variant="outline" size="icon" aria-label="Attach an image or document" title="Attach an image or document" onClick={() => fileInputRef.current?.click()} disabled={loading || isUploading || !activeConversationId}>
+                  {isUploading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                </Button>
+                <Input
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Write a message..."
+                  disabled={isUploading}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void sendMessage(); } }}
+                  className="h-9 border-border bg-card dark:border-[var(--input)] dark:bg-[var(--surface-1)] dark:text-neutral-100 dark:placeholder:text-muted-foreground"
+                />
+                <Button type="submit" disabled={loading || isUploading || !text.trim()}>
+                  {loading ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}
+                </Button>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">Images and documents up to 10 MB · Enter to send</p>
+            </form>
           </CardContent>
         </Card>
       </div>

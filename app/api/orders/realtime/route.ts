@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { GetDBUser } from "@/app/actions/user_action";
 import { getMonthlyPaidAmount } from "@/app/actions/monthly-amount";
 import {
   fetchCardsDataAndAllOrders,
@@ -6,6 +7,8 @@ import {
 } from "@/app/actions/order-action";
 
 export async function GET() {
+  const user = await GetDBUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const monthlyTotal = await getMonthlyPaidAmount();
   const monthlyOrders = await getMonthlyOrdersAction();
   const { allOrders,activeOrders,

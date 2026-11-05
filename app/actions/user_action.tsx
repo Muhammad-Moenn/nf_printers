@@ -1,56 +1,25 @@
 "use server";
-import bcrypt from "bcryptjs";
+import { clerkClient } from "@clerk/nextjs/server";
+
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
 
-export async function AddUserToDB() {
-  const user = await currentUser();
-  if (!user) return null;
-  // console.log("user",user)
-  const email = user.emailAddresses[0]?.emailAddress;
-  if (!email) return null;
-
-  const existingUser = await prisma.user.findUnique({
-  where: { clerkUserId: user.id },
-});
-
-if (existingUser) {
-  await prisma.user.update({
-    where: { clerkUserId: user.id },
-    data: {
-      email,
-      firstName: user.firstName ?? "",
-      lastName: user.lastName ?? "",
-      avatarUrl: user.imageUrl ?? "",
-      
-    },
-  });
-} else {
-  await prisma.user.create({
-    data: {
-      clerkUserId: user.id,
-      email,
-      firstName: user.firstName ?? "",
-      lastName: user.lastName ?? "",
-      avatarUrl: user.imageUrl ?? "",
-    },
-  });
+function isDynamicServerError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    (error as { digest?: unknown }).digest === "DYNAMIC_SERVER_USAGE"
+  );
 }
 
-
-  return { success: true };
-}
-// get the current user from DB
+// Kept as the shared database-user accessor used throughout existing actions.
 export const GetDBUser = async () => {
-  const user = await currentUser();
-  if (!user) return null;
-
   try {
-    return  await prisma.user.findUnique({
-    where: { clerkUserId: user.id },
-  });
+    return await getCurrentUser();
   } catch (error) {
-    // Database connection failed
+    if (isDynamicServerError(error)) throw error;
+    console.error("Session lookup failed:", error);
     return null;
   }
 };
@@ -64,53 +33,55 @@ export async function updateProfileAction(formData: FormData) {
   const firstName = String(formData.get("firstName") || "").trim();
   const lastName = String(formData.get("lastName") || "").trim();
 
-  if (!firstName || firstName.length < 2) {
-    return { error: "First name must be at least 2 characters" };
+  if (!firstName || firstName.length < 1 || firstName.length > 80) {
+    return { error: "Enter a first name (up to 80 characters)." };
   }
 
-  if (!lastName || lastName.length < 2) {
-    return { error: "Last name must be at least 2 characters" };
+  if (!lastName || lastName.length < 1 || lastName.length > 80) {
+    return { error: "Enter a last name (up to 80 characters)." };
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { firstName, lastName },
-  });
+  try {
+    if (user.clerkUserId) {
+      const client = await clerkClient();
+      await client.users.updateUser(user.clerkUserId, { firstName, lastName });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { firstName, lastName },
+    });
+  } catch (error) {
+    console.error("updateProfileAction error:", error);
+    return { error: "Unable to save your profile right now. Please try again." };
+  }
 
   return { success: "Profile updated successfully" };
 }
 
-// update the password
+export async function updateEmailPreferencesAction(input: {
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+}) {
+  const user = await GetDBUser();
+  if (!user) return { error: "Please sign in to update your preferences." };
+  if (
+    typeof input?.emailNotifications !== "boolean" ||
+    typeof input?.marketingEmails !== "boolean"
+  ) return { error: "Invalid preference values." };
 
-// export async function changePasswordAction(formData: FormData) {
-//   const user = await GetDBUser();
-//   if (!user) throw new Error("User does not exist");
-
-//   const currentPassword = String(formData.get("currentPassword") || "");
-//   const newPassword = String(formData.get("newPassword") || "");
-//   const confirmPassword = String(formData.get("confirmPassword") || "");
-
-//   if (newPassword.length < 6) {
-//     return { error: "New password must be at least 6 characters" };
-//   }
-
-//   if (newPassword !== confirmPassword) {
-//     return { error: "New passwords do not match" };
-//   }
-
-//   // const valid = await bcrypt.compare(currentPassword, user.password);
-//   // if (!valid) {
-//   //   return { error: "Current password is incorrect" };
-//   // }
-
-//   // const hashed = await bcrypt.hash(newPassword, 10);
-
-//   await prisma.user.update({
-//     where: { id: user.id },
-//     data: { password: newPassword },
-//   });
-
-//   return { success: "Password changed successfully" };
-// }
-
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailNotifications: input.emailNotifications,
+        marketingEmails: input.marketingEmails,
+      },
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("updateEmailPreferencesAction error:", error);
+    return { error: "Unable to save this preference. Please try again." };
+  }
+}
 

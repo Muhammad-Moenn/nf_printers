@@ -2,7 +2,7 @@ export interface UserOrder {
   id: string;
   service: string;
   quantity: number;
-  status: "completed" | "processing" | "shipped" | "cancelled";
+  status: "completed" | "processing" | "in_progress" | "pending" | "shipped" | "cancelled";
   total: number;
   date: string;
 }
@@ -20,7 +20,7 @@ export interface MockUser {
   name: string;
   email: string;
   company: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "employee" | "customer";
   orders: number;
   totalSpent: number;
   status: "active" | "suspended";

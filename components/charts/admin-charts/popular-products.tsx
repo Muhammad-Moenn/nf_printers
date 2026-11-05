@@ -2,15 +2,14 @@
 import { BarChart3 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-const productData = [
-  { name: "Flyers", orders: 342 },
-  { name: "Business Cards", orders: 289 },
-  { name: "Brochures", orders: 198 },
-  { name: "Banners", orders: 156 },
-  { name: "Booklets", orders: 94 },
-];
+type ProductData = {
+  name: string;
+  value: number;
+};
 
-const PopularProducts = () => {
+const PopularProducts = ({ data }: { data: ProductData[] }) => {
+  const hasOrders = data.some((product) => product.value > 0);
+
   return (
     <div className="">
       <div className="mb-5 flex items-center justify-between">
@@ -24,21 +23,50 @@ const PopularProducts = () => {
       </div>
 
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={productData} layout="vertical" margin={{ left: 10 }}>
-            <XAxis type="number" tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis dataKey="name" type="category" tick={{ fill: "hsl(215 15% 55%)", fontSize: 12 }} axisLine={false} tickLine={false} width={100} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(220 22% 14%)",
-                border: "1px solid hsl(220 18% 22%)",
-                borderRadius: "8px",
-                color: "hsl(210 20% 92%)",
-              }}
-            />
-            <Bar dataKey="orders" fill="hsl(152 60% 45%)" radius={[0, 4, 4, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {hasOrders ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
+              <XAxis
+                type="number"
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                dataKey="name"
+                type="category"
+                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                width={100}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  color: "var(--popover-foreground)",
+                }}
+              />
+              <Bar
+                dataKey="value"
+                name="Orders"
+                fill="var(--success)"
+                radius={[0, 4, 4, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center border-t border-border-strong/70 text-center dark:border-[var(--input)]">
+            <BarChart3 className="h-8 w-8 text-neutral-400 dark:text-muted-foreground" />
+            <p className="mt-3 text-sm font-semibold text-foreground dark:text-neutral-200">
+              No product orders yet
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Popular services appear here after orders are placed.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

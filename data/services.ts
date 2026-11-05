@@ -1,7 +1,7 @@
 
 
 export interface ServiceProps {
-  id: number;
+  id: number | string;
   title: string;
   description: string;
   icon: any;
@@ -21,8 +21,8 @@ export const services: ServiceProps[] = [
     description:
       "School, college, and office registers printed with durable paper and clean formatting.",
     icon:"notebookPen",
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-500/10",
+    iconColor: "text-primary-text",
+    iconBg: "bg-primary/10",
   details:
     "We provide long-lasting register printing designed for daily academic and office use. Our registers are printed with clear ruling, strong binding, and premium paper to ensure durability over time.",
   features: [
@@ -47,8 +47,8 @@ export const services: ServiceProps[] = [
     description:
       "High-quality book printing including textbooks, novels, manuals, and magazines.",
     icon: "bookOpen",
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-500/10",
+    iconColor: "text-primary-text",
+    iconBg: "bg-primary/10",
     details:
     "Our book printing service delivers professional-grade results with excellent paper quality, sharp text, and strong binding. Whether you need educational books or commercial publications, we ensure consistency and accuracy.",
   features: [
@@ -71,8 +71,8 @@ export const services: ServiceProps[] = [
     description:
       "Attractive book titles and covers printed with premium paper and sharp colors.",
     icon: "layers",
-    iconColor: "text-orange-500",
-    iconBg: "bg-orange-500/10",
+    iconColor: "text-accent-text",
+    iconBg: "bg-accent/10",
    details:
     "We design and print visually appealing book covers using premium materials. Our printing ensures accurate colors, smooth finishing, and a professional look.",
   features: [
@@ -93,8 +93,8 @@ export const services: ServiceProps[] = [
     description:
       "Fast and accurate printing of files, reports, notes, and official documents.",
     icon: "fileText",
-    iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-500/10",
+    iconColor: "text-success-text",
+    iconBg: "bg-success/10",
     details:
     "We offer quick and precise document printing services suitable for academic and professional needs, maintaining clarity and formatting accuracy.",
   features: [
@@ -115,8 +115,8 @@ export const services: ServiceProps[] = [
     description:
       "Spiral, soft, hard, and thermal binding for books and documents.",
     icon: "archive",
-    iconColor: "text-indigo-500",
-    iconBg: "bg-indigo-500/10",
+    iconColor: "text-violet-text",
+    iconBg: "bg-violet/10",
     details:
     "Our binding services provide durability and a professional finish, ensuring your documents remain secure and presentable.",
   features: [
@@ -138,8 +138,8 @@ export const services: ServiceProps[] = [
     description:
       "Cost-effective bulk printing solutions for businesses and institutions.",
     icon: "printer",
-    iconColor: "text-red-500",
-    iconBg: "bg-red-500/10",
+    iconColor: "text-destructive-text",
+    iconBg: "bg-destructive/10",
     details:
     "We specialize in large-scale printing with consistent quality and competitive pricing, ideal for organizations with high-volume needs.",
   features: [
@@ -161,8 +161,8 @@ export const services: ServiceProps[] = [
     description:
       "Large-format posters with vibrant colors and sharp image quality.",
     icon: "image",
-    iconColor: "text-pink-500",
-    iconBg: "bg-pink-500/10",
+    iconColor: "text-pink-text",
+    iconBg: "bg-pink/10",
     details:
     "Our poster printing service delivers eye-catching visuals with accurate color reproduction and crisp details.",
   features: [
@@ -183,8 +183,8 @@ export const services: ServiceProps[] = [
     description:
       "Custom invoice, receipt, and bill books with NCR paper options.",
     icon: "receipt",
-    iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-500/10",
+    iconColor: "text-success-text",
+    iconBg: "bg-success/10",
     details:
     "We print professional invoice and receipt books with clear formatting and optional carbonless (NCR) paper.",
   features: [
@@ -205,8 +205,8 @@ export const services: ServiceProps[] = [
     description:
       "Custom stickers and labels for products, branding, and packaging.",
     icon: "sticker",
-    iconColor: "text-pink-500",
-    iconBg: "bg-pink-500/10",
+    iconColor: "text-pink-text",
+    iconBg: "bg-pink/10",
     details:
     "We create high-quality stickers and labels that stick well and look professional for branding and packaging.",
   features: [
@@ -227,8 +227,8 @@ export const services: ServiceProps[] = [
     description:
       "Wall and desk calendars with customized designs and branding.",
     icon: "calendarDays",
-    iconColor: "text-sky-500",
-    iconBg: "bg-sky-500/10",
+    iconColor: "text-info-text",
+    iconBg: "bg-info/10",
     link: "/services/calendar-printing",
   },
   {
@@ -237,8 +237,8 @@ export const services: ServiceProps[] = [
     description:
       "Glossy and matte lamination for documents, cards, and posters.",
     icon: "shieldCheck",
-    iconColor: "text-teal-500",
-    iconBg: "bg-teal-500/10",
+    iconColor: "text-success-text",
+    iconBg: "bg-success/10",
     link: "/services/lamination",
   },
   {
@@ -247,8 +247,8 @@ export const services: ServiceProps[] = [
     description:
       "Precision cutting and finishing for printed materials.",
     icon: "scissors",
-    iconColor: "text-yellow-500",
-    iconBg: "bg-yellow-500/10",
+    iconColor: "text-warning-text",
+    iconBg: "bg-warning/10",
     link: "/services/cutting-trimming",
   },
 ];

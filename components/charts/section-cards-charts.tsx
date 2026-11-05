@@ -13,7 +13,7 @@ type DonutCardChartProps = {
 export default function DonutCardChart({
   total,
   value,
-  color = "#10B981", // progress color (green)
+  color = "var(--success)", // progress color (green)
   size = 100,
 }: DonutCardChartProps) {
   const { theme } = useTheme();
@@ -26,8 +26,8 @@ export default function DonutCardChart({
   ];
 
   // Gray colors
-  const remainingColor = theme === "dark" ? "#4B5563" : "#E5E7EB"; // dark: gray-800, light: gray-200
-  const textColor = theme === "dark" ? "#F9FAFB" : "#111827"; // dark: gray-50, light: gray-900
+  const remainingColor = theme === "dark" ? "var(--muted-foreground)" : "var(--border)"; // dark: gray-800, light: gray-200
+  const textColor = theme === "dark" ? "var(--foreground)" : "var(--foreground)"; // dark: gray-50, light: gray-900
 
   return (
     <div style={{ width: size, height: size }}>
@@ -54,7 +54,7 @@ export default function DonutCardChart({
                 y={size / 2}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={16}
+                fontSize={13}
                 fontWeight={600}
                 fill={textColor}
               >

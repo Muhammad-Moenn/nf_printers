@@ -1,104 +1,261 @@
-import { cn } from "@/lib/utils";
-import { Mail, Phone } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import type { ReactNode } from "react";
+import {
+  ArrowRight,
+  ArrowUp,
+  Facebook,
+  Globe,
+  Instagram,
+  Linkedin,
+  Twitter,
+} from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
-// import { Logo, LogoImage, LogoText } from "@/components/shadcnblocks/logo";
+import { Link } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 
 interface FooterProps {
   className?: string;
 }
 
+type FooterLink = {
+  text: string;
+  url: string;
+  icon?: string;
+};
+
+type FooterMenuSection = {
+  title: string;
+  links: FooterLink[];
+};
+
+const socialIconMap = {
+  facebook: Facebook,
+  twitter: Twitter,
+  instagram: Instagram,
+  linkedin: Linkedin,
+} as const;
+
+function FooterAnchor({
+  href,
+  className,
+  children,
+  ariaLabel,
+}: {
+  href: string;
+  className?: string;
+  children: ReactNode;
+  ariaLabel?: string;
+}) {
+  if (href.startsWith("/")) {
+    return (
+      <Link href={href} className={className} aria-label={ariaLabel}>
+        {children}
+      </Link>
+    );
+  }
+
+  const isExternal = /^https?:\/\//.test(href);
+
+  return (
+    <a
+      href={href}
+      className={className}
+      aria-label={ariaLabel}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noreferrer" : undefined}
+    >
+      {children}
+    </a>
+  );
+}
+
 const Footer: React.FC<FooterProps> = ({ className }) => {
   const t = useTranslations("home.footer");
-  const items = t.raw("menuItems");
-  const bottomLinks = t.raw("bottomLinks");
+  const items = t.raw("menuItems") as FooterMenuSection[];
+  const bottomLinks = t.raw("bottomLinks") as FooterLink[];
   const locale = useLocale();
-  const isLocale = locale === "ur";
+  const isRTL = locale === "ur";
+
+  const lastSection = items[items.length - 1];
+  const socialLinks =
+    lastSection?.links.some((link) => Boolean(link.icon)) === true
+      ? lastSection.links
+      : [];
+  const menuColumns = socialLinks.length > 0 ? items.slice(0, -1) : items;
+
+  const linkClassName =
+    "text-[length:var(--font-size-sm)] leading-6 text-muted-foreground transition-colors duration-200 hover:text-primary-text focus-visible:text-primary-text focus-visible:outline-none dark:text-neutral-300 dark:hover:text-primary-soft-foreground motion-reduce:transition-none";
+
   return (
-    <section
+    <footer
+      dir={isRTL ? "rtl" : "ltr"}
       className={cn(
-        "pt-32 pb-8 bg-gray-200 dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700",
-        className
+        "relative overflow-hidden border-t border-border bg-card text-foreground",
+        "dark:border-on-color/10 dark:bg-background dark:text-on-color",
+        className,
       )}
     >
-      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
-        <footer>
-          <div className="grid grid-cols-2 gap-8 lg:grid-cols-6">
-            <div className="col-span-2 mb-8 lg:mb-0">
-              <div className="flex items-center gap-2 lg:justify-start lg:items-start">
-                {/* <Logo url="https://shadcnblocks.com">
-                  <LogoImage
-                    src={logo.src}
-                    alt={logo.alt}
-                    title={logo.title}
-                    className="h-10 dark:invert"
-                  />
-                  <LogoText className="text-xl">{logo.title}</LogoText>
-                </Logo> */}
-                <Image
-                  src="/nf-logo2.png"
-                  alt="nf logo"
-                  priority
-                  width={150}
-                  height={70}
-                  className=" w-[180px] lg:w-[220px] h-auto dark:invert"
-                />
-              </div>
-              <p
-                className={`mt-4 text-gray-700 dark:text-gray-200 ${
-                  isLocale ? "text-right" : "text-left"
-                }`}
-              >
-                {t("tagline")}
-              </p>
-              <div className="mt-4 space-y-2">
-              <a href="tel:+923045033707" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors sm:text-sm">
-                <Phone className="h-4 w-4 text-amber-500" />
-                +92 304 5033707
-              </a>
-              <a href="tel:+923009774895" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors sm:text-sm">
-                <Phone className="h-4 w-4 text-amber-500" />
-                +92 300 9774895
-              </a>
-              <a href="mailto:nfprinter3610@gmail.com" className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors sm:text-sm">
-                <Mail className="h-4 w-4 text-amber-500" />
-                nfprinter3610@gmail.com
-              </a>
-            </div>
-            </div>
-            {items.map((section: any, sectionIdx: number) => (
-              <div
-                key={sectionIdx}
-                className={`${isLocale ? "text-right" : "text-left"}`}
-              >
-                <h3 className="mb-4 font-semibold xl:text-lg text-gray-800 dark:text-white">
-                  {section.title}
-                </h3>
-                <ul className="space-y-4 text-muted-foreground dark:text-gray-300">
-                  {section.links.map((link: any, linkIdx: number) => (
-                    <li key={linkIdx} className=" hover:underline ">
-                      <a href={link.url}>{link.text}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-0",
+          "bg-[radial-gradient(circle_at_100%_100%,color-mix(in_oklab,var(--primary)_9%,transparent),transparent_55%)]",
+          "dark:bg-[radial-gradient(circle_at_100%_100%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_55%)]",
+        )}
+      />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-[var(--space-4)] pb-[var(--space-6)] pt-[var(--space-12)] sm:px-[var(--space-6)] sm:pt-[var(--space-16)] lg:px-[var(--space-8)]">
+        <div className="grid grid-cols-2 gap-x-[var(--space-8)] gap-y-[var(--space-10)] sm:grid-cols-3 lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] lg:gap-x-[var(--space-12)]">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+            <Link
+              href="/"
+              aria-label="NF Printers home"
+              className="inline-flex items-center"
+            >
+              <Image
+                src="/dashboard-NFPrinters-logo.png"
+                alt="NF Printers"
+                width={289}
+                height={100}
+                className="h-auto w-[168px] sm:w-[180px]"
+              />
+            </Link>
+
+            <p className="mt-[var(--space-4)] max-w-sm text-[length:var(--font-size-sm)] leading-6 text-muted-foreground dark:text-neutral-300">
+              {t("tagline")}
+            </p>
+
+            <ul className="mt-[var(--space-6)] flex flex-wrap items-center gap-[var(--space-2)]">
+              {socialLinks.map((link, linkIdx) => {
+                const Icon =
+                  socialIconMap[
+                    (link.icon ?? "") as keyof typeof socialIconMap
+                  ] ?? Globe;
+
+                return (
+                  <li key={`${link.text}-${linkIdx}`}>
+                    <FooterAnchor
+                      href={link.url}
+                      ariaLabel={link.text}
+                      className={cn(
+                        "flex h-[var(--space-10)] w-[var(--space-10)] items-center justify-center rounded-full",
+                        "border border-border bg-card text-muted-foreground shadow-[var(--shadow-sm)]",
+                        "transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-border",
+                        "hover:bg-primary-soft hover:text-primary-text",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                        "dark:border-on-color/15 dark:bg-on-color/5 dark:text-neutral-300",
+                        "dark:hover:border-primary/30 dark:hover:bg-primary/10 dark:hover:text-primary-soft-foreground",
+                        "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+                      )}
+                    >
+                      <Icon
+                        className="h-[var(--space-4)] w-[var(--space-4)]"
+                        aria-hidden="true"
+                      />
+                    </FooterAnchor>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <div className="mt-24 flex flex-col justify-between gap-4 border-t pt-8 text-sm font-medium text-muted-foreground dark:text-gray-300 md:flex-row md:items-center">
-            {/* <p>{t("copyright")}</p> */}
-            <p className="text-white/70">© {new Date().getFullYear()} PrimePrint Press. All rights reserved.</p>
-            <ul className="flex gap-4">
-              {bottomLinks.map((link: any, linkIdx: number) => (
-                <li key={linkIdx} className="underline text-white/80 hover:text-white transition-colors">
-                  <a href={link.url}>{link.text}</a>
+
+          {menuColumns.map((section, sectionIdx) => (
+            <nav
+              key={`${section.title}-${sectionIdx}`}
+              aria-label={section.title}
+              className="col-span-1"
+            >
+              <h3 className="text-[length:var(--font-size-sm)] font-semibold text-heading dark:text-on-color">
+                {section.title}
+              </h3>
+
+              <ul className="mt-[var(--space-4)] space-y-[var(--space-3)]">
+                {section.links.map((link, linkIdx) => (
+                  <li key={`${link.text}-${linkIdx}`}>
+                    <FooterAnchor href={link.url} className={linkClassName}>
+                      {link.text}
+                    </FooterAnchor>
+                  </li>
+                ))}
+
+                {sectionIdx === 0 && (
+                  <li>
+                    <FooterAnchor
+                      href="/services"
+                      className={cn(
+                        linkClassName,
+                        "group inline-flex items-center gap-[var(--space-1)] font-semibold text-primary-text",
+                        "hover:text-primary-hover dark:text-primary-soft-foreground dark:hover:text-primary-soft-foreground",
+                      )}
+                    >
+                      {t("moreServices")}
+                      <ArrowRight
+                        className={cn(
+                          "h-[var(--space-4)] w-[var(--space-4)] transition-transform duration-200 motion-reduce:transition-none",
+                          isRTL
+                            ? "rotate-180 group-hover:-translate-x-0.5"
+                            : "group-hover:translate-x-0.5",
+                        )}
+                        aria-hidden="true"
+                      />
+                    </FooterAnchor>
+                  </li>
+                )}
+              </ul>
+            </nav>
+          ))}
+        </div>
+
+        <div className="mt-[var(--space-10)] flex justify-end">
+            <Link
+              href="/#hero"
+              aria-label={t("backToHome")}
+              title={t("backToHome")}
+            className={cn(
+              "group flex h-[var(--space-10)] w-[var(--space-10)] shrink-0 items-center justify-center",
+              "rounded-full bg-primary text-on-color shadow-[var(--shadow-sm)]",
+              "transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-md)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              "focus-visible:ring-offset-2 focus-visible:ring-offset-card dark:focus-visible:ring-offset-background",
+              "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+            )}
+          >
+            <ArrowUp
+              className="h-[var(--space-5)] w-[var(--space-5)] transition-transform duration-200 group-hover:-translate-y-0.5 motion-reduce:transition-none"
+              aria-hidden="true"
+            />
+          </Link>
+        </div>
+
+        <div className="mt-[var(--space-4)] flex flex-col gap-[var(--space-4)] border-t border-border/80 pt-[var(--space-6)] dark:border-on-color/10 md:flex-row md:items-center md:justify-between">
+          <p className="text-[length:var(--font-size-xs)] leading-5 text-muted-foreground dark:text-neutral-300">
+            {t("copyright")}
+          </p>
+
+          <div className="flex w-full flex-wrap items-center justify-between gap-[var(--space-4)] md:w-auto md:justify-end">
+            <ul className="flex flex-wrap items-center gap-x-[var(--space-6)] gap-y-[var(--space-2)]">
+              {bottomLinks.map((link, linkIdx) => (
+                <li key={`${link.text}-${linkIdx}`}>
+                  <FooterAnchor
+                    href={link.url}
+                    className={cn(
+                      "text-[length:var(--font-size-xs)] leading-5 text-muted-foreground underline-offset-4",
+                      "transition-colors duration-200 hover:text-primary-text hover:underline",
+                      "focus-visible:text-primary-text focus-visible:outline-none",
+                      "dark:text-neutral-300 dark:hover:text-primary-soft-foreground",
+                      "motion-reduce:transition-none",
+                    )}
+                  >
+                    {link.text}
+                  </FooterAnchor>
                 </li>
               ))}
             </ul>
           </div>
-        </footer>
+        </div>
       </div>
-    </section>
+    </footer>
   );
 };
 

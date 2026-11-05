@@ -1,14 +1,11 @@
 
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import { Poppins } from "next/font/google"
-import {
-  ClerkProvider
-} from '@clerk/nextjs'
-import { NavBar } from "@/components/header";
-import { Footer } from "@/components/ui/footer";
+import { AuthProvider } from "@/components/auth-provider";
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -28,21 +25,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en"  suppressHydrationWarning={true} >
-     <ClerkProvider>
       <body
      
        className={poppins.variable}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <ClerkProvider>
+          <AuthProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </AuthProvider>
+        </ClerkProvider>
       </body>
-      </ClerkProvider>
     </html>
   );
 }

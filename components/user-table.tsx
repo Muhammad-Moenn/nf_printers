@@ -13,70 +13,71 @@ import {
 import type { MockUser } from "@/data/mockUsers";
 import UserDetailDialog from "./userdetail-dialog";
 
+export type UserSortKey = "joinedDate" | "orders" | "totalSpent";
+
 interface UsersTableProps {
   users: MockUser[];
-  // onSelectUser: (user: MockUser) => void;
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  search: string;
+  onSearchChange: (value: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+  roleFilter: string;
+  onRoleFilterChange: (value: string) => void;
+  sortBy: UserSortKey;
+  sortAsc: boolean;
+  onSortToggle: (key: UserSortKey) => void;
+  onPageChange: (page: number) => void;
 }
 
-type SortKey = "joinedDate" | "orders" | "totalSpent";
-
-const ITEMS_PER_PAGE = 5;
-
-const UsersTable = ({ users}: UsersTableProps) => {
+const UsersTable = ({
+  users,
+  pagination,
+  search,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+  roleFilter,
+  onRoleFilterChange,
+  sortBy,
+  onSortToggle,
+  onPageChange,
+}: UsersTableProps) => {
   const [selectedUser, setSelectedUser] = useState<MockUser | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<SortKey>("joinedDate");
-  const [sortAsc, setSortAsc] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const filtered = users
-    .filter((u) => {
-      const matchesSearch =
-        u.name.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === "all" || u.status === statusFilter;
-      const matchesRole = roleFilter === "all" || u.role === roleFilter;
-      return matchesSearch && matchesStatus && matchesRole;
-    })
-    .sort((a, b) => {
-      const mul = sortAsc ? 1 : -1;
-      if (sortBy === "joinedDate") return mul * (new Date(a.joinedDate).getTime() - new Date(b.joinedDate).getTime());
-      return mul * ((a[sortBy] as number) - (b[sortBy] as number));
-    });
+  const { page, pageSize, total, totalPages } = pagination;
+  const firstRow = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastRow = Math.min(page * pageSize, total);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginated = filtered.slice((safeCurrentPage - 1) * ITEMS_PER_PAGE, safeCurrentPage * ITEMS_PER_PAGE);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortBy === key) setSortAsc(!sortAsc);
-    else { setSortBy(key); setSortAsc(false); }
-  };
-
-  const handleSearch = (val: string) => { setSearch(val); setCurrentPage(1); };
-  const handleStatusFilter = (val: string) => { setStatusFilter(val); setCurrentPage(1); };
-  const handleRoleFilter = (val: string) => { setRoleFilter(val); setCurrentPage(1); };
-
-  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const windowSize = 5;
+  let windowStart = Math.max(1, page - Math.floor(windowSize / 2));
+  const windowEnd = Math.min(totalPages, windowStart + windowSize - 1);
+  windowStart = Math.max(1, windowEnd - windowSize + 1);
+  const pageNumbers = Array.from(
+    { length: windowEnd - windowStart + 1 },
+    (_, index) => windowStart + index
+  );
 
   return (
-    <div className="rounded-lg border-1 border-gray-200 dark:border-gray-600/70 shadow-sm bg-gradient-to-t from-blue-50/70 via-blue-50/60 to-gray-50/90
-              dark:from-[#11151a] dark:via-[#1e232a]/90 dark:to-[#17181e]">
+    <div className="rounded-lg border border-border bg-gradient-to-t from-primary-soft/70 via-primary-soft/60 to-surface-2/90 shadow-sm dark:border-[var(--border)] dark:from-[var(--surface-1)] dark:via-[var(--surface-2)] dark:to-[var(--surface-2)]">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 border-b p-4">
+      <div className="flex flex-wrap items-center gap-3 border-b p-4 dark:border-[var(--border)] dark:bg-[var(--surface-3)]">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name or email…"
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-9"
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 dark:border-[var(--input)] dark:bg-[var(--surface-1)] dark:text-neutral-100 dark:placeholder:text-muted-foreground"
           />
         </div>
-        <Select value={statusFilter} onValueChange={handleStatusFilter}>
-          <SelectTrigger className="w-[140px]">
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger className="w-[140px] dark:border-[var(--input)] dark:bg-[var(--surface-4)] dark:text-neutral-100">
             <Filter className="mr-2 h-4 w-4" />
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -86,13 +87,14 @@ const UsersTable = ({ users}: UsersTableProps) => {
             <SelectItem value="suspended">Suspended</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={roleFilter} onValueChange={handleRoleFilter}>
-          <SelectTrigger className="w-[130px]">
+        <Select value={roleFilter} onValueChange={onRoleFilterChange}>
+          <SelectTrigger className="w-[130px] dark:border-[var(--input)] dark:bg-[var(--surface-4)] dark:text-neutral-100">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="user">User</SelectItem>
+            <SelectItem value="customer">Customer</SelectItem>
+            <SelectItem value="employee">Employee</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
           </SelectContent>
         </Select>
@@ -102,24 +104,24 @@ const UsersTable = ({ users}: UsersTableProps) => {
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50">
+            <TableRow className="bg-muted/50 dark:border-[var(--border)] dark:bg-[var(--surface-1)]">
               <TableHead>User Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>
-                <button onClick={() => toggleSort("orders")} className="inline-flex items-center gap-1 hover:text-foreground">
+                <button onClick={() => onSortToggle("orders")} className="inline-flex items-center gap-1 hover:text-foreground">
                   Orders <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
               <TableHead>
-                <button onClick={() => toggleSort("totalSpent")} className="inline-flex items-center gap-1 hover:text-foreground">
+                <button onClick={() => onSortToggle("totalSpent")} className="inline-flex items-center gap-1 hover:text-foreground">
                   Total Spent <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
               <TableHead>Status</TableHead>
               <TableHead>
-                <button onClick={() => toggleSort("joinedDate")} className="inline-flex items-center gap-1 hover:text-foreground">
+                <button onClick={() => onSortToggle("joinedDate")} className="inline-flex items-center gap-1 hover:text-foreground">
                   Joined <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
@@ -127,8 +129,8 @@ const UsersTable = ({ users}: UsersTableProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginated.map((user) => (
-              <TableRow key={user.id} className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => setSelectedUser(user)}>
+            {users.map((user) => (
+              <TableRow key={user.id} className="cursor-pointer transition-colors hover:bg-muted/40 dark:border-[var(--border)] dark:hover:bg-[var(--surface-4)]" onClick={() => setSelectedUser(user)}>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>{user.company}</TableCell>
@@ -138,7 +140,13 @@ const UsersTable = ({ users}: UsersTableProps) => {
                   </Badge>
                 </TableCell>
                 <TableCell>{user.orders}</TableCell>
-                <TableCell>${user.totalSpent.toLocaleString()}</TableCell>
+                <TableCell>
+                  {new Intl.NumberFormat("en-PK", {
+                    style: "currency",
+                    currency: "PKR",
+                    maximumFractionDigits: 0,
+                  }).format(user.totalSpent)}
+                </TableCell>
                 <TableCell>
                   <Badge variant={user.status === "active" ? "outline" : "destructive"} className={user.status === "active" ? "border-success text-success" : ""}>
                     {user.status === "active" ? "Active" : "Suspended"}
@@ -152,7 +160,7 @@ const UsersTable = ({ users}: UsersTableProps) => {
                 </TableCell>
               </TableRow>
             ))}
-            {filtered.length === 0 && (
+            {users.length === 0 && (
               <TableRow>
                 <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                   No users found matching your criteria.
@@ -164,37 +172,37 @@ const UsersTable = ({ users}: UsersTableProps) => {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between border-t px-4 py-3">
+      <div className="flex items-center justify-between border-t px-4 py-3 dark:border-[var(--border)] dark:bg-[var(--surface-3)]">
         <span className="text-sm text-muted-foreground">
-          Showing {filtered.length === 0 ? 0 : (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeCurrentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} users
+          Showing {firstRow}–{lastRow} of {total} users
         </span>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            disabled={safeCurrentPage <= 1}
-            onClick={() => setCurrentPage(safeCurrentPage - 1)}
+            disabled={page <= 1}
+            onClick={() => onPageChange(page - 1)}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          {pageNumbers.map((page) => (
+          {pageNumbers.map((pageNumber) => (
             <Button
-              key={page}
-              variant={page === safeCurrentPage ? "default" : "outline"}
+              key={pageNumber}
+              variant={pageNumber === page ? "default" : "outline"}
               size="icon"
               className="h-8 w-8 text-xs"
-              onClick={() => setCurrentPage(page)}
+              onClick={() => onPageChange(pageNumber)}
             >
-              {page}
+              {pageNumber}
             </Button>
           ))}
           <Button
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            disabled={safeCurrentPage >= totalPages}
-            onClick={() => setCurrentPage(safeCurrentPage + 1)}
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(page + 1)}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

@@ -1,144 +1,175 @@
 "use client";
 
-import Slider from "react-slick";
-import { Button } from "./ui/button";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, MoveRight } from "lucide-react";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import { useState } from "react";
-import { getLocale } from "next-intl/server";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  BookOpen,
+  FileText,
+  Layers,
+  MoveRight,
+  NotebookPen,
+  NotebookText,
+  Printer,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { ServiceCard } from "./service-card";
+import { useEffect, useState } from "react";
 
-// Custom Next Arrow
-function NextArrow({ onClick }: { onClick?: () => void }) {
-  return (
-    <button
-      className="absolute top-1/2 -right-12 transform -translate-y-1/2 z-20 bg-blue-100 dark:bg-gray-800 text-gray-500 dark:text-white p-2 rounded-full shadow-lg hover:bg-gray-200 transition cursor-pointer"
-      onClick={onClick}
-    >
-      <ChevronRight className="w-5 h-5" />
-    </button>
-  );
-}
+import type { ServiceProps } from "@/data/services";
+import { cn } from "@/lib/utils";
 
-// Custom Prev Arrow
-function PrevArrow({ onClick }: { onClick?: () => void }) {
-  return (
-    <button
-      className="absolute top-1/2 -left-12 transform -translate-y-1/2 z-20 bg-blue-100 dark:bg-gray-800 text-gray-500 dark:text-white p-2 rounded-full shadow-lg hover:bg-gray-200 transition cursor-pointer"
-      onClick={onClick}
-    >
-      <ChevronLeft className="w-5 h-5" />
-    </button>
-  );
-}
+import { ServiceShowcaseCard } from "./service-showcase-card";
+
+const showcaseIcons: LucideIcon[] = [
+  NotebookPen,
+  BookOpen,
+  Layers,
+  FileText,
+  NotebookText,
+  Printer,
+];
+
+const dotPattern = {
+  backgroundImage:
+    "radial-gradient(color-mix(in oklab, var(--primary) 55%, transparent) 1.5px, transparent 1.5px)",
+  backgroundSize: "14px 14px",
+} as const;
 
 export function ServicesSection() {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const settings = {
-    dots: true,
-    arrows: true,
-    infinite: true,
-    autoplay: true,
-    autoplaySpeed: 0, // 🔥 continuous
-    speed: 5000, // 🔥 smooth flow
-    cssEase: "linear", // 🔥 no snapping
-    pauseOnHover: true,
-    pauseOnFocus: true,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
-
-    beforeChange: (_current: number, next: number) => setActiveSlide(next),
-    customPaging: function (i: number) {
-      return (
-        <div
-          id="services"
-          className={`w-2 h-2 rounded-full transition ${
-            i === activeSlide
-              ? "bg-blue-500"
-              : "bg-gray-300 dark:bg-gray-100/[0.4]"
-          }`}
-        />
-      );
-    },
-    appendDots: (dots: React.ReactNode) => (
-      <div className="mt-6 flex justify-center ">{dots}</div>
-    ),
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 640, settings: { slidesToShow: 1 } },
-    ],
-  };
   const locale = useLocale();
   const t = useTranslations("home.servic_section");
-  const isLocaleUr = locale === "ur";
-  const services = t.raw("services");
+  const landing = useTranslations("home.landing");
+  const isRTL = locale === "ur";
+  const prefersReducedMotion = useReducedMotion();
+  const [hasMounted, setHasMounted] = useState(false);
+  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
+  const services = ((t.raw("services") as ServiceProps[]) ?? []).slice(0, 6);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  const reveal = (delay = 0, offset = 20) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: offset },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: "-80px" },
+    transition: reduceMotion
+      ? { duration: 0 }
+      : {
+          duration: 0.5,
+          delay,
+          ease: [0.22, 1, 0.36, 1] as const,
+        },
+  });
+
   return (
-    <section id="services" className=" bg-gray-50 dark:bg-black">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-20">
-        {/* Header */}
-        <div className="text-center mb-14">
-          <span className="uppercase tracking-widest text-amber-500 sm:text-md font-medium">
-           {isLocaleUr ? "ہماری خدمات" : "What We Offer"}
-          </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-gray-950 dark:text-white mt-2">
-            {t("heading")}
+    <section
+      id="services"
+      aria-labelledby="services-heading"
+      className="relative overflow-hidden py-16 text-foreground scroll-mt-24 sm:py-20 lg:py-24 dark:text-on-color"
+    >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute left-4 top-10 h-20 w-20 opacity-70 sm:left-8 sm:h-24 sm:w-24 lg:left-12"
+        style={dotPattern}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-10 right-4 h-20 w-20 opacity-70 sm:right-8 sm:h-24 sm:w-24 lg:right-12"
+        style={dotPattern}
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div {...reveal()} className="mx-auto max-w-3xl text-center">
+          <div className="flex items-center justify-center gap-3 sm:gap-4">
+            <span
+              aria-hidden="true"
+              className="h-px w-10 bg-gradient-to-r from-transparent to-primary-border sm:w-20 lg:w-28"
+            />
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary-border/70 bg-primary-soft px-3.5 py-1.5 text-[length:var(--font-size-xs)] font-bold uppercase tracking-[0.16em] text-primary-text shadow-[var(--shadow-sm)] sm:text-sm">
+              <Printer className="h-4 w-4" aria-hidden="true" />
+              {landing("services_label")}
+            </span>
+            <span
+              aria-hidden="true"
+              className="h-px w-10 bg-gradient-to-l from-transparent to-primary-border sm:w-20 lg:w-28"
+            />
+          </div>
+
+          <h2
+            id="services-heading"
+            className="mt-5 text-2xl font-bold leading-tight tracking-tight text-heading sm:text-3xl lg:text-4xl xl:text-5xl"
+          >
+            {t("heading_lead")}{" "}
+            <span className="text-primary-text">{t("heading_highlight")}</span>
           </h2>
-          <p className="mt-5 text-gray-600 dark:text-gray-300 max-w-2xl text-lg mx-auto">
+
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg lg:text-2xl lg:leading-9">
             {t("description")}
           </p>
-        </div>
+        </motion.div>
 
-        {/* Slider */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4">
-          {services.slice(0, 6).map((service: any, i: number) => (
-            <Link href={`services/${service.id}`} key={i} className="md:px-3 mt-2">
-              <ServiceCard {...service} />
-            </Link>
-          ))}
-        </div>
-        {/* <Slider {...settings} className="py-5  ">
-          {services.map((service) => (
-            <div key={service.id} className="px-3 mt-2">
-              <ServiceCard {...service} />
-            </div>
-          ))}
-        </Slider> */}
-
-        {/* CTA */}
-        <Button
-          asChild
-          className="
-           flex items-center justify-center
-           cursor-pointer max-w-[130px] h-10 rounded-full mx-auto mt-10 
-             group z-10 hover:-translate-y-0.5 transition duration-200  text-center 
-         "
+        <ul
+          role="list"
+          className="mt-12 grid list-none grid-cols-1 gap-5 sm:mt-14 md:grid-cols-2 lg:gap-6 xl:grid-cols-3"
         >
+          {services.map((service, index) => {
+            const Icon = showcaseIcons[index] ?? NotebookPen;
+
+            return (
+              <motion.li
+                key={service.id ?? service.title}
+                {...reveal(0.05 + index * 0.06, 24)}
+                className="min-w-0"
+              >
+                <Link
+                  href={service.link || `/services/${service.id}`}
+                  className="block h-full"
+                >
+                  <ServiceShowcaseCard
+                    title={service.title}
+                    description={service.description}
+                    Icon={Icon}
+                  />
+                </Link>
+              </motion.li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-12 flex items-center justify-center gap-3 sm:mt-14 sm:gap-5">
+          <span
+            aria-hidden="true"
+            className="hidden h-px w-24 bg-gradient-to-r from-transparent to-primary-border sm:block lg:w-40"
+          />
           <Link
             href="/services"
-            className={`flex items-center gap-1 text-md leading-none py-4 ${
-              isLocaleUr ? "flex-row-reverse" : "flex-row"
-            }`}
+            className={cn(
+              "group inline-flex h-14 max-w-full items-center justify-center gap-2.5 whitespace-nowrap",
+              "rounded-full bg-gradient-to-r from-primary to-primary-hover px-6",
+              "text-base font-bold text-on-color shadow-[var(--shadow-lg)]",
+              "transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-xl)]",
+              "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+              "sm:h-[3.75rem] sm:px-10 sm:text-lg",
+              isRTL && "flex-row-reverse",
+            )}
           >
-            {isLocaleUr ? "سب دیکھیں" : "View All"}
-
+            {landing("view_all")}
             <MoveRight
-              className={` ml-1
-               w-4 h-4
-               transition-transform duration-500 ease-out
-               
-               ${
-                 isLocaleUr
-                   ? " -rotate-180 group-hover:-translate-x-2"
-                   : " group-hover:translate-x-2"
-               }`}
-            ></MoveRight>
+              className={cn(
+                "h-5 w-5 transition-transform duration-300",
+                isRTL
+                  ? "rotate-180 group-hover:-translate-x-1"
+                  : "group-hover:translate-x-1",
+              )}
+              aria-hidden="true"
+            />
           </Link>
-        </Button>
+          <span
+            aria-hidden="true"
+            className="hidden h-px w-24 bg-gradient-to-l from-transparent to-primary-border sm:block lg:w-40"
+          />
+        </div>
       </div>
     </section>
   );

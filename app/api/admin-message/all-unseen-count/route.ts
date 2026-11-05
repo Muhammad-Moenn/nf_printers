@@ -4,21 +4,19 @@ import { GetDBUser } from "@/app/actions/user_action";
 
 export async function GET() {
   try {
-    // const clerkUser = await currentUser();
-    // if (!clerkUser) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-    const dbUser= await GetDBUser();
+    const dbUser = await GetDBUser();
     if (!dbUser) {
-      return NextResponse.json({ error: "Unauthorized, this is not exist in db" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
+      );
     }
-    // const conversation = await prisma.conversation.findUnique({
-    //   where: { userId: dbUser.id },
-    // });
-
-    // if (!conversation) {
-    //   return NextResponse.json({ count: 0 });
-    // }
+    if (dbUser.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      );
+    }
 
     const count = await prisma.message.count({
       where: {
@@ -29,13 +27,15 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ count });
-
+    return NextResponse.json(
+      { count },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (error) {
-    console.error(error);
+    console.error("Admin unseen count failed:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 }

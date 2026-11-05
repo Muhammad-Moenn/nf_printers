@@ -5,7 +5,11 @@ import { Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 
-export function ModeToggle() {
+export function ModeToggle({
+  variant = "switch",
+}: {
+  variant?: "switch" | "icon";
+}) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -18,31 +22,49 @@ export function ModeToggle() {
     setTheme(isDark ? "light" : "dark");
   };
 
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        onClick={toggleTheme}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 dark:text-neutral-300 dark:hover:bg-primary/10 dark:hover:text-primary-soft-foreground"
+      >
+        {isDark ? (
+          <Moon className="h-5 w-5" />
+        ) : (
+          <Sun className="h-5 w-5" />
+        )}
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
       role="switch"
       aria-checked={isDark}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={toggleTheme}
       className={`
-        relative inline-flex h-[21px] w-[40px] items-center
-        rounded-full transition-colors duration-300
-        focus:outline-none ring-2 ring-offset-2 cursor-pointer mx-[5px]
+        relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center
+        rounded-full border transition-colors duration-300
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30
         ${isDark
-          ? "bg-zinc-700/70 ring-gray-400"
-          : "bg-yellow-400 ring-yellow-500"}
+          ? "border-on-color/10 bg-neutral-700"
+          : "border-border bg-muted"}
       `}
     >
       {/* Animated Thumb */}
       <motion.span
         layout
-        animate={{ x: isDark ? 21 : 2.3 }}
+        animate={{ x: isDark ? 23 : 3 }}
         transition={{
           type: "spring",
           stiffness: 500,
           damping: 30
         }}
-        className="absolute flex h-[17px] w-[17px] items-center justify-center rounded-full bg-white shadow-lg"
+        className="absolute flex h-5 w-5 items-center justify-center rounded-full bg-card shadow-sm"
       >
         {/* Sun */}
         <motion.span
@@ -54,7 +76,7 @@ export function ModeToggle() {
           transition={{ duration: 0.2 }}
           className="absolute"
         >
-          <Sun className="h-[14px] w-[14px] text-yellow-500" />
+          <Sun className="h-3.5 w-3.5 text-warning-text" />
         </motion.span>
 
         {/* Moon */}
@@ -67,7 +89,7 @@ export function ModeToggle() {
           transition={{ duration: 0.2 }}
           className="absolute"
         >
-          <Moon className="h-[14px] w-[14px] text-blue-600" />
+          <Moon className="h-3.5 w-3.5 text-primary-text" />
         </motion.span>
       </motion.span>
     </button>
@@ -119,8 +141,8 @@ export function ModeToggle() {
 //         rounded-full transition-colors duration-300
 //         focus:outline-none focus:ring-2 focus:ring-offset-2
 //         ${isDark
-//           ? "bg-zinc-600 focus:ring-zinc-500"
-//           : "bg-yellow-400 focus:ring-yellow-500"}
+//           ? "bg-neutral-600 focus:ring-border"
+//           : "bg-warning focus:ring-warning"}
 //       `}
 //     >
 //       {/* Track inner */}
@@ -136,7 +158,7 @@ export function ModeToggle() {
 //       <span
 //         className={`
 //           relative flex h-5 w-5 items-center justify-center
-//           rounded-full bg-white shadow-lg
+//           rounded-full bg-card shadow-lg
 //           transform transition-all duration-500 ease-out
 //           ${isDark ? "translate-x-[21px]" : "translate-x-[2px]"}
 //         `}
@@ -144,14 +166,14 @@ export function ModeToggle() {
 //         {/* Icons */}
 //         <Sun
 //           className={`
-//             absolute h-4 w-4 text-yellow-500
+//             absolute h-4 w-4 text-warning-text
 //             transition-all duration-300
 //             ${isDark ? "scale-0 opacity-0 rotate-90" : "scale-100 opacity-100 rotate-0"}
 //           `}
 //         />
 //         <Moon
 //           className={`
-//             absolute h-4 w-4 text-blue-600
+//             absolute h-4 w-4 text-primary-text
 //             transition-all duration-300
 //             ${isDark ? "scale-100 opacity-100 rotate-0" : "scale-0 opacity-0 -rotate-90"}
 //           `}

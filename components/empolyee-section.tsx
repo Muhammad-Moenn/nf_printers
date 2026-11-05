@@ -69,10 +69,10 @@ export default async function EmployeeSection() {
   const employees = t.raw("employees");
   return (
     <div id="our-team" className="max-w-6xl mx-auto px-8 py-16">
-      <h1 className="text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-white font-semibold text-center px-4">
+      <h1 className="text-3xl md:text-4xl lg:text-5xl text-foreground dark:text-on-color font-semibold text-center px-4">
         {t("employees_title")}
       </h1>
-      <p className="text-gray-500 leading-6 dark:text-gray-300 text-lg text-center max-w-xl mx-auto my-7">
+      <p className="text-muted-foreground leading-6 dark:text-neutral-300 text-lg text-center max-w-xl mx-auto my-7">
         {t("employees_description")}
       </p>
       <HoverEffect users={employees} />

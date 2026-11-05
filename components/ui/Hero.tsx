@@ -1,116 +1,273 @@
 "use client";
-import { CheckCircle2, MoveRight, Sparkles, Star } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+
+import {
+  ArrowRight,
+  FolderCheck,
+  Smile,
+  Star,
+  Trophy,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
+import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
+
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useLocale } from "next-intl";
-import { useTranslations } from "use-intl";
-import {Link as ScrollLink} from "react-scroll";
+import { useAuthUser } from "@/components/auth-provider";
+import { cn } from "@/lib/utils";
+
 type Props = {
   className?: string;
 };
+
+type HeroStat = {
+  value: string;
+  label: string;
+  icon: "trophy" | "folder" | "smile" | "zap";
+};
+
+const statIcons: Record<HeroStat["icon"], LucideIcon> = {
+  trophy: Trophy,
+  folder: FolderCheck,
+  smile: Smile,
+  zap: Zap,
+};
+
+const trustAvatars = [
+  { initials: "AK", className: "bg-primary-soft text-primary-text" },
+  { initials: "SR", className: "bg-info-soft text-info-text" },
+  { initials: "MH", className: "bg-violet-soft text-violet-text" },
+  { initials: "ZN", className: "bg-pink-soft text-pink-text" },
+];
+
 const HeroSection = ({ className }: Props) => {
   const locale = useLocale();
-  const t = useTranslations("home");
-  const features = t.raw("hero_features");
-  return (
-    <section id="hero" className="py-32 relative overflow-hidden ">
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover -z-10"
-      >
-        <source src="/videos/heroSection-video.mp4" type="video/mp4" />
-      </video>
-      <div className=" relative z-10 bg-transparent text-center w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6">
-          <motion.span
-            initial={{  y: -10 }}
-            animate={{
-            
-              y: [0, -3, 0],
-            }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="inline-flex items-center gap-2 rounded-full bg-[hsl(36,90%,55%)]/20 px-4 py-1.5 -mb-1 text-sm font-medium text-[hsl(36,90%,55%)] w-fit mx-auto"
-          >
-            <Sparkles className="h-4 w-4" />
+  const landing = useTranslations("home.landing");
+  const { user } = useAuthUser();
+  const createOrderHref = user ? "/user-dashboard/new-order" : "/sign-in";
+  const prefersReducedMotion = useReducedMotion();
+  const [hasMounted, setHasMounted] = useState(false);
+  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
+  const isRTL = locale === "ur";
+  const stats = (landing.raw("hero_stats") as HeroStat[]) ?? [];
 
-            {locale === "ur"
-              ? "پریمیم پرنٹنگ سلوشنز"
-              : "Premium Printing Solutions"}
-          </motion.span>
-          <h1 className="text-2xl font-semibold px-4 md:text-4xl lg:text-4xl xl:text-6xl md:max-w-xl mx-auto lg:max-w-3xl xl:max-w-5xl text-gray-900 dark:text-white">
-            {t("hero_title")}
-          </h1>
-          <p className=" text-muted-foreground lg:text-lg max-w-2xl leading-6 w-full mx-auto">
-            {t("description")}
-          </p>
-        </div>
-       <div className="flex items-center gap-4 justify-center">
-         <Button
-          asChild
-          size="lg"
-          className={`group text-[14px] bg-[#F97316] hover:bg-[#EA580C] lg:text-[16px] mt-10 hover:-translate-y-0.5 transition duration-200  text-center   flex justify-center items-center max-w-[220px] ${
-            locale === "ur" ? "flex-row-reverse" : "flex-row"
-          }`}
-        >
-          <Link href="/user-dashboard">
-            {t("btn_text")}
-            <MoveRight
-              className={`
-        w-4 h-4
-        transition-transform duration-500 ease-out
-        ${
-          locale === "ur"
-            ? "rotate-180  group-hover:-translate-x-2"
-            : "rotate-0  group-hover:translate-x-2"
-        }
-      `}
-            ></MoveRight>
-          </Link>
-        </Button>
-        <Button
-          asChild
-          size="lg"
-          className={`group text-[14px] border-2 bg-transparent  text-[#F59E0B] border-[#F59E0B] hover:bg-transparent lg:text-[16px] mt-10 hover:-translate-y-0.5 transition duration-200  text-center   flex justify-center items-center max-w-[140px]  ${
-            locale === "ur" ? "flex-row-reverse" : "flex-row"
-          }`}
-        >
-          <ScrollLink to="contact" smooth={true} offset={-70} duration={500} className="cursor-pointer">
-            {locale === "ur"
-              ? "ہم سے رابطہ کریں"
-              : "Contact Us"}
-           
-          </ScrollLink>
-        </Button>
-       </div>
-        {/* <motion.div
-          className="mt-12 grid grid-cols-1 text-center md:grid-cols-2 gap-8 text-sm text-muted-foreground w-full md:max-w-[450px] mx-auto"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          {features.map((item: any) => (
-            <span
-              key={item}
-              className={`flex items-center justify-center md:justify-start gap-2 ${
-                locale === "ur"
-                  ? "flex-row-reverse md:mr-10 lg:mr-12"
-                  : "flex-row lg:ml-10 md:ml-8"
-              }`}
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  const reveal = (delay = 0, withScale = false) => ({
+    initial: reduceMotion
+      ? false
+      : { opacity: 0, y: 18, ...(withScale ? { scale: 0.97 } : {}) },
+    whileInView: {
+      opacity: 1,
+      y: 0,
+      ...(withScale ? { scale: 1 } : {}),
+    },
+    viewport: { once: true, amount: 0.2 },
+    transition: reduceMotion
+      ? { duration: 0 }
+      : {
+          duration: 0.55,
+          delay,
+          ease: [0.22, 1, 0.36, 1] as const,
+        },
+  });
+
+  return (
+    <section
+      id="hero"
+      aria-labelledby="hero-heading"
+      className={cn("relative isolate overflow-hidden", className)}
+    >
+      <div
+        dir={isRTL ? "rtl" : "ltr"}
+        className="relative mx-auto w-full max-w-[1280px] px-4 pb-[var(--space-4)] pt-[var(--space-8)] sm:px-6 sm:pb-[var(--space-6)] sm:pt-[var(--space-10)] lg:px-8 lg:pb-[var(--space-8)] lg:pt-[var(--space-12)]"
+      >
+        <div className="grid min-w-0 items-center gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-4">
+          <div className={cn("min-w-0", isRTL ? "text-right" : "text-left")}>
+            <motion.span
+              {...reveal()}
+              className="inline-flex items-center gap-2 rounded-full border border-primary-border bg-primary-soft/90 px-4 py-1.5 text-badge font-semibold tracking-normal text-primary-text shadow-[var(--shadow-sm)] backdrop-blur-sm dark:border-primary-border dark:bg-primary-soft dark:text-primary-soft-foreground"
             >
-              <CheckCircle2 className="h-4 w-4 text-[hsl(36,90%,55%)]" />
-              {item}
-            </span>
-          ))}
-        </motion.div> */}
+              <Star
+                className="h-3.5 w-3.5 fill-landing-star text-landing-star"
+                aria-hidden="true"
+              />
+              {landing("hero_badge")}
+            </motion.span>
+
+            <motion.h1
+              id="hero-heading"
+              {...reveal(0.06)}
+              className="mt-[var(--space-4)] font-hero text-[length:clamp(1.6rem,8vw,2.25rem)] font-bold leading-hero tracking-hero text-heading sm:mt-[var(--space-5)] sm:text-hero"
+            >
+              <span className="block whitespace-nowrap">
+                {landing("hero_title_line1")}
+              </span>
+              <span className="block text-primary-text">
+                {landing("hero_title_line2")}
+              </span>
+            </motion.h1>
+
+            <motion.p
+              {...reveal(0.12)}
+              className="mt-[var(--space-3)] max-w-[30rem] font-hero text-hero-lead font-normal leading-relaxed text-foreground/80 sm:mt-[var(--space-4)] dark:text-foreground"
+            >
+              {landing("hero_description")}
+            </motion.p>
+
+            <motion.div
+              {...reveal(0.18)}
+              className={cn(
+                "mt-[var(--space-5)] flex flex-col gap-3 sm:mt-[var(--space-6)] sm:flex-row sm:items-center",
+                isRTL && "sm:flex-row-reverse sm:justify-end",
+              )}
+            >
+              <Button
+                asChild
+                size="lg"
+                className="group h-12 rounded-full bg-primary px-[var(--space-6)] font-hero text-sm font-semibold text-on-color shadow-[var(--shadow-md)] hover:bg-primary-hover sm:text-control"
+              >
+                <Link
+                  href={createOrderHref}
+                  className={cn(
+                    "flex items-center gap-2",
+                    isRTL && "flex-row-reverse",
+                  )}
+                >
+                  {landing("hero_cta_primary")}
+                  <ArrowRight
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-300",
+                      isRTL
+                        ? "rotate-180 group-hover:-translate-x-1"
+                        : "group-hover:translate-x-1",
+                    )}
+                    aria-hidden="true"
+                  />
+                </Link>
+              </Button>
+
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="group h-12 rounded-full border-border bg-card px-[var(--space-5)] font-hero text-sm font-semibold text-heading shadow-[var(--shadow-sm)] hover:bg-primary-soft hover:text-primary-text dark:border-border dark:bg-card/80 dark:text-heading dark:hover:border-primary-border dark:hover:bg-primary-soft dark:hover:text-primary-text sm:text-control"
+              >
+                <Link
+                  href="/#about"
+                  className={cn(
+                    "flex items-center gap-2.5",
+                    isRTL && "flex-row-reverse",
+                  )}
+                >
+                  {landing("hero_cta_secondary")}
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-heading text-on-color transition-transform duration-300 group-hover:scale-105 dark:bg-primary">
+                    <ArrowRight
+                      className={cn(
+                        "h-3.5 w-3.5 transition-transform duration-300",
+                        isRTL
+                          ? "rotate-180 group-hover:-translate-x-0.5"
+                          : "group-hover:translate-x-0.5",
+                      )}
+                      strokeWidth={2.5}
+                      aria-hidden="true"
+                    />
+                  </span>
+                </Link>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              {...reveal(0.24)}
+              className={cn(
+                "mt-[var(--space-5)] flex flex-wrap items-center gap-3 sm:mt-[var(--space-6)] sm:gap-4",
+                isRTL && "flex-row-reverse justify-end",
+              )}
+            >
+              <div
+                className={cn("flex -space-x-2.5", isRTL && "space-x-reverse")}
+              >
+                {trustAvatars.map((avatar) => (
+                  <span
+                    key={avatar.initials}
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border-2 border-card text-caption font-bold shadow-sm sm:h-9 sm:w-9",
+                      avatar.className,
+                    )}
+                    aria-hidden="true"
+                  >
+                    {avatar.initials}
+                  </span>
+                ))}
+              </div>
+              <p className="font-hero text-sm font-medium text-foreground/80 sm:text-control dark:text-muted-foreground">
+                {landing("hero_trust")}
+              </p>
+            </motion.div>
+          </div>
+
+          <motion.div
+            {...reveal(0.1, true)}
+            className="relative flex min-w-0 items-center justify-center lg:justify-start"
+          >
+            <div className="landing-machine-glow w-full max-w-[560px] sm:max-w-[680px] lg:w-[135%] lg:max-w-none xl:w-[180%]">
+              <Image
+                src="/machine-image.png"
+                alt={landing("hero_image_alt")}
+                width={2068}
+                height={800}
+                priority
+                sizes="(max-width: 1024px) 92vw, 60vw"
+                className="h-auto w-full object-contain"
+              />
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.div
+          {...reveal(0.3)}
+          className="relative z-10 mt-[var(--space-8)] sm:mt-[var(--space-10)]"
+        >
+          <dl className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-3xl)] border border-border/70 bg-card/95 px-1 py-1 shadow-[var(--shadow-xl)] backdrop-blur-md dark:border-border/70 dark:bg-card/90 lg:grid-cols-4">
+            {stats.map((stat, index) => {
+              const Icon = statIcons[stat.icon] ?? Trophy;
+              return (
+                <div
+                  key={stat.label}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 px-3 py-4 text-center sm:px-6 sm:py-5",
+                    index % 2 === 0 && "border-e border-border/70",
+                    index < 2 && "border-b border-border/70 lg:border-b-0",
+                    index === 1 && "lg:border-e lg:border-border/70",
+                    index === 3 && "lg:border-e-0",
+                  )}
+                >
+                  <dt className="flex flex-col items-center gap-0.5">
+                    <Icon
+                      className="h-5 w-5 text-primary-text dark:text-primary-soft-foreground"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
+                    <span
+                      dir="ltr"
+                      className="font-hero text-xl font-bold leading-tight tracking-tight text-heading"
+                    >
+                      {stat.value}
+                    </span>
+                  </dt>
+                  <dd className="font-hero text-[length:var(--font-size-xs)] font-medium leading-tight text-muted-foreground sm:text-sm">
+                    {stat.label}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+        </motion.div>
       </div>
     </section>
   );
