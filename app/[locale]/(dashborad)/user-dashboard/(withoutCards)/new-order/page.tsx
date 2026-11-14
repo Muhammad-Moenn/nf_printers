@@ -1,49 +1,14 @@
-import { fetchCardsDataAndAllOrders } from "@/app/actions/order-action";
-import NewOrderServices from "@/components/newOrder-services"
-import { CardData, SectionCards } from "@/components/section-cards";
+import { GetDBUser } from "@/app/actions/user_action";
+import NewOrderServices from "@/components/newOrder-services";
 
-async function NewOrderPage() {
+export default async function NewOrderPage() {
+  const dbUser = await GetDBUser();
 
-const { activeOrders, pendingOrders, completedOrders, totalPaid } =
-      await fetchCardsDataAndAllOrders();
-  const cards:CardData[] = [
-      {
-        title: "Active Orders",
-        value: Number(activeOrders.length).toFixed(2),
-        description: "Orders currently in progress",
-        icon: "package",
-      },
-      {
-        title: "Pending Quotes",
-        value: Number(pendingOrders.length).toFixed(2),
-        description: "Awaiting approval",
-        icon: "file-text",
-      },
-      {
-        title: "Completed Orders",
-        value:Number(completedOrders.length).toFixed(2),
-        description: "Successfully delivered",
-        icon: "check-circle",
-      },
-      {
-        title: "Total Paid",
-        value: new Intl.NumberFormat("en-PK", {
-        style: "currency",
-        currency: "PKR",
-      }).format(totalPaid),
-        description: "Lifetime payments",
-        icon: "wallet",
-      },
-    ];
   return (
     <div>
-      {/* <SectionCards cards={cards}/> */}
       <div className="overflow-hidden">
-       {/* <SectionCards cards={cards}/> */}
-        <NewOrderServices/>
+        <NewOrderServices userId={dbUser?.id ?? ""} />
       </div>
     </div>
   );
 }
-
-export default NewOrderPage;

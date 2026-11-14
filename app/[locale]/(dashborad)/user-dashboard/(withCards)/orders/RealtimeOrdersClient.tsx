@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -21,53 +21,24 @@ import {
   Wallet,
 } from "lucide-react";
 import OrderTable from "@/components/order-table";
-import { supabase } from "@/lib/supabaseClient";
-import { Order } from "@/types/order";
+import { Link } from "@/i18n/navigation";
+import {
+  EMPTY_ORDERS_REALTIME_DATA,
+  useOrdersData,
+} from "@/lib/query/hooks/use-orders";
 
-type MonthlyOrder = { label: string; total: number };
-type MonthlyPaid = { month: string; total: number };
 type Props = {
-  initialMonthlyTotal: MonthlyPaid[];
-  initialMonthlyOrders: MonthlyOrder[];
-  initialOrders: Order[];
+  userId: string;
 };
 
 const money = (amount: number) =>
   `Rs ${Math.round(amount).toLocaleString("en-PK")}`;
 
-export default function RealtimeOrdersClient({
-  initialMonthlyTotal,
-  initialMonthlyOrders,
-  initialOrders,
-}: Props) {
-  const [monthlyTotal, setMonthlyTotal] = useState(initialMonthlyTotal);
-  const [monthlyOrders, setMonthlyOrders] = useState(initialMonthlyOrders);
-  const [orders, setOrders] = useState(initialOrders);
-
-  useEffect(() => {
-    let mounted = true;
-    const refetch = async () => {
-      try {
-        const response = await fetch("/api/orders/realtime");
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!mounted) return;
-        setMonthlyTotal(data.monthlyTotal ?? []);
-        setMonthlyOrders(data.monthlyOrders ?? []);
-        setOrders(data.allOrders ?? []);
-      } catch (error) {
-        console.error("Unable to refresh orders", error);
-      }
-    };
-    const channel = supabase
-      .channel("orders-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "Order" }, refetch)
-      .subscribe();
-    return () => {
-      mounted = false;
-      void channel.unsubscribe();
-    };
-  }, []);
+export default function RealtimeOrdersClient({ userId }: Props) {
+  const { data, isRefetchError } = useOrdersData(userId);
+  const payload = data ?? EMPTY_ORDERS_REALTIME_DATA;
+  const monthlyTotal = payload.monthlyTotal;
+  const monthlyOrders = payload.monthlyOrders;
 
   const orderChart = useMemo(() => monthlyOrders.map((item) => ({
     month: item.label,
@@ -89,6 +60,14 @@ export default function RealtimeOrdersClient({
 
   return (
     <main className="min-w-0 space-y-5 px-4 pb-8 pt-4 md:px-6 lg:space-y-5">
+      {isRefetchError ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-primary-border bg-card px-4 py-3 text-sm text-destructive-text"
+        >
+          Unable to refresh orders. Showing the last loaded data.
+        </p>
+      ) : null}
       <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
         <article className="min-w-0 rounded-lg border border-primary-border bg-card p-4 shadow-[var(--shadow-md)] sm:p-5">
           <header className="mb-4 flex items-center justify-between gap-3">
@@ -164,12 +143,12 @@ export default function RealtimeOrdersClient({
         <div className="border-b border-primary-border px-4 py-4 sm:px-5">
           <div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-soft text-primary-text"><ChartNoAxesColumn className="h-5 w-5" /></span><h2 className="text-lg font-semibold text-[var(--heading)]">My Orders</h2></div>
         </div>
-        <div className="min-w-0 pt-4"><OrderTable ordersData={orders} /></div>
+        <div className="min-w-0 pt-4"><OrderTable userId={userId} /></div>
       </section>
 
       <section className="flex flex-col gap-4 rounded-lg border border-primary-border bg-gradient-to-r from-primary-soft to-violet-soft/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-card text-warning-text shadow-sm"><Lightbulb className="h-6 w-6" /></span><div><h2 className="font-semibold text-[var(--heading)]">A smoother way to print</h2><p className="mt-1 text-sm text-muted-foreground">Place an order and follow its progress from your dashboard.</p></div></div>
-        <a href="/user-dashboard/new-order" className="inline-flex h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-on-color shadow-md shadow-primary transition hover:bg-primary">Start new order <ArrowRight className="h-4 w-4" /></a>
+        <Link href="/user-dashboard/new-order" className="inline-flex h-11 items-center justify-center gap-2 rounded-control bg-primary px-5 text-sm font-semibold text-on-color shadow-md shadow-primary transition hover:bg-primary">Start new order <ArrowRight className="h-4 w-4" /></Link>
       </section>
     </main>
   );

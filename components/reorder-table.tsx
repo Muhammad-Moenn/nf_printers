@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Order } from "@/types/order";
+import type { OrderDetail } from "@/types/order";
+import { useReorderOrders } from "@/lib/query/hooks/use-orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,18 +27,14 @@ import {
   Eye,
   FileText,
   Image as ImageIcon,
+  LoaderCircle,
   RefreshCcw,
   RefreshCw,
   Search,
 } from "lucide-react";
 
 type DesignFile = { url: string; key?: string; name?: string; type?: string };
-type OrderRow = Order & {
-  finalAmount?: number | null;
-  estimatedAmount?: number | null;
-  pricingStatus?: string | null;
-  payment?: { status?: string | null; amount?: number | string | null } | null;
-};
+type OrderRow = OrderDetail;
 const statusClass: Record<string, string> = {
   completed: "bg-success-soft text-success-text ring-success",
   in_progress: "bg-primary-soft text-primary-text ring-primary",
@@ -84,10 +81,14 @@ const selectItemClass =
 
 export default function ReorderTable({
   ordersData,
+  userId,
 }: {
-  ordersData: OrderRow[];
+  ordersData?: OrderRow[];
+  userId: string;
 }) {
   const router = useRouter();
+  const { data, isLoading } = useReorderOrders(userId, ordersData);
+  const orders = data ?? ordersData ?? [];
   const [search, setSearch] = useState("");
   const [service, setService] = useState("all");
   const [status, setStatus] = useState("all");
@@ -101,9 +102,9 @@ export default function ReorderTable({
   const services = useMemo(
     () =>
       [
-        ...new Set(ordersData.map((order) => order.service).filter(Boolean)),
+        ...new Set(orders.map((order) => order.service).filter(Boolean)),
       ].sort(),
-    [ordersData],
+    [orders],
   );
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -116,7 +117,7 @@ export default function ReorderTable({
           : dateFilter === "year"
             ? new Date(now.getFullYear(), 0, 1)
             : null;
-    return ordersData
+    return orders
       .filter((order) => {
         const matchesTerm =
           !term ||
@@ -138,7 +139,7 @@ export default function ReorderTable({
           (dateOf(a)?.getTime() ?? 0) - (dateOf(b)?.getTime() ?? 0);
         return sort === "oldest" ? dateDiff : -dateDiff;
       });
-  }, [ordersData, search, service, status, dateFilter, sort, direction]);
+  }, [orders, search, service, status, dateFilter, sort, direction]);
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
   const resetPage = (fn: () => void) => {
@@ -233,7 +234,7 @@ export default function ReorderTable({
               </SelectItem>
               {[
                 ...new Set(
-                  ordersData
+                  orders
                     .map((item) => item.status)
                     .filter(
                       (item): item is NonNullable<typeof item> =>
@@ -275,7 +276,9 @@ export default function ReorderTable({
         </div>
         <div className="flex flex-col gap-3 border-t border-border-subtle pt-3  dark:border-on-color/10 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? "order" : "orders"} found
+            {isLoading
+              ? "Loading orders…"
+              : `${filtered.length} ${filtered.length === 1 ? "order" : "orders"} found`}
           </p>
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-muted-foreground">Sort by</span>
@@ -473,13 +476,22 @@ export default function ReorderTable({
               {visible.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-4 py-12 text-center">
-                    <FileText className="mx-auto h-8 w-8 text-neutral-300" />
-                    <p className="mt-2 text-sm font-medium text-foreground dark:text-neutral-200">
-                      No orders found
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Adjust your search or filters and try again.
-                    </p>
+                    {isLoading ? (
+                      <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Loading orders…
+                      </span>
+                    ) : (
+                      <>
+                        <FileText className="mx-auto h-8 w-8 text-neutral-300" />
+                        <p className="mt-2 text-sm font-medium text-foreground dark:text-neutral-200">
+                          No orders found
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Adjust your search or filters and try again.
+                        </p>
+                      </>
+                    )}
                   </td>
                 </tr>
               )}

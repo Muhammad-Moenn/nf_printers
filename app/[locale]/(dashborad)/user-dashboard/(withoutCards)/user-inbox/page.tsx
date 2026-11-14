@@ -1,4 +1,4 @@
-import { getOrCreateConversation } from "@/app/actions/user-message";
+import { getOrCreateConversation } from "@/lib/data/user-dashboard";
 import { GetDBUser } from "@/app/actions/user_action";
 import UserMessage from "@/components/user-message";
 import { getCurrentUser } from "@/lib/auth";

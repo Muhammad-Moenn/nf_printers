@@ -220,11 +220,13 @@ export const adminOrderItemSchema = z.object({
   pricingBreakdown: z.array(adminPricingBreakdownItemSchema).nullable(),
   adminAdjusted: z.boolean(),
   adjustmentReason: z.string().nullable(),
-  priceEstimatedAt: z.date().nullable(),
-  priceReviewedAt: z.date().nullable(),
+  // ISO strings, matching the cache's JSON boundary (a Redis hit never returns
+  // Date instances), so cached and fresh payloads have one shape.
+  priceEstimatedAt: z.string().nullable(),
+  priceReviewedAt: z.string().nullable(),
   status: adminOrderStatusSchema,
-  orderDate: z.date().nullable(),
-  deliveryDate: z.date().nullable(),
+  orderDate: z.string().nullable(),
+  deliveryDate: z.string().nullable(),
   paperType: z.string().nullable(),
   size: z.string().nullable(),
   gsm: z.string().nullable(),
@@ -234,8 +236,8 @@ export const adminOrderItemSchema = z.object({
   requirements: z.string().nullable(),
   isReorder: z.boolean(),
   designs: z.array(z.object({ url: z.string(), key: z.string() })),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export const adminMonthlyOrderAnalyticsSchema = z.object({
@@ -299,7 +301,6 @@ export const adminOrdersPagePayloadSchema = z.object({
   ordersNeedingAction: z.array(adminOrderItemSchema).max(6),
   pagination: adminOrdersPaginationSchema,
   stats: adminStatsSchema,
-  orderOverview: adminOrdersOverviewPayloadSchema,
   analytics: adminOrdersAnalyticsSchema,
 });
 

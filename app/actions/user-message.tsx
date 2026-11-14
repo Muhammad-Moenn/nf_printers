@@ -1,5 +1,21 @@
 import { prisma } from "@/lib/prisma";
+import { invalidateAdminMessageCaches } from "@/lib/cache/invalidate";
 import { GetDBUser } from "./user_action";
+
+const conversationSelect = {
+  id: true,
+  messages: {
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      text: true,
+      senderId: true,
+      receiverId: true,
+      seen: true,
+      createdAt: true,
+    },
+  },
+} as const;
 
 export async function getOrCreateConversation() {
   const dbUser = await GetDBUser();
@@ -9,13 +25,7 @@ export async function getOrCreateConversation() {
 
   let conversation = await prisma.conversation.findUnique({
     where: { userId: dbUser.id },
-    include: {
-      user: true,
-      admin: true,
-      messages: {
-        orderBy: { createdAt: "asc" },
-      },
-    },
+    select: conversationSelect,
   });
 
   if (!conversation) {
@@ -24,14 +34,9 @@ export async function getOrCreateConversation() {
         userId: dbUser.id,
         adminId: process.env.ADMIN_ID!,
       },
-      include: {               // ✅ ADD THIS
-        user: true,
-        admin: true,
-        messages: {
-          orderBy: { createdAt: "asc" },
-        },
-      },
+      select: conversationSelect,
     });
+    await invalidateAdminMessageCaches();
   }
 
   return conversation;

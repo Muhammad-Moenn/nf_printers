@@ -1,3 +1,4 @@
+import { apiClient } from "@/lib/api/client";
 import { calculateRuleBasedPrice } from "@/lib/pricing/rule-based-pricing";
 import { pricingResultSchema, type PricingResult } from "@/lib/pricing/types";
 
@@ -6,17 +7,15 @@ export async function predictPrice(input: unknown): Promise<PricingResult> {
 
   if (modelUrl) {
     try {
-      const response = await fetch(modelUrl, {
+      const result = await apiClient<PricingResult>(modelUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
+        body: input as Record<string, unknown>,
+        timeout: 10_000,
+        credentials: "omit",
         cache: "no-store",
-        signal: AbortSignal.timeout(10_000),
       });
 
-      if (response.ok) {
-        return pricingResultSchema.parse(await response.json());
-      }
+      return pricingResultSchema.parse(result);
     } catch (error) {
       console.error("Pricing model service failed, using rule engine:", error);
     }

@@ -1,9 +1,14 @@
 import { cache } from "react";
-import {
-  fetchCardsDataAndAllOrders,
-  fetchCurrentMonthOrders,
-} from "@/app/actions/order-action";
 
-// Share dashboard queries between the nested layout and page during one render.
-export const getDashboardCardsData = cache(fetchCardsDataAndAllOrders);
-export const getDashboardMonthData = cache(fetchCurrentMonthOrders);
+import { getCurrentUser } from "@/lib/auth";
+import {
+  emptyDashboardSummary,
+  getUserDashboardSummary,
+} from "@/lib/user-dashboard-summary";
+
+// Share the dashboard summary between the nested layout and page during one render.
+export const getDashboardCardsData = cache(async () => {
+  const user = await getCurrentUser();
+  if (!user) return emptyDashboardSummary();
+  return getUserDashboardSummary(user.id);
+});

@@ -1,66 +1,28 @@
 "use client";
 
 import { BellRing } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
+
+import { useRealtimeTables } from "@/lib/realtime-bus";
+import { useUnseenMessageCount } from "@/lib/query/hooks/use-messages";
 
 export default function NotificationButton({ dbUser }: any) {
-  const [notification, setNotification] = useState(0);
+  const { data: notification = 0, refetch } = useUnseenMessageCount(
+    dbUser?.id,
+    dbUser?.role
+  );
 
-  // ✅ Stable fetch function
-  const fetchCount = useCallback(async () => {
-    if (!dbUser?.id) return;
-
-    try {
-      const endpoint =
-        dbUser.role === "ADMIN"
-          ? "/api/admin-message/all-unseen-count"
-          : "/api/user-message/unseen-count";
-
-      const res = await fetch(endpoint);
-      if (!res.ok) return;
-
-      const data = await res.json();
-      setNotification(data.count ?? 0);
-      // console.log("Fetched notification count:", data.count);
-    } catch (error) {
-      console.error("Fetch notification error:", error);
-    }
-  }, [dbUser]);
-
-  useEffect(() => {
-    if (!dbUser?.id) return;
-
-    // 🔹 Initial load
-    fetchCount();
-
-    // 🔹 Realtime subscription
-    const channel = supabase
-      .channel(`messages-${dbUser.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Message",
-          // filter: `receiverId=eq.${dbUser.id}`,
-        },
-        (payload) => {
-
-          // console.log("Message change detected, fetching count...");
-          fetchCount();
-        }
-      )
-      .subscribe((status) => {
-        console.log("Realtime status:", status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-       console.log("Realtime status closed:");
-    };
-  }, [dbUser, fetchCount]);
+  // The admin inbox listens to Message events on this same bus, so the bell and
+  // inbox share one channel. The bus ref-counts listeners and only tears the
+  // channel down when the last subscriber unmounts.
+  useRealtimeTables(
+    "messages-realtime",
+    ["Message"] as const,
+    () => {
+      void refetch();
+    },
+    { enabled: Boolean(dbUser?.id) }
+  );
 
   if (!dbUser) return null;
   return (

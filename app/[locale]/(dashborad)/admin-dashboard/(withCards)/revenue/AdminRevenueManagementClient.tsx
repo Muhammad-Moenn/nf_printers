@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   ArrowDown,
@@ -43,7 +36,6 @@ import {
   YAxis,
 } from "recharts";
 
-import { getAdminRevenueManagementData } from "@/app/actions/admin-dashboard-action";
 import type {
   RevenueManagementPayload,
   RevenuePeriod,
@@ -57,7 +49,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/lib/supabaseClient";
+import { DEFAULT_ADMIN_REVENUE_PERIOD } from "@/lib/query/admin-defaults";
+import { useAdminRevenue } from "@/lib/query/hooks/use-admin-revenue";
+import { queryKeys } from "@/lib/query/query-keys";
 
 type ChartRange = "daily" | "weekly" | "monthly";
 type PaymentStatusFilter = "all" | "unpaid" | "overdue";
@@ -720,121 +714,48 @@ function RecentTransactions({
 }
 
 export default function AdminRevenueManagementClient({
-  initialData,
+  adminId,
 }: {
-  initialData: RevenueManagementPayload;
+  adminId: string;
 }) {
-  const [data, setData] = useState(initialData);
-  const [period, setPeriod] = useState<RevenuePeriod>(initialData.period);
+  const queryClient = useQueryClient();
+  const [period, setPeriod] = useState<RevenuePeriod>(
+    DEFAULT_ADMIN_REVENUE_PERIOD
+  );
   const [chartRange, setChartRange] = useState<ChartRange>("monthly");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
-  const channelId = useId();
-  const channelName = `admin-revenue-management-realtime-${channelId.replaceAll(":", "")}`;
-  const periodRef = useRef<RevenuePeriod>(initialData.period);
-  const requestSeq = useRef(0);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasSubscribed = useRef(false);
-
-  useEffect(() => {
-    periodRef.current = period;
-  }, [period]);
-
-  useEffect(() => {
-    setData(initialData);
-    setPeriod(initialData.period);
-    periodRef.current = initialData.period;
-  }, [initialData]);
+  const revenueQuery = useAdminRevenue(adminId, period);
+  const data = revenueQuery.data;
+  const isPending = revenueQuery.isFetching;
+  const error = revenueQuery.isError
+    ? "Could not refresh revenue data. Please try again."
+    : null;
 
   const refresh = useCallback(
-    (nextPeriod: RevenuePeriod = periodRef.current) => {
-      periodRef.current = nextPeriod;
-      setPeriod(nextPeriod);
-      const seq = ++requestSeq.current;
+    (nextPeriod: RevenuePeriod = period) => {
+      // Switching period mounts a different query key; if it is cached and
+      // fresh it should render from cache instead of forcing a request.
+      if (nextPeriod !== period) {
+        setPeriod(nextPeriod);
+        return;
+      }
 
-      startTransition(async () => {
-        try {
-          const payload = await getAdminRevenueManagementData(nextPeriod);
-          if (seq !== requestSeq.current) {
-            return;
-          }
-          if (!payload) {
-            setError("Revenue data is unavailable.");
-            return;
-          }
-          setData(payload);
-          setPeriod(payload.period);
-          periodRef.current = payload.period;
-          setError(null);
-        } catch {
-          if (seq === requestSeq.current) {
-            setError("Could not refresh revenue data. Please try again.");
-          }
-        }
+      // Manual refresh retires every period/analytics variant the server
+      // invalidated, while only the active query refetches immediately.
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.revenueRoot(adminId),
       });
     },
-    [startTransition],
+    [queryClient, adminId, period]
   );
 
-  const scheduleRefresh = useCallback(() => {
-    if (refreshTimer.current) {
-      clearTimeout(refreshTimer.current);
-    }
-
-    refreshTimer.current = setTimeout(() => {
-      refreshTimer.current = null;
-      refresh(periodRef.current);
-    }, 600);
-  }, [refresh]);
-
-  useEffect(() => {
-    let active = true;
-
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Order" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Payment" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Expense" },
-        scheduleRefresh,
-      )
-      .subscribe((status) => {
-        if (!active) {
-          return;
-        }
-
-        if (status === "SUBSCRIBED") {
-          if (hasSubscribed.current) {
-            refresh(periodRef.current);
-          }
-          hasSubscribed.current = true;
-          return;
-        }
-
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setError("Realtime updates are temporarily unavailable.");
-        }
-      });
-
-    return () => {
-      active = false;
-      if (refreshTimer.current) {
-        clearTimeout(refreshTimer.current);
-        refreshTimer.current = null;
-      }
-      void supabase.removeChannel(channel);
-    };
-  }, [channelName, refresh, scheduleRefresh]);
+  if (!data) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        {error ?? "Loading revenue…"}
+      </div>
+    );
+  }
 
   const exportReport = () =>
     downloadCsv(`revenue-report-${period}.csv`, [

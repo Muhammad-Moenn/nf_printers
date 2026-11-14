@@ -1,10 +1,8 @@
 declare module "*.css";
+declare module "*.scss";
+declare module "*.sass";
 
-export {};
-
-declare global {
-  interface Window {
-    google: any;
-    googleTranslateElementInit: () => void;
-  }
+interface Window {
+  google: any;
+  googleTranslateElementInit: () => void;
 }

@@ -46,6 +46,7 @@ interface CustomTableProps<T extends { id: string | number }> {
   // onDelete?: (row: T) => void;
   renderActions?: (row: T) => React.ReactNode;
   serverState?: ServerTableState;
+  loading?: boolean;
 }
 export type SortMode = "az" | "za" | "latest" | "oldest";
 
@@ -80,6 +81,7 @@ export default function CustomTable<T extends BaseRow>({
   // onDelete,
   renderActions,
   serverState,
+  loading = false,
 }: CustomTableProps<T>) {
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(defaultPageSize);
@@ -374,7 +376,7 @@ export default function CustomTable<T extends BaseRow>({
                   colSpan={columns.length}
                   className="text-center py-6 text-muted-foreground"
                 >
-                  No results found
+                  {loading ? "Loading…" : "No results found"}
                 </td>
               </tr>
             )}

@@ -1,108 +1,56 @@
 "use client";
 
 import { CardData, SectionCards } from "@/components/section-cards";
-import { supabase } from "@/lib/supabaseClient";
 import { useAuthUser } from "@/components/auth-provider";
 import { usePathname } from "next/navigation";
-import React, { useEffect, useState } from "react";
-const EMPTY_DATA = {
-  allOrders:[],
-  activeOrders: [],
-  pendingOrders: [],
-  completedOrders: [],
-  totalPaid: 0,
-  currentMonthPaid:0,
-    currentWeekPaid:0,
-};
-function RealtimeReordersClient({ Data }: { Data: any }) {
+import {
+  EMPTY_ORDERS_REALTIME_DATA,
+  useOrderMetrics,
+} from "@/lib/query/hooks/use-orders";
+
+function RealtimeReordersClient({ userId }: { userId: string }) {
   const pathname = usePathname();
   const { user } = useAuthUser();
-  const [cardData, setCardData] = useState(Data ?? EMPTY_DATA);
-  const {
-    allOrders=[],
-    activeOrders = [],
-    pendingOrders = [],
-    completedOrders = [],
-    totalPaid = 0,
-    currentMonthPaid=0,
-    currentWeekPaid=0,
-  } = cardData ?? EMPTY_DATA;
+  const { data } = useOrderMetrics(userId);
+  const payload = data ?? EMPTY_ORDERS_REALTIME_DATA;
+  const { totalPaid, currentMonthPaid, currentWeekPaid, statusCounts } = payload;
 
-  const refetch = async () => {
-    try {
-      const res = await fetch("/api/orders/realtime", { cache: "no-store" });
-      if (!res.ok) return;
-
-      const data = await res.json();
-      // console.log("Refetch data:", data.currentMonthPaid,data.currentWeekPaid);
-
-      setCardData({
-        allOrders:Array.isArray(data.allOrders)? data.allOrders:[],
-        activeOrders: Array.isArray(data.activeOrders) ? data.activeOrders : [],
-        pendingOrders: Array.isArray(data.pendingOrders)
-          ? data.pendingOrders
-          : [],
-        completedOrders: Array.isArray(data.completedOrders)
-          ? data.completedOrders
-          : [],
-        totalPaid: typeof data.totalPaid === "number" ? data.totalPaid : 0,
-        currentMonthPaid: typeof data.currentMonthPaid === "number" ? data.currentMonthPaid : 0,
-        currentWeekPaid: typeof data.currentWeekPaid === "number" ? data.currentWeekPaid : 0,
-      });
-    } catch (err) {
-      console.error("Refetch failed", err);
-    }
+  const orderCounts = {
+    active: statusCounts.inProgress,
+    pending: statusCounts.pending,
+    completed: statusCounts.completed,
   };
-  useEffect(() => {
-    const channel = supabase
-      .channel("cards-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Order",
-        },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
 
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
   const cards: CardData[] = [
     {
       title: "Active Orders",
-      value: activeOrders.length,
+      value: orderCounts.active,
       description: "Orders currently in progress",
       icon: "package",
       shortLabel: "In Progress",
       color: "var(--primary)", // Blue
       is_chart: true,
-       total_order:Number(allOrders.length),
+        total_order: statusCounts.total,
     },
     {
       title: "Pending Quotes",
-      value: pendingOrders.length,
+      value: orderCounts.pending,
       description: "Awaiting approval",
       icon: "file-text",
       shortLabel: "Awaiting",
       color: "var(--warning)", // Amber
       is_chart: true,
-     total_order:Number(allOrders.length),
+      total_order: statusCounts.total,
     },
     {
       title: "Completed Orders",
-      value: completedOrders.length,
+      value: orderCounts.completed,
       description: "Successfully delivered",
       icon: "check-circle",
       shortLabel: "Delivered",
       color: "var(--success)", // Green
       is_chart: true,
-      total_order:Number(allOrders.length),
+       total_order: statusCounts.total,
     },
     {
       title: "Total Paid",

@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import {
+  CACHE_TTL,
+  adminUnseenCountPrefix,
+  cacheKeys,
+} from "@/lib/cache/keys";
+import { getOrSetVersioned } from "@/lib/cache/store";
 import { prisma } from "@/lib/prisma";
 import { GetDBUser } from "@/app/actions/user_action";
 
@@ -18,14 +24,21 @@ export async function GET() {
       );
     }
 
-    const count = await prisma.message.count({
-      where: {
-        senderId: {
-          not: dbUser.id,
-        },
-        seen: false,
-      },
-    });
+    const count = await getOrSetVersioned(
+      cacheKeys.admin.messagesVersion,
+      adminUnseenCountPrefix,
+      dbUser.id,
+      CACHE_TTL.adminUnseenCount,
+      () =>
+        prisma.message.count({
+          where: {
+            senderId: {
+              not: dbUser.id,
+            },
+            seen: false,
+          },
+        })
+    );
 
     return NextResponse.json(
       { count },

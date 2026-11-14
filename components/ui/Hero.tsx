@@ -103,7 +103,7 @@ const HeroSection = ({ className }: Props) => {
             <motion.h1
               id="hero-heading"
               {...reveal(0.06)}
-              className="mt-[var(--space-4)] font-hero text-[length:clamp(1.6rem,8vw,2.25rem)] font-bold leading-hero tracking-hero text-heading sm:mt-[var(--space-5)] sm:text-hero"
+              className="mt-[var(--space-4)] font-hero text-[length:clamp(1.6rem,8.2vw,2.25rem)] font-bold leading-hero tracking-hero text-heading sm:mt-[var(--space-5)] sm:text-hero"
             >
               <span className="block whitespace-nowrap">
                 {landing("hero_title_line1")}

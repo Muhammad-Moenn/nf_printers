@@ -47,6 +47,7 @@ model UploadedFile {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, key])
 }
 
 model Payment {
@@ -59,6 +60,9 @@ model Payment {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   order     Order         @relation(fields: [orderId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([createdAt])
 }
 
 model Service {
@@ -142,6 +146,13 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([userId, createdAt])
+  @@index([userId, orderDate])
+  @@index([userId, status])
+  @@index([status, orderDate])
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([service])
 }
 
 model Designs {
@@ -156,6 +167,9 @@ model Designs {
   user   User   @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([key])
 }
 
 enum Role {
@@ -216,6 +230,7 @@ model Conversation {
 
   // @@index([userId])
   @@index([adminId])
+  @@index([updatedAt])
 }
 
 model Message {
@@ -236,5 +251,8 @@ model Message {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@index([conversationId])
+  @@index([conversationId, createdAt])
   @@index([senderId])
+  @@index([receiverId, seen])
+  @@index([createdAt])
 }

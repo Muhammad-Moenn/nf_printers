@@ -253,6 +253,8 @@ export function SignUpForm() {
         Use at least 8 characters and do not reuse a password from another site.
       </p>
 
+      <div id="clerk-captcha" />
+
       {error && (
         <p
           role="alert"

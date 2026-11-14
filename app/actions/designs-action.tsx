@@ -1,6 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { invalidateUserDesignCaches } from "@/lib/cache/invalidate";
+import { CACHE_TTL, cacheKeys } from "@/lib/cache/keys";
+import { getOrSet } from "@/lib/cache/store";
 import { GetDBUser } from "./user_action";
 import { UTApi } from "uploadthing/server";
 
@@ -25,7 +28,7 @@ export type Design = {
     name?: string | null;
     type?: string | null;
     userId?: string;
-    createdAt?: Date;
+    createdAt?: Date | string;
 };
 
 export async function saveDesign(design: Design) {
@@ -58,6 +61,7 @@ export async function saveDesign(design: Design) {
     await prisma.uploadedFile.deleteMany({ where: { key: design.key, userId: dbUser.id } }).catch((error) => {
       console.error("Temporary upload record cleanup failed:", error);
     });
+    await invalidateUserDesignCaches(dbUser.id);
     return { success: true };
   } catch (error) {
     console.error("Error saving design:", error);
@@ -71,33 +75,46 @@ export async function getUserDesigns() {
   const dbUser = await GetDBUser();
   if (!dbUser) throw new Error("User not found");
 
+  return getOrSet(
+    cacheKeys.user.designs(dbUser.id),
+    CACHE_TTL.userDesigns,
+    () => loadUserDesigns(dbUser.id)
+  );
+}
+
+async function loadUserDesigns(userId: string) {
   try {
-    const designs = await prisma.designs.findMany({
-      where: {
-        userId: dbUser.id,
-      },
-      
-      orderBy: {
-        createdAt: "desc", // latest designs first
-      },
-      select: {
-        id: true,
-        url: true,
-        key: true,
-        size: true,
-        userId: true,
-        createdAt: true,
-      },
-    });
-    const orders = await prisma.order.findMany({
-      where: { userId: dbUser.id },
-      select: { designs: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    });
+    const [designs, orders] = await Promise.all([
+      prisma.designs.findMany({
+        where: {
+          userId,
+        },
+
+        orderBy: {
+          createdAt: "desc", // latest designs first
+        },
+        select: {
+          id: true,
+          url: true,
+          key: true,
+          size: true,
+          userId: true,
+          createdAt: true,
+        },
+      }),
+      prisma.order.findMany({
+        where: { userId },
+        select: { designs: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
     const knownKeys = new Set(designs.map((design) => design.key));
     const metadataByKey = new Map<string, { name?: string; type?: string; size?: number }>();
-    const legacyDesigns: Design[] = [];
+    const legacyByKey = new Map<
+      string,
+      { url: string; key: string; size: number | null; userId: string; createdAt: Date }
+    >();
 
     for (const order of orders) {
       if (!Array.isArray(order.designs)) continue;
@@ -112,22 +129,34 @@ export async function getUserDesigns() {
             size: typeof item.size === "number" ? item.size : undefined,
           });
         }
-        if (knownKeys.has(item.key)) continue;
+        if (knownKeys.has(item.key) || legacyByKey.has(item.key)) continue;
 
-        const created = await prisma.designs.create({
-          data: {
-            url: item.url,
-            key: item.key,
-            size: typeof item.size === "number" ? item.size : null,
-            userId: dbUser.id,
-            createdAt: order.createdAt,
-          },
-          select: { id: true, url: true, key: true, size: true, userId: true, createdAt: true },
+        legacyByKey.set(item.key, {
+          url: item.url,
+          key: item.key,
+          size: typeof item.size === "number" ? item.size : null,
+          userId,
+          createdAt: order.createdAt,
         });
-        knownKeys.add(item.key);
-        legacyDesigns.push({ ...created, ...metadataByKey.get(item.key) });
       }
     }
+
+    const legacyKeys = Array.from(legacyByKey.keys());
+
+    if (legacyKeys.length) {
+      await prisma.designs.createMany({
+        data: Array.from(legacyByKey.values()),
+      });
+    }
+
+    const legacyDesigns = legacyKeys.length
+      ? (
+          await prisma.designs.findMany({
+            where: { userId, key: { in: legacyKeys } },
+            select: { id: true, url: true, key: true, size: true, userId: true, createdAt: true },
+          })
+        ).map((design) => ({ ...design, ...metadataByKey.get(design.key) }))
+      : [];
 
     return [
       ...designs.map((design) => ({ ...design, ...metadataByKey.get(design.key) })),
@@ -169,5 +198,6 @@ export async function deleteDesign(design: Design) {
     if (!deletedFile.success) throw new Error("Unable to delete the stored design file");
   }
   await prisma.designs.delete({ where: { id: ownedDesign.id } });
+  await invalidateUserDesignCaches(dbUser.id);
   return { success: true };
 }

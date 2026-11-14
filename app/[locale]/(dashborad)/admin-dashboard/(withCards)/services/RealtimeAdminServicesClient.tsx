@@ -3,12 +3,12 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
   useTransition,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Check,
@@ -28,18 +28,19 @@ import {
   X,
 } from "lucide-react";
 import {
-  deleteAdminServiceAction,
-  getAdminServicesAction,
-  saveAdminServiceAction,
-  toggleAdminServiceAction,
-} from "@/app/actions/admin-services-action";
+  deleteAdminService,
+  saveAdminService,
+  toggleAdminService,
+} from "@/lib/data/admin-services";
 import {
   serviceInputSchema,
   type AdminService,
   type AdminServicesPayload,
   type ServiceInput,
 } from "@/app/schemas/admin-services-schema";
-import { supabase } from "@/lib/supabaseClient";
+import { useAdminServices } from "@/lib/query/hooks/use-admin-services";
+import { markAdminMutationSync } from "@/lib/query/admin-invalidation";
+import { queryKeys } from "@/lib/query/query-keys";
 import {
   Select,
   SelectContent,
@@ -224,7 +225,7 @@ function ServiceForm({
 
     startTransition(async () => {
       try {
-        const result = await saveAdminServiceAction(parsed.data, service?.id);
+        const result = await saveAdminService(parsed.data, service?.id);
         if (!result.success) {
           setError(result.error);
           toast.error(result.error);
@@ -595,11 +596,20 @@ function ConfirmDeleteDialog({
 }
 
 export default function RealtimeAdminServicesClient({
+  adminId,
   initialData,
 }: {
+  adminId: string;
   initialData: AdminServicesPayload;
 }) {
-  const [payload, setPayload] = useState(initialData);
+  const queryClient = useQueryClient();
+  const servicesQuery = useAdminServices(adminId, initialData);
+  const payload = servicesQuery.data ?? initialData;
+  const pending = servicesQuery.isFetching;
+  const realtimeStatus = "live" as const;
+  const queryError = servicesQuery.isError
+    ? "Unable to refresh services. Please try again."
+    : null;
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
@@ -610,143 +620,38 @@ export default function RealtimeAdminServicesClient({
   const [deleteTarget, setDeleteTarget] = useState<AdminService | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [realtimeStatus, setRealtimeStatus] = useState<
-    "connecting" | "live" | "offline"
-  >("connecting");
-  const [pending, startTransition] = useTransition();
 
-  const channelId = useId();
-  const channelName = useMemo(
-    () => `admin-services-realtime-${channelId.replaceAll(":", "")}`,
-    [channelId],
+  const setPayload = useCallback(
+    (
+      updater:
+        | AdminServicesPayload
+        | ((current: AdminServicesPayload) => AdminServicesPayload)
+    ) => {
+      queryClient.setQueryData<AdminServicesPayload>(
+        queryKeys.admin.services(adminId),
+        (current) => {
+          const base = current ?? initialData;
+          return typeof updater === "function" ? updater(base) : updater;
+        }
+      );
+    },
+    [queryClient, adminId, initialData]
   );
 
-  const refreshInFlight = useRef(false);
-  const refreshQueued = useRef(false);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refreshRef = useRef<() => void>(() => {});
-  const hasSubscribed = useRef(false);
-  const wasHidden = useRef(false);
-
   const refresh = useCallback(() => {
-    if (refreshInFlight.current) {
-      refreshQueued.current = true;
-      return;
-    }
-
-    refreshInFlight.current = true;
-    startTransition(async () => {
-      try {
-        const data = await getAdminServicesAction();
-        if (!data) {
-          setError("Services data is unavailable. Please try again.");
-          return;
-        }
-        setPayload(data);
-        setError(null);
-      } catch {
-        setError("Unable to refresh services. Please try again.");
-      } finally {
-        refreshInFlight.current = false;
-        if (refreshQueued.current) {
-          refreshQueued.current = false;
-          refreshRef.current();
-        }
-      }
+    // Refetch now; the Supabase echo for this write is ignored for a moment so
+    // the same change is not fetched twice.
+    markAdminMutationSync(adminId, "Service");
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.admin.services(adminId),
     });
-  }, [startTransition]);
+  }, [queryClient, adminId]);
+
+  const refreshRef = useRef(refresh);
 
   useEffect(() => {
     refreshRef.current = refresh;
   }, [refresh]);
-
-  const scheduleRefresh = useCallback(() => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
-    refreshTimer.current = setTimeout(() => {
-      refreshTimer.current = null;
-      refreshRef.current();
-    }, 500);
-  }, []);
-
-  useEffect(() => {
-    setPayload(initialData);
-  }, [initialData]);
-
-  useEffect(() => {
-    let active = true;
-
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Service" },
-        scheduleRefresh,
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Order" },
-        scheduleRefresh,
-      )
-      .subscribe((subscriptionStatus) => {
-        if (!active) return;
-
-        if (subscriptionStatus === "SUBSCRIBED") {
-          setRealtimeStatus("live");
-          if (hasSubscribed.current) scheduleRefresh();
-          hasSubscribed.current = true;
-          return;
-        }
-
-        if (
-          subscriptionStatus === "CHANNEL_ERROR" ||
-          subscriptionStatus === "TIMED_OUT"
-        ) {
-          setRealtimeStatus("offline");
-          return;
-        }
-
-        setRealtimeStatus("connecting");
-      });
-
-    return () => {
-      active = false;
-      if (refreshTimer.current) {
-        clearTimeout(refreshTimer.current);
-        refreshTimer.current = null;
-      }
-      void supabase.removeChannel(channel);
-    };
-  }, [channelName, scheduleRefresh]);
-
-  useEffect(() => {
-    if (realtimeStatus === "live") return;
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") refreshRef.current();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [realtimeStatus]);
-
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        wasHidden.current = true;
-        return;
-      }
-      if (wasHidden.current) {
-        wasHidden.current = false;
-        scheduleRefresh();
-      }
-    };
-    const onOnline = () => scheduleRefresh();
-
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    window.addEventListener("online", onOnline);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      window.removeEventListener("online", onOnline);
-    };
-  }, [scheduleRefresh]);
 
   const patchService = useCallback(
     (id: string, patch: Partial<AdminService>) => {
@@ -759,7 +664,7 @@ export default function RealtimeAdminServicesClient({
         }),
       );
     },
-    [],
+    [setPayload],
   );
 
   const removeService = useCallback((id: string) => {
@@ -773,7 +678,7 @@ export default function RealtimeAdminServicesClient({
         ),
       });
     });
-  }, []);
+  }, [setPayload]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = useMemo(
@@ -824,7 +729,7 @@ export default function RealtimeAdminServicesClient({
     patchService(service.id, { isActive: nextActive });
 
     try {
-      const result = await toggleAdminServiceAction(service.id, nextActive);
+      const result = await toggleAdminService(service.id, nextActive);
       if (!result.success) {
         patchService(service.id, { isActive: service.isActive });
         toast.error(result.error);
@@ -847,7 +752,7 @@ export default function RealtimeAdminServicesClient({
 
     setBusyId(target.id);
     try {
-      const result = await deleteAdminServiceAction(target.id);
+      const result = await deleteAdminService(target.id);
       if (!result.success) {
         toast.error(result.error);
         return;
@@ -938,12 +843,12 @@ export default function RealtimeAdminServicesClient({
         </div>
       </div>
 
-      {error && (
+      {(error ?? queryError) && (
         <div
           role="alert"
           className="flex items-center justify-between gap-3 rounded-lg border border-destructive-border bg-destructive-soft px-4 py-2.5 text-sm text-destructive-text dark:border-destructive dark:bg-destructive/40 dark:text-destructive-soft-foreground"
         >
-          <span>{error}</span>
+          <span>{error ?? queryError}</span>
           <button
             type="button"
             onClick={() => setError(null)}
@@ -1073,7 +978,7 @@ export default function RealtimeAdminServicesClient({
           </div>
         </div>
 
-        {pending && realtimeStatus !== "live" && (
+        {pending && (
           <div
             role="status"
             className="flex items-center gap-2 px-5 py-2 text-xs text-muted-foreground"

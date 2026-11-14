@@ -8,6 +8,9 @@ import {
   type AdminService,
   type AdminServicesPayload,
 } from "@/app/schemas/admin-services-schema";
+import { CACHE_TTL, cacheKeys } from "@/lib/cache/keys";
+import { getOrSet } from "@/lib/cache/store";
+import { invalidateServiceCaches } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/prisma";
 
 async function requireAdmin() {
@@ -28,16 +31,29 @@ const normalize = (value: string) => value.trim().toLowerCase();
 
 const serviceIdSchema = z.string().trim().min(1).max(100);
 
-function revalidateServices() {
+async function revalidateServices() {
   revalidatePath("/[locale]/services", "page");
   revalidatePath("/[locale]/admin-dashboard/services", "page");
+  await invalidateServiceCaches();
 }
 
 export async function getAdminServicesAction(): Promise<AdminServicesPayload | null> {
   if (!(await requireAdmin())) return null;
 
   try {
-    const [services, orderCounts] = await Promise.all([
+    return await getOrSet(
+      cacheKeys.admin.servicesList,
+      CACHE_TTL.adminServicesList,
+      loadAdminServicesPayload,
+    );
+  } catch (error) {
+    console.error("getAdminServicesAction failed", error);
+    return null;
+  }
+}
+
+async function loadAdminServicesPayload(): Promise<AdminServicesPayload> {
+  const [services, orderCounts] = await Promise.all([
       prisma.service.findMany({
         orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
         select: {
@@ -105,10 +121,6 @@ export async function getAdminServicesAction(): Promise<AdminServicesPayload | n
         popularOrders: popular?.orderCount ?? 0,
       },
     };
-  } catch (error) {
-    console.error("getAdminServicesAction failed", error);
-    return null;
-  }
 }
 
 export async function saveAdminServiceAction(raw: unknown, id?: string) {
@@ -172,7 +184,7 @@ export async function saveAdminServiceAction(raw: unknown, id?: string) {
     if (id) await prisma.service.update({ where: { id }, data });
     else await prisma.service.create({ data });
 
-    revalidateServices();
+    await revalidateServices();
     return { success: true as const };
   } catch (error) {
     console.error("saveAdminServiceAction failed", error);
@@ -191,7 +203,7 @@ export async function toggleAdminServiceAction(id: string, isActive: boolean) {
 
   try {
     await prisma.service.update({ where: { id }, data: { isActive } });
-    revalidateServices();
+    await revalidateServices();
     return { success: true as const };
   } catch (error) {
     console.error("toggleAdminServiceAction failed", error);
@@ -217,7 +229,7 @@ export async function deleteAdminServiceAction(id: string) {
       return { success: false as const, error: "Service not found." };
 
     await prisma.service.delete({ where: { id } });
-    revalidateServices();
+    await revalidateServices();
     return { success: true as const };
   } catch (error) {
     console.error("deleteAdminServiceAction failed", error);

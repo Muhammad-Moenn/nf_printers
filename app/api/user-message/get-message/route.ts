@@ -10,9 +10,18 @@ export async function GET() {
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
   const conversation = await prisma.conversation.findUnique({
     where: { userId: dbUser.id },
-    include: {
+    select: {
+      id: true,
       messages: {
         orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          text: true,
+          senderId: true,
+          receiverId: true,
+          seen: true,
+          createdAt: true,
+        },
       },
     },
   });

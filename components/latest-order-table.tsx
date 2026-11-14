@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
+import { useOrder } from "@/lib/query/hooks/use-orders";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -102,15 +103,23 @@ export default function LatestOrdersTable({
   darkPalette = "default",
   dashboardPath = "admin-dashboard",
   compactDashboard = false,
+  userId,
 }: {
   ordersData: LatestOrder[];
   darkPalette?: "default" | "services";
   dashboardPath?: "admin-dashboard" | "user-dashboard";
   compactDashboard?: boolean;
+  userId?: string;
 }) {
   const servicesPalette = darkPalette === "services";
   const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<LatestOrder | null>(null);
+  const { data: detail } = useOrder(
+    dashboardPath === "user-dashboard" ? userId : undefined,
+    selectedOrder?.id ?? null
+  );
+  const activeOrder =
+    selectedOrder && detail ? { ...selectedOrder, ...detail } : selectedOrder;
 
   const visibleOrders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -385,39 +394,39 @@ export default function LatestOrdersTable({
       </div>}
 
       <Dialog
-        open={Boolean(selectedOrder)}
+        open={Boolean(activeOrder)}
         onOpenChange={(open) => !open && setSelectedOrder(null)}
       >
         <DialogContent className={`max-h-[88vh] overflow-y-auto sm:max-w-2xl ${servicesPalette ? "dark:border-[var(--border)] dark:bg-[var(--surface-3)] dark:text-neutral-100" : ""}`}>
           <DialogHeader>
             <DialogTitle>Order overview</DialogTitle>
             <DialogDescription>
-              {selectedOrder
-                ? `#${selectedOrder.id.slice(-6).toUpperCase()} for ${
-                    selectedOrder.customerName || "this customer"
+              {activeOrder
+                ? `#${activeOrder.id.slice(-6).toUpperCase()} for ${
+                    activeOrder.customerName || "this customer"
                   }`
                 : "Review the latest order details."}
             </DialogDescription>
           </DialogHeader>
 
-          {selectedOrder && (
+          {activeOrder && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <DetailItem servicesPalette={servicesPalette} label="Customer" value={selectedOrder.customerName || "—"} />
-              <DetailItem servicesPalette={servicesPalette} label="Email" value={selectedOrder.customerEmail || "—"} />
-              <DetailItem servicesPalette={servicesPalette} label="Product" value={selectedOrder.product} />
-              <DetailItem servicesPalette={servicesPalette} label="Service" value={selectedOrder.service} />
-              <DetailItem servicesPalette={servicesPalette} label="Quantity" value={selectedOrder.quantity} />
-              <DetailItem servicesPalette={servicesPalette} label="Status" value={selectedOrder.status.replaceAll("_", " ")} />
-              <DetailItem servicesPalette={servicesPalette} label="Ordered" value={formatDate(selectedOrder.orderDate)} />
-              <DetailItem servicesPalette={servicesPalette} label="Delivery date" value={formatDate(selectedOrder.deliveryDate)} />
+              <DetailItem servicesPalette={servicesPalette} label="Customer" value={activeOrder.customerName || "—"} />
+              <DetailItem servicesPalette={servicesPalette} label="Email" value={activeOrder.customerEmail || "—"} />
+              <DetailItem servicesPalette={servicesPalette} label="Product" value={activeOrder.product} />
+              <DetailItem servicesPalette={servicesPalette} label="Service" value={activeOrder.service} />
+              <DetailItem servicesPalette={servicesPalette} label="Quantity" value={activeOrder.quantity} />
+              <DetailItem servicesPalette={servicesPalette} label="Status" value={activeOrder.status.replaceAll("_", " ")} />
+              <DetailItem servicesPalette={servicesPalette} label="Ordered" value={formatDate(activeOrder.orderDate)} />
+              <DetailItem servicesPalette={servicesPalette} label="Delivery date" value={formatDate(activeOrder.deliveryDate)} />
               <DetailItem
                 servicesPalette={servicesPalette}
                 label="Print specification"
                 value={[
-                  selectedOrder.paperType,
-                  selectedOrder.gsm && `${selectedOrder.gsm} GSM`,
-                  selectedOrder.colorMode,
-                  selectedOrder.sides,
+                  activeOrder.paperType,
+                  activeOrder.gsm && `${activeOrder.gsm} GSM`,
+                  activeOrder.colorMode,
+                  activeOrder.sides,
                 ]
                   .filter(Boolean)
                   .join(" · ") || "Not set"}
@@ -426,9 +435,9 @@ export default function LatestOrdersTable({
                 servicesPalette={servicesPalette}
                 label="Quote"
                 value={formatAmount(
-                  selectedOrder.finalAmount ??
-                    selectedOrder.estimatedAmount ??
-                    selectedOrder.amount
+                  activeOrder.finalAmount ??
+                    activeOrder.estimatedAmount ??
+                    activeOrder.amount
                 )}
               />
             </div>

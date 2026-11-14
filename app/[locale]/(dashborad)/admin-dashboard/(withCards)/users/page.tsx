@@ -1,16 +1,33 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { redirect } from "next/navigation";
 
-import { getAdminUsersDashboardDataAction } from "@/app/actions/admin-users-action";
+import { AdminUsersRealtimeSync } from "@/components/admin-realtime-sync";
+import { requireAdminPage } from "@/lib/auth-guards";
+import { getAdminUsersDashboardData } from "@/lib/data/admin-users";
+import { DEFAULT_ADMIN_USERS_QUERY } from "@/lib/query/admin-defaults";
+import { makeQueryClient } from "@/lib/query/query-client";
+import { queryKeys } from "@/lib/query/query-keys";
+
 import RealtimeAdminUsersClient from "./RealtimeAdminUsersClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {
-  const initialData = await getAdminUsersDashboardDataAction();
+  const user = await requireAdminPage();
 
-  if (!initialData) {
-    redirect("/sign-in");
-  }
+  const initialData = await getAdminUsersDashboardData();
+  if (!initialData) redirect("/sign-in");
 
-  return <RealtimeAdminUsersClient initialData={initialData} />;
+  const queryClient = makeQueryClient();
+  queryClient.setQueryData(
+    queryKeys.admin.users(user.id, DEFAULT_ADMIN_USERS_QUERY),
+    initialData
+  );
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <AdminUsersRealtimeSync adminId={user.id} />
+      <RealtimeAdminUsersClient adminId={user.id} />
+    </HydrationBoundary>
+  );
 }

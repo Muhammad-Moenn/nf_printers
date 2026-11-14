@@ -56,7 +56,6 @@ export async function SiteHeader() {
           {/* <LanguageSelector/> */}
           <ModeToggle />
           <NotificationButton dbUser={dbUser} />
-          <CartButton />
           <NavUser user={data.user} />
         </div>
       </div>

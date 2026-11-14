@@ -2,6 +2,13 @@
 
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import {
+  CACHE_TTL,
+  adminUsersFilterHash,
+  adminUsersPagePrefix,
+  cacheKeys,
+} from "@/lib/cache/keys";
+import { getOrSetVersioned } from "@/lib/cache/store";
 import { prisma } from "@/lib/prisma";
 import { GetDBUser } from "./user_action";
 import type { MockUser, UserOrder } from "@/data/mockUsers";
@@ -30,7 +37,7 @@ async function requireAdminUser() {
 
 const adminUsersQuerySchema = z.object({
   page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(5).max(100).default(5),
+  pageSize: z.number().int().min(5).max(100).default(20),
   search: z.string().trim().max(120).default(""),
   role: z.enum(["all", "customer", "employee", "admin"]).default("all"),
   status: z.enum(["all", "active", "suspended"]).default("all"),
@@ -53,17 +60,35 @@ type UserListRow = {
 type TopSpenderRow = { name: string; spent: number };
 type SignupRow = { month: string; users: number };
 
+type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;
+
 export async function getAdminUsersDashboardDataAction(input?: unknown) {
   const admin = await requireAdminUser();
   if (!admin) {
     return null;
   }
 
+  const query = parseAdminUsersQuery(input);
+
+  // User/profile/order writes bump this counter, retiring cached pages. The
+  // counter and the page are read in one round trip on a hit.
+  return getOrSetVersioned(
+    cacheKeys.admin.usersVersion,
+    adminUsersPagePrefix,
+    adminUsersFilterHash(query),
+    CACHE_TTL.adminUsersPage,
+    () => loadAdminUsersDashboardData(query)
+  );
+}
+
+function parseAdminUsersQuery(input: unknown): AdminUsersQuery {
   const parsedQuery = adminUsersQuerySchema.safeParse(input ?? {});
-  const query = parsedQuery.success
+  return parsedQuery.success
     ? parsedQuery.data
     : adminUsersQuerySchema.parse({});
+}
 
+async function loadAdminUsersDashboardData(query: AdminUsersQuery) {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const pageSize = query.pageSize;
@@ -91,34 +116,6 @@ export async function getAdminUsersDashboardDataAction(input?: unknown) {
     ? Prisma.sql`WHERE ${Prisma.join(filters, " AND ")}`
     : Prisma.empty;
 
-  const [totalRows, stats] = await Promise.all([
-    prisma.$queryRaw<{ count: number }[]>`
-      SELECT COUNT(*)::int AS count
-      FROM "User" u
-      ${whereSql}
-    `,
-    (async () => {
-      const [totalUsers, newThisMonth, staffUsers] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { createdAt: { gte: startOfMonth } } }),
-        prisma.user.count({
-          where: { role: { in: ["ADMIN", "EMPLOYEE"] } },
-        }),
-      ]);
-
-      return {
-        totalUsers,
-        activeUsers: totalUsers,
-        newThisMonth,
-        staffUsers,
-      };
-    })(),
-  ]);
-
-  const total = totalRows[0]?.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(query.page, totalPages);
-  const skip = (page - 1) * pageSize;
   const directionSql = Prisma.raw(
     query.sortDirection === "asc" ? "ASC" : "DESC"
   );
@@ -129,7 +126,7 @@ export async function getAdminUsersDashboardDataAction(input?: unknown) {
         ? Prisma.sql`ORDER BY "totalSpent" ${directionSql}, u.id ASC`
         : Prisma.sql`ORDER BY u."createdAt" ${directionSql}, u.id ASC`;
 
-  const [rows, topSpenders, signupRows] = await Promise.all([
+  const fetchUserPageRows = (targetPage: number) =>
     prisma.$queryRaw<UserListRow[]>`
       SELECT
         u.id,
@@ -152,37 +149,83 @@ export async function getAdminUsersDashboardDataAction(input?: unknown) {
       ) o ON o."userId" = u.id
       ${whereSql}
       ${orderSql}
-      LIMIT ${pageSize} OFFSET ${skip}
-    `,
-    prisma.$queryRaw<TopSpenderRow[]>`
-      SELECT
-        COALESCE(
-          NULLIF(TRIM(CONCAT_WS(' ', u."firstName", u."lastName")), ''),
-          u.email
-        ) AS name,
-        COALESCE(SUM(o."finalAmount"), 0)::float8 AS spent
-      FROM "User" u
-      LEFT JOIN "Order" o
-        ON o."userId" = u.id AND o.status = 'completed'
-      GROUP BY u.id
-      ORDER BY spent DESC
-      LIMIT 6
-    `,
-    prisma.$queryRaw<SignupRow[]>`
-      SELECT
-        to_char("createdAt", 'YYYY-MM') AS month,
-        COUNT(*)::int AS users
-      FROM "User"
-      GROUP BY 1
-      ORDER BY 1
-    `,
-  ]);
+      LIMIT ${pageSize} OFFSET ${(targetPage - 1) * pageSize}
+    `;
+
+  // Count, stats, the requested page's rows, and the filter-independent
+  // aggregates all run in one round trip. Only the clamped retry and the
+  // per-user order history depend on an earlier result.
+  const [totalRows, stats, requestedRows, topSpenders, signupRows] =
+    await Promise.all([
+      prisma.$queryRaw<{ count: number }[]>`
+        SELECT COUNT(*)::int AS count
+        FROM "User" u
+        ${whereSql}
+      `,
+      (async () => {
+        const [row] = await prisma.$queryRaw<
+          { totalUsers: number; newThisMonth: number; staffUsers: number }[]
+        >`
+          SELECT
+            COUNT(*)::int AS "totalUsers",
+            COUNT(*) FILTER (WHERE "createdAt" >= ${startOfMonth})::int AS "newThisMonth",
+            COUNT(*) FILTER (WHERE role IN ('ADMIN', 'EMPLOYEE'))::int AS "staffUsers"
+          FROM "User"
+        `;
+
+        const totalUsers = row?.totalUsers ?? 0;
+
+        return {
+          totalUsers,
+          activeUsers: totalUsers,
+          newThisMonth: row?.newThisMonth ?? 0,
+          staffUsers: row?.staffUsers ?? 0,
+        };
+      })(),
+      fetchUserPageRows(query.page),
+      // Aggregate from completed orders instead of scanning every user, so the
+      // cost scales with completed orders rather than total registrations.
+      prisma.$queryRaw<TopSpenderRow[]>`
+        SELECT
+          COALESCE(
+            NULLIF(TRIM(CONCAT_WS(' ', u."firstName", u."lastName")), ''),
+            u.email
+          ) AS name,
+          SUM(o."finalAmount")::float8 AS spent
+        FROM "Order" o
+        JOIN "User" u ON u.id = o."userId"
+        WHERE o.status = 'completed' AND o."finalAmount" IS NOT NULL
+        GROUP BY u.id
+        ORDER BY spent DESC
+        LIMIT 6
+      `,
+      // Bounded signup trend; the chart only needs a rolling window.
+      prisma.$queryRaw<SignupRow[]>`
+        SELECT
+          to_char("createdAt", 'YYYY-MM') AS month,
+          COUNT(*)::int AS users
+        FROM "User"
+        WHERE "createdAt" >= date_trunc('month', now()) - interval '11 months'
+        GROUP BY 1
+        ORDER BY 1
+      `,
+    ]);
+
+  const total = totalRows[0]?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(query.page, totalPages);
+  // Re-query only when the requested page is past the end of a shrunken
+  // result set; the common path returns the rows fetched above.
+  const rows =
+    page === query.page ? requestedRows : await fetchUserPageRows(page);
 
   const userIds = rows.map((row) => row.id);
   const pageUsers = userIds.length
     ? await prisma.user.findMany({
         where: { id: { in: userIds } },
-        include: {
+        // Only the order history is needed here; avoid loading full user rows.
+        select: {
+          id: true,
           orders: {
             orderBy: { createdAt: "desc" },
             take: 50,

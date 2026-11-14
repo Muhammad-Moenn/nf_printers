@@ -3,15 +3,7 @@
 import { useAuth } from "@clerk/nextjs";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type SessionUser = {
-  id: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  fullName: string;
-  avatarUrl: string | null;
-  role: string;
-};
+import { fetchSessionUser, type SessionUser } from "@/lib/data/auth";
 
 const AuthContext = createContext<{ user: SessionUser | null; refresh: () => Promise<void> }>({ user: null, refresh: async () => {} });
 
@@ -21,8 +13,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/me", { cache: "no-store", credentials: "same-origin" });
-      const data = await response.json();
+      const data = await fetchSessionUser();
       setUser(data.user ?? null);
     } catch {
       setUser(null);

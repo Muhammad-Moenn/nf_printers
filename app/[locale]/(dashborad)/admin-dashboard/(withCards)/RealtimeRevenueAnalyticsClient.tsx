@@ -1,66 +1,64 @@
 "use client";
 
-import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 
-import { useAdminDashboardStore } from "@/app/store/admin-dashboard-store";
-import type { AdminRevenueAnalyticsPayload } from "@/app/schemas/admin-dashboard-schema";
-import RevenueAnalytics from "@/components/charts/admin-charts/revenue-analytics";
-import { supabase } from "@/lib/supabaseClient";
+import { useAdminRevenueAnalytics } from "@/lib/query/hooks/use-admin-dashboard";
+import { queryKeys } from "@/lib/query/query-keys";
 
-function RealtimeRevenueAnalyticsClient({
-  initialData,
-}: {
-  initialData: AdminRevenueAnalyticsPayload;
-}) {
-  const revenueAnalytics = useAdminDashboardStore(
-    (state) => state.revenueAnalytics
+const RevenueAnalytics = dynamic(
+  () => import("@/components/charts/admin-charts/revenue-analytics"),
+  {
+    ssr: false,
+    loading: () => <RevenueAnalyticsSkeleton />,
+  }
+);
+
+function RevenueAnalyticsSkeleton() {
+  return (
+    <div className="w-full animate-pulse" aria-hidden="true">
+      <div className="mb-5 flex items-center gap-2">
+        <div className="h-10 w-10 rounded-lg bg-muted/60" />
+        <div className="space-y-2">
+          <div className="h-5 w-40 rounded bg-muted/60" />
+          <div className="h-3 w-28 rounded bg-muted/40" />
+        </div>
+      </div>
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        <div className="h-[70px] rounded-lg bg-muted/40" />
+        <div className="h-[70px] rounded-lg bg-muted/40" />
+        <div className="h-[70px] rounded-lg bg-muted/40" />
+      </div>
+      <div className="mb-2 h-4 w-40 rounded bg-muted/40" />
+      <div className="h-52 rounded-lg bg-muted/30" />
+    </div>
   );
-  const isRefreshing = useAdminDashboardStore(
-    (state) => state.isRefreshingRevenue
-  );
-  const error = useAdminDashboardStore((state) => state.revenueError);
-  const setRevenueAnalyticsPayload = useAdminDashboardStore(
-    (state) => state.setRevenueAnalyticsPayload
-  );
-  const refreshRevenueAnalytics = useAdminDashboardStore(
-    (state) => state.refreshRevenueAnalytics
-  );
+}
 
-  const visibleData = revenueAnalytics ?? initialData;
+function RealtimeRevenueAnalyticsClient({ adminId }: { adminId: string }) {
+  const queryClient = useQueryClient();
+  const revenueQuery = useAdminRevenueAnalytics(adminId);
+  const data = revenueQuery.data;
 
-  useEffect(() => {
-    setRevenueAnalyticsPayload(initialData);
-    void refreshRevenueAnalytics({ force: true });
-  }, [initialData, refreshRevenueAnalytics, setRevenueAnalyticsPayload]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-revenue-analytics-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Order",
-        },
-        () => refreshRevenueAnalytics({ force: true })
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [refreshRevenueAnalytics]);
+  if (!data) {
+    return null;
+  }
 
   return (
     <RevenueAnalytics
-      data={visibleData.monthlyRevenue}
-      todayRevenue={visibleData.todayRevenue}
-      weekRevenue={visibleData.weekRevenue}
-      monthRevenue={visibleData.monthRevenue}
-      isRefreshing={isRefreshing}
-      error={error}
-      onRefresh={() => refreshRevenueAnalytics({ force: true })}
+      data={data.monthlyRevenue}
+      todayRevenue={data.todayRevenue}
+      weekRevenue={data.weekRevenue}
+      monthRevenue={data.monthRevenue}
+      isRefreshing={revenueQuery.isFetching}
+      error={
+        revenueQuery.isError ? "Unable to refresh revenue analytics." : null
+      }
+      onRefresh={() => {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.revenueAnalytics(adminId),
+        });
+      }}
     />
   );
 }

@@ -13,15 +13,19 @@ async function SettingPage() {
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Account Settings</h1>
         <p className="mt-2 text-muted-foreground">Manage your profile and account preferences.</p>
       </header>
-      <SettingsForms user={{
-        firstName: user.firstName ?? "",
-        lastName: user.lastName ?? "",
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt.toISOString(),
-        emailNotifications: user.emailNotifications,
-        marketingEmails: user.marketingEmails,
-      }} />
+      <SettingsForms
+        userId={user.id}
+        user={{
+          id: user.id,
+          firstName: user.firstName ?? "",
+          lastName: user.lastName ?? "",
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt.toISOString(),
+          emailNotifications: user.emailNotifications,
+          marketingEmails: user.marketingEmails,
+        }}
+      />
     </div>
   );
 }

@@ -1,11 +1,13 @@
 "use client";
 
+import type { Design } from "@/lib/data/designs";
 import {
-  deleteDesign,
-  getUserDesigns,
-  saveDesign,
-  type Design,
-} from "@/app/actions/designs-action";
+  designsQueryOptions,
+  useDeleteDesign,
+  useSaveDesign,
+  useUserDesigns,
+} from "@/lib/query/hooks/use-designs";
+import { useQueryClient } from "@tanstack/react-query";
 import { UploadDropzone } from "@/utils/uploadthing";
 import {
   AlertDialog,
@@ -84,10 +86,16 @@ function formatDate(value?: Date | string | null) {
 
 export default function UploadDesign({
   designs: initialDesigns,
+  userId,
 }: {
   designs: Design[];
+  userId: string;
 }) {
-  const [designs, setDesigns] = useState<Design[]>(initialDesigns);
+  const queryClient = useQueryClient();
+  const { data: cachedDesigns } = useUserDesigns(userId, initialDesigns);
+  const designs = cachedDesigns ?? initialDesigns;
+  const saveDesignMutation = useSaveDesign(userId);
+  const deleteDesignMutation = useDeleteDesign(userId);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -122,15 +130,19 @@ export default function UploadDesign({
   const refreshDesigns = async (
     metadata?: Map<string, { name: string; type: string }>,
   ) => {
+    if (!userId) return;
     setRefreshing(true);
     try {
-      const refreshed = await getUserDesigns();
-      setDesigns(
+      const refreshed = await queryClient.fetchQuery(
+        designsQueryOptions(userId)
+      );
+      queryClient.setQueryData(
+        designsQueryOptions(userId).queryKey,
         refreshed.map((design) => ({
           ...design,
           name: metadata?.get(design.key)?.name,
           type: metadata?.get(design.key)?.type,
-        })),
+        }))
       );
     } catch {
       toast.error("Could not refresh your designs. Please reload the page.");
@@ -153,7 +165,7 @@ export default function UploadDesign({
     }));
 
     const results = await Promise.allSettled(
-      uploadedDesigns.map((design) => saveDesign(design)),
+      uploadedDesigns.map((design) => saveDesignMutation.mutateAsync(design)),
     );
     const succeeded = results.filter(
       (result) => result.status === "fulfilled",
@@ -193,11 +205,14 @@ export default function UploadDesign({
 
   const handleDelete = async () => {
     if (!pendingDelete) return;
+    const target = pendingDelete;
     setDeleting(true);
     try {
-      await deleteDesign(pendingDelete);
-      setDesigns((current) =>
-        current.filter((design) => design.id !== pendingDelete.id),
+      await deleteDesignMutation.mutateAsync(target);
+      queryClient.setQueryData(
+        designsQueryOptions(userId).queryKey,
+        (current: Design[] | undefined) =>
+          (current ?? []).filter((design) => design.id !== target.id)
       );
       toast.success("Design deleted.");
       setPendingDelete(null);

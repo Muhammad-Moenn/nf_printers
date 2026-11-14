@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
 import {
   Card,
@@ -7,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PieChart, Pie, Cell, Label } from "recharts";
 import {
   IconPackage,
   IconFileText,
@@ -21,7 +23,18 @@ import {
   IconCurrencyDollar,
 } from "@tabler/icons-react";
 import { CheckCircle2, ChevronRight, Clock3, Hourglass } from "lucide-react";
-import DonutCardChart from "./charts/section-cards-charts";
+
+// Only customer cards render the donut, so keep Recharts out of the admin
+// overview bundle and load it with the cards that need it.
+const DonutCardChart = dynamic(() => import("./charts/section-cards-charts"), {
+  ssr: false,
+  loading: () => (
+    <div
+      aria-hidden="true"
+      className="h-16 w-16 animate-pulse rounded-full bg-muted/50"
+    />
+  ),
+});
 
 const iconMap = {
   package: IconPackage,
@@ -173,46 +186,5 @@ export function SectionCards({
         return <div key={i} className="h-full">{cardContent}</div>;
       })}
     </>
-  );
-}
-
-type Props = {
-  value: number; // percentage (0–100)
-  color?: string; // dynamic color
-  size?: number;
-};
-
-export default function DonutProgressChart({
-  value,
-  color = "var(--primary)",
-  size = 200,
-}: Props) {
-  const data = [
-    { name: "progress", value: value },
-    { name: "remaining", value: 100 - value },
-  ];
-
-  return (
-    <div style={{ width: size, height: size }}>
-      <PieChart width={size} height={size}>
-        <Pie
-          data={data}
-          dataKey="value"
-          startAngle={90}
-          endAngle={-270}
-          innerRadius="70%"
-          outerRadius="90%"
-          stroke="none"
-        >
-          <Cell fill={color} />
-          <Cell fill="var(--border)" />
-          <Label
-            value={`${value}%`}
-            position="center"
-            style={{ fontSize: 20, fontWeight: 600 }}
-          />
-        </Pie>
-      </PieChart>
-    </div>
   );
 }

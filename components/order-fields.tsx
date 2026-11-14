@@ -25,7 +25,8 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { saveDesign } from "@/app/actions/designs-action";
+import { useSaveDesign } from "@/lib/query/hooks/use-designs";
+import { deleteUploadedFile } from "@/lib/data/uploads";
 import { toast } from "react-toastify";
 
 type UploadedImage = {
@@ -39,6 +40,7 @@ type UploadedImage = {
 interface OrderFieldsProps {
   orderDraft: Order;
   setorderDraft: React.Dispatch<React.SetStateAction<Order>>;
+  userId: string;
   prevdesigns?: UploadedImage[];
   children?: React.ReactNode;
 }
@@ -86,9 +88,11 @@ const PaperTypes = [
 function OrderFields({
   orderDraft,
   setorderDraft,
+  userId,
   prevdesigns=[],
   children,
 }: OrderFieldsProps) {
+  const saveDesignMutation = useSaveDesign(userId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
@@ -109,7 +113,7 @@ function OrderFields({
     );
     if (!designsToSave.length) return;
 
-    const saved = await Promise.allSettled(designsToSave.map((design) => saveDesign(design)));
+    const saved = await Promise.allSettled(designsToSave.map((design) => saveDesignMutation.mutateAsync(design)));
     const failures = saved.filter((result) => result.status === "rejected");
     if (failures.length) {
       console.error("Failed to save uploaded order designs:", failures);
@@ -132,20 +136,12 @@ function OrderFields({
     try {
       setDeletingKey(key);
 
-      const res = await fetch("/api/uploadthing/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key }),
-      });
+      await deleteUploadedFile(key);
 
-      if (!res.ok) throw new Error("Delete failed");
-
-      if (res.ok) {
-        setorderDraft((prev) => ({
-          ...prev,
-          designs: (prev.designs ?? []).filter((img) => img.key !== key),
-        }));
-      }
+      setorderDraft((prev) => ({
+        ...prev,
+        designs: (prev.designs ?? []).filter((img) => img.key !== key),
+      }));
     } catch (err) {
       console.error(err);
     } finally {

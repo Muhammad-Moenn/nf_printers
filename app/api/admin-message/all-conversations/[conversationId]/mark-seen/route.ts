@@ -1,6 +1,7 @@
 // Mark all messages not sent by admin as seen
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { invalidateAdminMessageCaches } from "@/lib/cache/invalidate";
 import { GetDBUser } from "@/app/actions/user_action";
 
 interface Params {
@@ -54,6 +55,8 @@ export async function POST(req: Request, { params }: Params) {
         updatedAt: new Date(), // ensures Realtime sees a row-level change
       },
     });
+
+    await invalidateAdminMessageCaches();
 
     return NextResponse.json(
       { updatedCount: updated.count },

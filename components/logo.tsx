@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 
+import { apiClient } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 import {
@@ -45,10 +46,10 @@ const LogoBrandDownload = ({
 }: LogoBrandDownloadProps) => {
   const handleDownload = async (file: LogoBrandDownloadProps["files"][0]) => {
     try {
-      const response = await fetch(file.path);
-      if (!response.ok) throw new Error(`Failed to fetch ${file.name}`);
-
-      const blob = await response.blob();
+      const blob = await apiClient<Blob>(file.path, {
+        responseType: "blob",
+        credentials: "omit",
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

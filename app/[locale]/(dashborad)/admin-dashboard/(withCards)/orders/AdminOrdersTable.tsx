@@ -12,11 +12,11 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "react-toastify";
 
 import {
-  approveEstimatedPriceAction,
-  overrideEstimatedPriceAction,
-  updateAdminOrderAction,
-  updateAdminOrderStatusAction,
-} from "@/app/actions/admin-dashboard-action";
+  approveEstimatedPrice,
+  overrideEstimatedPrice,
+  updateAdminOrder,
+  updateAdminOrderStatus,
+} from "@/lib/data/admin-dashboard";
 import type {
   AdminOrderItem,
   AdminOrderStatus,
@@ -287,7 +287,7 @@ export default function AdminOrdersTable({
     setUpdatingOrderId(orderId);
 
     startTransition(async () => {
-      const result = await updateAdminOrderStatusAction({ orderId, status });
+      const result = await updateAdminOrderStatus({ orderId, status });
 
       if (!result.success) {
         toast.error(result.error);
@@ -320,7 +320,7 @@ export default function AdminOrdersTable({
     }
 
     setIsSavingEdit(true);
-    const result = await updateAdminOrderAction({
+      const result = await updateAdminOrder({
       orderId: editingOrder.id,
       ...editDraft,
       deliveryDate: editDraft.deliveryDate || null,
@@ -353,7 +353,7 @@ export default function AdminOrdersTable({
     if (!selectedOrder) return;
 
     setIsReviewingPrice(true);
-    const result = await approveEstimatedPriceAction(selectedOrder.id);
+      const result = await approveEstimatedPrice(selectedOrder.id);
     setIsReviewingPrice(false);
 
     if (!result.success) {
@@ -383,7 +383,7 @@ export default function AdminOrdersTable({
     }
 
     setIsReviewingPrice(true);
-    const result = await overrideEstimatedPriceAction({
+      const result = await overrideEstimatedPrice({
       orderId: selectedOrder.id,
       finalAmount: normalizedAmount,
       reason: overrideReason,

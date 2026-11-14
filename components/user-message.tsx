@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, CheckCheck, FileText, Headset, LoaderCircle, MessageCircle, Paperclip, Send } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { decodeChatMessage, isImageAttachment, type ChatAttachment } from "@/lib/chat-message";
+import { useSendUserMessage, useUserMessages } from "@/lib/query/hooks/use-messages";
+import { queryKeys } from "@/lib/query/query-keys";
 import { useUploadThing } from "@/utils/uploadthing";
 
 type InboxMessage = {
@@ -22,116 +25,147 @@ export default function UserMessage({ user, conversationId, initialMessages = []
   conversationId: string;
   initialMessages?: InboxMessage[];
 }) {
-  const [messages, setMessages] = useState<InboxMessage[]>(initialMessages);
+  const queryClient = useQueryClient();
+  const {
+    data: serverMessages,
+    isLoading,
+    error: queryError,
+  } = useUserMessages(user.userId, initialMessages);
+  const sendMutation = useSendUserMessage(user.userId);
+  const [pendingMessages, setPendingMessages] = useState<InboxMessage[]>([]);
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(initialMessages.length === 0);
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sendingRef = useRef(false);
   const { startUpload, isUploading } = useUploadThing("imageUploader", {
-    onUploadError: (uploadError) => setError(uploadError.message || "File upload failed. Please try again."),
+    onUploadError: (uploadError) =>
+      setActionError(
+        uploadError.message || "File upload failed. Please try again."
+      ),
   });
-  const fetchingRef = useRef(false);
 
-  const fetchMessages = useCallback(async () => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    try {
-      const response = await fetch("/api/user-message/get-message", { cache: "no-store" });
-      if (!response.ok) throw new Error("Unable to load your messages.");
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setMessages((current) => {
-          const pending = current.filter((message) => message.id.startsWith("pending-"));
-          const serverIds = new Set(data.map((message: InboxMessage) => message.id));
-          const stillPending = pending.filter((message) => !data.some((serverMessage: InboxMessage) =>
-            serverMessage.senderId === message.senderId &&
-            serverMessage.text === message.text &&
-            Math.abs(new Date(serverMessage.createdAt).getTime() - new Date(message.createdAt).getTime()) < 30_000
-          ));
-          const next = [...data, ...stillPending];
-          if (next.length === current.length && next.every((message, index) => {
-            const previous = current[index];
-            return previous?.id === message.id && previous?.seen === message.seen && previous?.text === message.text;
-          })) return current;
-          return next;
-        });
-      }
-      setError("");
-    } catch {
-      setError("We couldn’t load your messages. Please try again.");
-    } finally {
-      fetchingRef.current = false;
-      setLoading(false);
-    }
-  }, []);
+  const messages = useMemo(() => {
+    const server: InboxMessage[] = (serverMessages ?? initialMessages).map(
+      (message) => ({
+        id: message.id,
+        text: message.text,
+        senderId: message.senderId,
+        createdAt: message.createdAt,
+        seen: message.seen,
+        attachment: message.attachment ?? undefined,
+      })
+    );
+
+    const stillPending = pendingMessages.filter(
+      (pending) =>
+        !server.some(
+          (message) =>
+            message.senderId === pending.senderId &&
+            message.text === pending.text &&
+            Math.abs(
+              new Date(message.createdAt).getTime() -
+                new Date(pending.createdAt).getTime()
+            ) < 30_000
+        )
+    );
+
+    return [...server, ...stillPending];
+  }, [serverMessages, initialMessages, pendingMessages]);
 
   useEffect(() => {
-    void fetchMessages();
+    if (!serverMessages) return;
+
+    setPendingMessages((current) =>
+      current.filter(
+        (pending) =>
+          !serverMessages.some(
+            (message) =>
+              message.senderId === pending.senderId &&
+              message.text === pending.text &&
+              Math.abs(
+                new Date(message.createdAt).getTime() -
+                  new Date(pending.createdAt).getTime()
+              ) < 30_000
+          )
+      )
+    );
+  }, [serverMessages]);
+
+  useEffect(() => {
+    const invalidate = () => {
+      void queryClient.invalidateQueries(
+        { queryKey: queryKeys.messages.userMessages(user.userId) },
+        { cancelRefetch: false }
+      );
+    };
+
     const channel = supabase
       .channel(`user-inbox-${conversationId}`)
-      .on("postgres_changes", {
-        event: "*", schema: "public", table: "Message",
-        filter: `conversationId=eq.${conversationId}`,
-      }, () => { void fetchMessages(); })
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "Message",
+          filter: `conversationId=eq.${conversationId}`,
+        },
+        invalidate
+      )
       .subscribe();
 
-    // Realtime is the fast path. Poll while this tab is visible as a fallback
-    // for deployments where Supabase Postgres Changes is not enabled.
-    const poll = window.setInterval(() => {
-      if (document.visibilityState === "visible") void fetchMessages();
-    }, 3000);
     const refreshOnFocus = () => {
-      if (document.visibilityState === "visible") void fetchMessages();
+      if (document.visibilityState === "visible") invalidate();
     };
     document.addEventListener("visibilitychange", refreshOnFocus);
 
     return () => {
-      window.clearInterval(poll);
       document.removeEventListener("visibilitychange", refreshOnFocus);
       void supabase.removeChannel(channel);
     };
-  }, [conversationId, fetchMessages]);
+  }, [conversationId, user.userId, queryClient]);
+
+  const loading = isLoading;
+  const sending = sendMutation.isPending;
+  const error =
+    actionError ||
+    (queryError ? "We couldn’t load your messages. Please try again." : "");
 
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (container) container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
   async function sendMessage(event?: FormEvent<HTMLFormElement>, attachment?: ChatAttachment) {
     event?.preventDefault();
     const trimmed = text.trim();
-    if ((!trimmed && !attachment) || sending) return;
+    if ((!trimmed && !attachment) || sendingRef.current) return;
 
+    sendingRef.current = true;
     const optimisticId = `pending-${Date.now()}`;
     const optimistic: InboxMessage = {
       id: optimisticId, text: trimmed, senderId: user.userId,
       createdAt: new Date().toISOString(), seen: false,
       attachment,
     };
-    setSending(true);
-    setError("");
+    setActionError("");
     setText("");
-    setMessages((current) => [...current, optimistic]);
+    setPendingMessages((current) => [...current, optimistic]);
 
     try {
-      const response = await fetch("/api/user-message/send-message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: trimmed, attachment }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Your message could not be sent.");
-      setMessages((current) => current.map((message) => message.id === optimisticId ? data : message));
+      await sendMutation.mutateAsync({ text: trimmed, attachment });
       inputRef.current?.focus();
     } catch (err) {
-      setMessages((current) => current.filter((message) => message.id !== optimisticId));
+      setPendingMessages((current) =>
+        current.filter((message) => message.id !== optimisticId)
+      );
       setText(trimmed);
-      setError(err instanceof Error ? err.message : "Your message could not be sent.");
+      setActionError(
+        err instanceof Error ? err.message : "Your message could not be sent."
+      );
     } finally {
-      setSending(false);
+      sendingRef.current = false;
     }
   }
 
@@ -146,10 +180,10 @@ export default function UserMessage({ user, conversationId, initialMessages = []
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
     if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
-      setError("Attach an image, PDF, Word, or spreadsheet file up to 10 MB.");
+      setActionError("Attach an image, PDF, Word, or spreadsheet file up to 10 MB.");
       return;
     }
-    setError("");
+    setActionError("");
     try {
       const uploaded = await startUpload([file]);
       const uploadedFile = uploaded?.[0];
@@ -163,7 +197,7 @@ export default function UserMessage({ user, conversationId, initialMessages = []
         uploadedBy: uploadedFile.serverData.uploadedBy,
       });
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "File upload failed. Please try again.");
+      setActionError(uploadError instanceof Error ? uploadError.message : "File upload failed. Please try again.");
     }
   }
 

@@ -9,8 +9,8 @@ export interface CartItem {
    service:string
    quantity: string; // Quantity
    status?: OrderStatus; // Optional status
-   orderDate?: Date | null; // Order date
-   deliveryDate?: Date | null; // Delivery date (can be "-" for N/A)
+   orderDate?: Date | string | null; // Order date
+   deliveryDate?: Date | string | null; // Delivery date (can be "-" for N/A)
    amount: string; // Price / total
    // Optional Fields for Reorder / UI / Extra info
    finishingOptions?: string[]; // ["Lamination", "Binding", etc.]

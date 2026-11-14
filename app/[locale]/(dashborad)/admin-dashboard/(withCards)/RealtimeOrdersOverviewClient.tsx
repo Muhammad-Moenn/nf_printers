@@ -1,65 +1,90 @@
 "use client";
 
-import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 
-import type { AdminOrdersOverviewPayload } from "@/app/schemas/admin-dashboard-schema";
-import { useAdminDashboardStore } from "@/app/store/admin-dashboard-store";
-import OrdersOverview from "@/components/charts/admin-charts/orders-overview";
-import { supabase } from "@/lib/supabaseClient";
+import type { OrderOverviewItem } from "@/app/schemas/admin-dashboard-schema";
+import { useAdminStats } from "@/lib/query/hooks/use-admin-dashboard";
+import { queryKeys } from "@/lib/query/query-keys";
 
-function RealtimeOrdersOverviewClient({
-  initialData,
-}: {
-  initialData: AdminOrdersOverviewPayload;
-}) {
-  const ordersOverview = useAdminDashboardStore(
-    (state) => state.ordersOverview
-  );
-  const isRefreshing = useAdminDashboardStore(
-    (state) => state.isRefreshingOrdersOverview
-  );
-  const error = useAdminDashboardStore(
-    (state) => state.ordersOverviewError
-  );
-  const setOrdersOverviewPayload = useAdminDashboardStore(
-    (state) => state.setOrdersOverviewPayload
-  );
-  const refreshOrdersOverview = useAdminDashboardStore(
-    (state) => state.refreshOrdersOverview
-  );
+const OrdersOverview = dynamic(
+  () => import("@/components/charts/admin-charts/orders-overview"),
+  {
+    ssr: false,
+    loading: () => <OrdersOverviewSkeleton />,
+  }
+);
 
-  const visibleData = ordersOverview ?? initialData;
+function OrdersOverviewSkeleton() {
+  return (
+    <div className="w-full animate-pulse" aria-hidden="true">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="h-10 w-10 rounded-lg bg-muted/60" />
+          <div className="space-y-2">
+            <div className="h-5 w-40 rounded bg-muted/60" />
+            <div className="h-3 w-28 rounded bg-muted/40" />
+          </div>
+        </div>
+        <div className="h-9 w-9 rounded-md bg-muted/40" />
+      </div>
+      <div className="flex flex-col items-center gap-6">
+        <div className="h-44 w-44 rounded-full bg-muted/30" />
+        <div className="w-full space-y-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="h-4 rounded bg-muted/40" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    setOrdersOverviewPayload(initialData);
-    void refreshOrdersOverview({ force: true });
-  }, [initialData, refreshOrdersOverview, setOrdersOverviewPayload]);
+function RealtimeOrdersOverviewClient({ adminId }: { adminId: string }) {
+  const queryClient = useQueryClient();
+  const statsQuery = useAdminStats(adminId);
+  const stats = statsQuery.data?.stats;
 
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-orders-overview-realtime")
-      .on(
-        "postgres_changes",
+  const data: OrderOverviewItem[] = stats
+    ? [
         {
-          event: "*",
-          schema: "public",
-          table: "Order",
+          name: "Completed",
+          value: stats.completedOrders,
+          color: "var(--success)",
         },
-        () => refreshOrdersOverview({ force: true })
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [refreshOrdersOverview]);
+        {
+          name: "In Progress",
+          value: stats.inProgressOrders,
+          color: "var(--info)",
+        },
+        {
+          name: "Processing",
+          value: stats.processingOrders,
+          color: "var(--violet)",
+        },
+        {
+          name: "Pending",
+          value: stats.pendingOrders,
+          color: "var(--warning)",
+        },
+        {
+          name: "Cancelled",
+          value: stats.cancelledOrders,
+          color: "var(--destructive)",
+        },
+      ]
+    : [];
 
   return (
     <OrdersOverview
-      data={visibleData.data}
-      isRefreshing={isRefreshing}
-      error={error}
-      onRefresh={() => refreshOrdersOverview({ force: true })}
+      data={data}
+      isRefreshing={statsQuery.isFetching}
+      error={statsQuery.isError ? "Unable to refresh order overview." : null}
+      onRefresh={() => {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.stats(adminId),
+        });
+      }}
     />
   );
 }

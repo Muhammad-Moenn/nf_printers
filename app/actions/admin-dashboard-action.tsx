@@ -1,8 +1,20 @@
 "use server";
 
+import { cache } from "react";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { invalidateOrderCaches } from "@/lib/cache/invalidate";
+import {
+  ADMIN_TOP_SERVICES_LIMIT,
+  CACHE_TTL,
+  adminOrderRangeCountsPrefix,
+  adminOrdersActionPrefix,
+  adminOrdersFilterHash,
+  adminOrdersPagePrefix,
+  cacheKeys,
+} from "@/lib/cache/keys";
+import { cacheGet, getOrSet, getOrSetVersioned } from "@/lib/cache/store";
 import { sendOrderEmail } from "@/lib/email-notifications";
 import { GetDBUser } from "./user_action";
 import { buildAdminStatsCards } from "@/lib/admin-stats-cards";
@@ -18,7 +30,7 @@ import {
   getPaidPaymentTotalsByWeekIndex,
   getOrderStatusCountsByMonth,
   getOrderStatusCountsByYear,
-  getOrderCountInRange,
+  getOrderCountSummary,
   getCompletedOrderAverageValue,
   getTopServiceCounts,
   getExpenseTotal,
@@ -30,6 +42,7 @@ import {
   adminOrderStatusSchema,
   adminOrdersPagePayloadSchema,
   adminOrdersPageQuerySchema,
+  type AdminOrdersPageQuery,
   adminPopularServicesPayloadSchema,
   revenueManagementPayloadSchema,
   revenuePeriodSchema,
@@ -137,7 +150,14 @@ async function requireAdminUser() {
   return dbUser;
 }
 
-async function getAdminStatsSnapshot(): Promise<AdminStats> {
+const getAdminOrderStatusCounts = cache(async () =>
+  prisma.order.groupBy({
+    by: ["status"],
+    _count: { _all: true },
+  })
+);
+
+async function loadAdminStatsSnapshot(): Promise<AdminStats> {
   const now = new Date();
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
@@ -153,10 +173,7 @@ async function getAdminStatsSnapshot(): Promise<AdminStats> {
       by: ["role"],
       _count: { _all: true },
     }),
-    prisma.order.groupBy({
-      by: ["status"],
-      _count: { _all: true },
-    }),
+    getAdminOrderStatusCounts(),
     getCompletedRevenueSummary({
       today: startOfToday,
       weekStart: startOfWeek,
@@ -210,7 +227,53 @@ async function getAdminStatsSnapshot(): Promise<AdminStats> {
   });
 }
 
-async function getAdminRevenueAnalyticsSnapshot(): Promise<AdminRevenueAnalyticsPayload> {
+const getAdminStatsSnapshot = cache(async (): Promise<AdminStats> =>
+  getOrSet(cacheKeys.admin.stats, CACHE_TTL.adminStats, loadAdminStatsSnapshot)
+);
+
+const getCachedCompletedRevenueByMonth = cache(async (year: number) => {
+  const entries = await getOrSet<[number, number][]>(
+    cacheKeys.admin.dashboardMonthlyRevenue(year),
+    CACHE_TTL.adminAnalytics,
+    async () => Array.from((await getCompletedRevenueByMonth(year)).entries())
+  );
+
+  return new Map(entries);
+});
+
+const getCachedOrderStatusCountsByMonth = cache((year: number) =>
+  getOrSet(
+    cacheKeys.admin.orderStatusByMonth(year),
+    CACHE_TTL.adminAnalytics,
+    () => getOrderStatusCountsByMonth(year)
+  )
+);
+
+const getCachedOrderStatusCountsByYear = cache(() =>
+  getOrSet(
+    cacheKeys.admin.orderStatusByYear,
+    CACHE_TTL.adminAnalytics,
+    () => getOrderStatusCountsByYear()
+  )
+);
+
+const getCachedTopServiceCounts = cache(() =>
+  getOrSet(
+    cacheKeys.admin.topServices(ADMIN_TOP_SERVICES_LIMIT),
+    CACHE_TTL.adminAnalytics,
+    () => getTopServiceCounts(ADMIN_TOP_SERVICES_LIMIT)
+  )
+);
+
+const getCachedAverageCompletedOrderValue = cache(() =>
+  getOrSet(
+    cacheKeys.admin.averageCompletedOrderValue,
+    CACHE_TTL.adminAnalytics,
+    () => getCompletedOrderAverageValue()
+  )
+);
+
+async function loadAdminRevenueAnalyticsSnapshot(): Promise<AdminRevenueAnalyticsPayload> {
   const now = new Date();
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
@@ -227,7 +290,7 @@ async function getAdminRevenueAnalyticsSnapshot(): Promise<AdminRevenueAnalytics
       weekStart: startOfWeek,
       monthStart: startOfMonth,
     }),
-    getCompletedRevenueByMonth(now.getFullYear()),
+    getCachedCompletedRevenueByMonth(now.getFullYear()),
   ]);
 
   const monthlyRevenue = emptyMonthlyRevenue().map((month, index) => ({
@@ -243,6 +306,15 @@ async function getAdminRevenueAnalyticsSnapshot(): Promise<AdminRevenueAnalytics
     monthRevenue: revenueSummary.month,
   });
 }
+
+const getAdminRevenueAnalyticsSnapshot = cache(
+  async (): Promise<AdminRevenueAnalyticsPayload> =>
+    getOrSet(
+      cacheKeys.admin.revenueAnalytics,
+      CACHE_TTL.adminRevenue,
+      loadAdminRevenueAnalyticsSnapshot
+    )
+);
 
 export async function getAdminStatsCardsAction() {
   const dbUser = await requireAdminUser();
@@ -306,8 +378,15 @@ export async function getAdminRevenueManagementData(periodInput: unknown) {
   const parsedPeriod = revenuePeriodSchema.safeParse(periodInput);
   if (!parsedPeriod.success) return null;
 
+  return getOrSet(
+    cacheKeys.admin.revenue(parsedPeriod.data),
+    CACHE_TTL.adminRevenue,
+    () => loadAdminRevenueManagementData(parsedPeriod.data)
+  );
+}
+
+async function loadAdminRevenueManagementData(period: RevenuePeriod) {
   const now = new Date();
-  const period = parsedPeriod.data;
   const { start, end, previousStart, previousEnd } = revenuePeriodRange(period, now);
   const currentYearStart = new Date(now.getFullYear(), 0, 1);
   const currentYearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
@@ -362,7 +441,7 @@ export async function getAdminRevenueManagementData(periodInput: unknown) {
     previousStart && previousEnd
       ? getExpenseTotal(previousStart, previousEnd)
       : Promise.resolve(0),
-    getCompletedRevenueByMonth(now.getFullYear()),
+    getCachedCompletedRevenueByMonth(now.getFullYear()),
     getPaidPaymentTotalsByMonth(now.getFullYear()),
     getCompletedRevenueByDayOfMonth(dailyStart, dailyEnd),
     getPaidPaymentTotalsByDayOfMonth(dailyStart, dailyEnd),
@@ -372,14 +451,29 @@ export async function getAdminRevenueManagementData(periodInput: unknown) {
       where: { createdAt: { gte: start, lte: end } },
       orderBy: { createdAt: "desc" },
       take: 50,
-      include: { order: { include: { user: true } } },
+      select: {
+        id: true,
+        amount: true,
+        method: true,
+        status: true,
+        createdAt: true,
+        order: {
+          select: {
+            user: { select: { firstName: true, lastName: true, email: true } },
+          },
+        },
+      },
     }),
     prisma.order.findMany({
       where: { payment: { is: { status: "unpaid" } } },
       orderBy: { createdAt: "desc" },
       take: 50,
-      include: {
-        payment: true,
+      select: {
+        id: true,
+        amount: true,
+        finalAmount: true,
+        deliveryDate: true,
+        payment: { select: { amount: true, status: true } },
         user: { select: { firstName: true, lastName: true, email: true } },
       },
     }),
@@ -480,11 +574,8 @@ export async function getAdminRevenueManagementData(periodInput: unknown) {
   });
 }
 
-async function getAdminOrdersOverviewSnapshot(): Promise<AdminOrdersOverviewPayload> {
-  const statusGroups = await prisma.order.groupBy({
-    by: ["status"],
-    _count: { _all: true },
-  });
+async function loadAdminOrdersOverviewSnapshot(): Promise<AdminOrdersOverviewPayload> {
+  const statusGroups = await getAdminOrderStatusCounts();
 
   const counts = new Map(
     statusGroups.map((group) => [group.status, group._count._all])
@@ -524,6 +615,15 @@ async function getAdminOrdersOverviewSnapshot(): Promise<AdminOrdersOverviewPayl
   });
 }
 
+const getAdminOrdersOverviewSnapshot = cache(
+  async (): Promise<AdminOrdersOverviewPayload> =>
+    getOrSet(
+      cacheKeys.admin.ordersOverview,
+      CACHE_TTL.adminStats,
+      loadAdminOrdersOverviewSnapshot
+    )
+);
+
 export async function getAdminOrdersOverviewAction() {
   const dbUser = await requireAdminUser();
   if (!dbUser) {
@@ -533,27 +633,42 @@ export async function getAdminOrdersOverviewAction() {
   return getAdminOrdersOverviewSnapshot();
 }
 
-async function getAdminDashboardActivitySnapshot(): Promise<AdminDashboardActivityPayload> {
-  const [popularServicesPayload, latestOrdersPayload] = await Promise.all([
-    getAdminPopularServicesSnapshot(),
-    getAdminLatestOrdersSnapshot(),
+/**
+ * `admin.activity` already embeds both values, so it is the single cached
+ * resource. Wrapping the loaders in their own `getOrSet` calls added several
+ * sequential Redis round trips on a miss without any reader that needs the
+ * intermediate keys.
+ */
+async function loadAdminDashboardActivitySnapshot(): Promise<AdminDashboardActivityPayload> {
+  const [popularServices, latestOrdersPayload] = await Promise.all([
+    getTopServiceCounts(ADMIN_TOP_SERVICES_LIMIT),
+    loadAdminLatestOrdersSnapshot(),
   ]);
 
   return adminDashboardActivityPayloadSchema.parse({
-    popularServices: popularServicesPayload.popularServices,
+    popularServices,
     latestOrders: latestOrdersPayload.latestOrders,
   });
 }
 
+const getAdminDashboardActivitySnapshot = cache(
+  async (): Promise<AdminDashboardActivityPayload> =>
+    getOrSet(
+      cacheKeys.admin.activity,
+      CACHE_TTL.adminActivity,
+      loadAdminDashboardActivitySnapshot
+    )
+);
+
 async function getAdminPopularServicesSnapshot(): Promise<AdminPopularServicesPayload> {
-  const popularServices = await getTopServiceCounts(5);
+  const popularServices = await getCachedTopServiceCounts();
 
   return adminPopularServicesPayloadSchema.parse({
     popularServices,
   });
 }
 
-async function getAdminLatestOrdersSnapshot(): Promise<AdminLatestOrdersPayload> {
+async function loadAdminLatestOrdersSnapshot(): Promise<AdminLatestOrdersPayload> {
   const latestOrders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     take: 5,
@@ -583,6 +698,15 @@ async function getAdminLatestOrdersSnapshot(): Promise<AdminLatestOrdersPayload>
     })),
   });
 }
+
+const getAdminLatestOrdersSnapshot = cache(
+  async (): Promise<AdminLatestOrdersPayload> =>
+    getOrSet(
+      cacheKeys.admin.latestOrders,
+      CACHE_TTL.adminActivity,
+      loadAdminLatestOrdersSnapshot
+    )
+);
 
 export async function getAdminDashboardActivityAction() {
   const dbUser = await requireAdminUser();
@@ -628,7 +752,7 @@ type AdminOrderWithUser = Prisma.OrderGetPayload<{
 
 function adminOrderActionPriority(order: {
   status: AdminOrderStatus;
-  deliveryDate: Date | null;
+  deliveryDate: string | Date | null;
 }) {
   if (order.status === "pending") {
     return 0;
@@ -638,7 +762,7 @@ function adminOrderActionPriority(order: {
     order.deliveryDate &&
     order.status !== "completed" &&
     order.status !== "cancelled" &&
-    order.deliveryDate.getTime() < Date.now()
+    new Date(order.deliveryDate).getTime() < Date.now()
   ) {
     return 1;
   }
@@ -690,11 +814,11 @@ function formatAdminOrder(order: AdminOrderWithUser) {
       : null,
     adminAdjusted: order.adminAdjusted,
     adjustmentReason: order.adjustmentReason,
-    priceEstimatedAt: order.priceEstimatedAt,
-    priceReviewedAt: order.priceReviewedAt,
+    priceEstimatedAt: order.priceEstimatedAt?.toISOString() ?? null,
+    priceReviewedAt: order.priceReviewedAt?.toISOString() ?? null,
     status: order.status,
-    orderDate: order.orderDate,
-    deliveryDate: order.deliveryDate,
+    orderDate: order.orderDate?.toISOString() ?? null,
+    deliveryDate: order.deliveryDate?.toISOString() ?? null,
     paperType: order.paperType,
     size: order.size,
     gsm: order.gsm,
@@ -704,10 +828,60 @@ function formatAdminOrder(order: AdminOrderWithUser) {
     requirements: order.requirements,
     isReorder: order.isReorder ?? false,
     designs: normalizeDesigns(order.designs),
-    createdAt: order.createdAt,
-    updatedAt: order.updatedAt,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
   };
 }
+
+type OrderRangeCountParams = {
+  now: Date;
+  today: Date;
+  weekStart: Date;
+  monthStart: Date;
+};
+
+// The action list does not depend on the active filters or page, so cache the
+// formatted response under the same version counter as the paginated entries.
+const getCachedOrdersNeedingAction = cache(() =>
+  getOrSetVersioned(
+    cacheKeys.admin.ordersVersion,
+    adminOrdersActionPrefix,
+    "top-6",
+    CACHE_TTL.adminOrdersPage,
+    async () => {
+      const rows = await prisma.order.findMany({
+        where: { status: { in: ["pending", "processing", "in_progress"] } },
+        orderBy: [{ status: "asc" }, { deliveryDate: "asc" }],
+        take: 12,
+        include: adminOrderUserInclude,
+      });
+
+      return rows
+        .map(formatAdminOrder)
+        .sort(
+          (left, right) =>
+            adminOrderActionPriority(left) - adminOrderActionPriority(right)
+        )
+        .slice(0, 6);
+    }
+  )
+);
+
+// Filter-independent counts share a short-lived versioned entry. The boundary
+// signature keeps day/week/month rollovers from reusing yesterday's numbers.
+const getCachedOrderCountsInRanges = ({
+  now,
+  today,
+  weekStart,
+  monthStart,
+}: OrderRangeCountParams) =>
+  getOrSetVersioned(
+    cacheKeys.admin.ordersVersion,
+    adminOrderRangeCountsPrefix,
+    `${today.toISOString()}|${weekStart.toISOString()}|${monthStart.toISOString()}`,
+    CACHE_TTL.adminOrdersPage,
+    () => getOrderCountSummary({ now, today, weekStart, monthStart })
+  );
 
 function adminOrderSort(
   sortKey: string,
@@ -739,10 +913,31 @@ export async function getAdminOrdersPageData(
     return null;
   }
 
+  const parsedQuery = adminOrdersPageSchemaParse(input);
+  const query = parsedQuery;
+
+  // Order writes bump this counter, retiring every cached page plus the
+  // filter-independent action list and date-range counts at once. The counter
+  // and the entry are read in one round trip on a hit.
+  return getOrSetVersioned(
+    cacheKeys.admin.ordersVersion,
+    adminOrdersPagePrefix,
+    adminOrdersFilterHash(query),
+    CACHE_TTL.adminOrdersPage,
+    () => loadAdminOrdersPage(query)
+  );
+}
+
+function adminOrdersPageSchemaParse(input: unknown): AdminOrdersPageQuery {
   const parsedQuery = adminOrdersPageQuerySchema.safeParse(input ?? {});
-  const query = parsedQuery.success
+  return parsedQuery.success
     ? parsedQuery.data
     : adminOrdersPageQuerySchema.parse({});
+}
+
+async function loadAdminOrdersPage(
+  query: AdminOrdersPageQuery
+): Promise<AdminOrdersPagePayload> {
   const { pageSize, status, search, sortKey, sortDirection } = query;
 
   const where: Prisma.OrderWhereInput = {
@@ -780,55 +975,57 @@ export async function getAdminOrdersPageData(
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const currentYear = now.getFullYear();
 
-  const total = await prisma.order.count({ where });
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const page = Math.min(query.page, totalPages);
-  const skip = (page - 1) * pageSize;
-
   const [
+    total,
     stats,
-    orderOverview,
-    orders,
-    actionOrders,
+    ordersNeedingAction,
     monthlyCountRows,
     yearlyCountRows,
     topServices,
     averageCompletedOrderValue,
-    ordersToday,
-    ordersThisWeek,
-    ordersThisMonth,
+    orderCounts,
+    requestedPageOrders,
   ] = await Promise.all([
+    prisma.order.count({ where }),
     getAdminStatsSnapshot(),
-    getAdminOrdersOverviewSnapshot(),
+    getCachedOrdersNeedingAction(),
+    getCachedOrderStatusCountsByMonth(currentYear),
+    getCachedOrderStatusCountsByYear(),
+    getCachedTopServiceCounts(),
+    getCachedAverageCompletedOrderValue(),
+    getCachedOrderCountsInRanges({
+      now,
+      today: startOfToday,
+      weekStart: startOfWeek,
+      monthStart: startOfMonth,
+    }),
+    // The row query only needs the requested page, so run it alongside the
+    // count instead of after it (a second DB round trip on every load).
     prisma.order.findMany({
       where,
       orderBy: adminOrderSort(sortKey, sortDirection),
-      skip,
+      skip: (query.page - 1) * pageSize,
       take: pageSize,
       include: adminOrderUserInclude,
     }),
-    prisma.order.findMany({
-      where: { status: { in: ["pending", "processing", "in_progress"] } },
-      orderBy: [{ status: "asc" }, { deliveryDate: "asc" }],
-      take: 12,
-      include: adminOrderUserInclude,
-    }),
-    getOrderStatusCountsByMonth(currentYear),
-    getOrderStatusCountsByYear(),
-    getTopServiceCounts(5),
-    getCompletedOrderAverageValue(),
-    getOrderCountInRange(startOfToday, now),
-    getOrderCountInRange(startOfWeek, now),
-    getOrderCountInRange(startOfMonth, now),
   ]);
 
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(query.page, totalPages);
+  // Re-query only when the requested page is past the end of a shrunken
+  // result set; the common path returns the rows fetched above.
+  const orders =
+    page === query.page
+      ? requestedPageOrders
+      : await prisma.order.findMany({
+          where,
+          orderBy: adminOrderSort(sortKey, sortDirection),
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          include: adminOrderUserInclude,
+        });
+
   const formattedOrders = orders.map(formatAdminOrder);
-  const ordersNeedingAction = actionOrders
-    .map(formatAdminOrder)
-    .sort(
-      (a, b) => adminOrderActionPriority(a) - adminOrderActionPriority(b)
-    )
-    .slice(0, 6);
 
   const monthlyCountMap = new Map(
     monthlyCountRows.map((row) => [row.month, row])
@@ -870,15 +1067,14 @@ export async function getAdminOrdersPageData(
       totalPages,
     },
     stats,
-    orderOverview,
     analytics: {
       monthlyOrders,
       yearlyOrders,
       topServices,
       averageCompletedOrderValue,
-      ordersToday,
-      ordersThisWeek,
-      ordersThisMonth,
+      ordersToday: orderCounts.today,
+      ordersThisWeek: orderCounts.week,
+      ordersThisMonth: orderCounts.month,
     },
   });
 }
@@ -898,6 +1094,14 @@ export async function updateAdminOrderStatusAction({
     };
   }
 
+  const parsedOrderId = z.string().trim().min(1).safeParse(orderId);
+  if (!parsedOrderId.success) {
+    return {
+      success: false,
+      error: "Invalid order id.",
+    };
+  }
+
   const parsedStatus = adminOrderStatusSchema.safeParse(status);
   if (!parsedStatus.success) {
     return {
@@ -906,24 +1110,38 @@ export async function updateAdminOrderStatusAction({
     };
   }
 
-  const pricingError = await validatePriceForStatus(orderId, parsedStatus.data);
+  const targetOrderId = parsedOrderId.data;
+
+  const pricingError = await validatePriceForStatus(
+    targetOrderId,
+    parsedStatus.data
+  );
   if (pricingError) {
     return { success: false, error: pricingError };
   }
 
   try {
     const order = await prisma.order.findUnique({
-      where: { id: orderId },
+      where: { id: targetOrderId },
       select: {
         status: true,
+        userId: true,
         user: { select: { email: true, emailNotifications: true } },
       },
     });
     if (!order) return { success: false, error: "Order not found." };
 
     await prisma.order.update({
-      where: { id: orderId },
+      where: { id: targetOrderId },
       data: { status: parsedStatus.data },
+    });
+    await invalidateOrderCaches(order.userId, {
+      // Revenue only moves when the order enters or leaves "completed".
+      revenue:
+        order.status === "completed" ||
+        parsedStatus.data === "completed",
+      // Per-service order counts are independent of status.
+      services: false,
     });
 
     if (order.status !== parsedStatus.data) {
@@ -963,8 +1181,13 @@ export async function approveEstimatedPriceAction(orderId: string) {
     return { success: false, error: "Unauthorized admin request." };
   }
 
+  const parsedOrderId = z.string().trim().min(1).safeParse(orderId);
+  if (!parsedOrderId.success) {
+    return { success: false, error: "Invalid order id." };
+  }
+
   const order = await prisma.order.findUnique({
-    where: { id: orderId },
+    where: { id: parsedOrderId.data },
     select: { estimatedAmount: true },
   });
 
@@ -973,8 +1196,8 @@ export async function approveEstimatedPriceAction(orderId: string) {
   }
 
   try {
-    await prisma.order.update({
-      where: { id: orderId },
+    const updated = await prisma.order.update({
+      where: { id: parsedOrderId.data },
       data: {
         amount: order.estimatedAmount.toString(),
         finalAmount: order.estimatedAmount,
@@ -984,6 +1207,9 @@ export async function approveEstimatedPriceAction(orderId: string) {
         priceReviewedById: dbUser.id,
         priceReviewedAt: new Date(),
       },
+    });
+    await invalidateOrderCaches(updated.userId, {
+      services: false,
     });
 
     return { success: true };
@@ -1024,7 +1250,7 @@ export async function overrideEstimatedPriceAction(input: {
   }
 
   try {
-    await prisma.order.update({
+    const updated = await prisma.order.update({
       where: { id: parsed.data.orderId },
       data: {
         amount: String(parsed.data.finalAmount),
@@ -1035,6 +1261,9 @@ export async function overrideEstimatedPriceAction(input: {
         priceReviewedById: dbUser.id,
         priceReviewedAt: new Date(),
       },
+    });
+    await invalidateOrderCaches(updated.userId, {
+      services: false,
     });
 
     return { success: true };
@@ -1067,6 +1296,16 @@ export async function updateAdminOrderAction({
     };
   }
 
+  const parsedOrderId = z.string().trim().min(1).safeParse(orderId);
+  if (!parsedOrderId.success) {
+    return { success: false, error: "Invalid order id." };
+  }
+
+  const parsedDeliveryDate = deliveryDate ? new Date(deliveryDate) : null;
+  if (parsedDeliveryDate && Number.isNaN(parsedDeliveryDate.getTime())) {
+    return { success: false, error: "Invalid delivery date." };
+  }
+
   const cleanProduct = product.trim();
   const cleanService = service.trim();
   const cleanQuantity = quantity.trim();
@@ -1088,7 +1327,7 @@ export async function updateAdminOrderAction({
 
   try {
     const existingOrder = await prisma.order.findUnique({
-      where: { id: orderId },
+      where: { id: parsedOrderId.data },
       select: {
         product: true,
         service: true,
@@ -1131,14 +1370,14 @@ export async function updateAdminOrderAction({
         })
       : null;
 
-    await prisma.order.update({
-      where: { id: orderId },
+    const updated = await prisma.order.update({
+      where: { id: parsedOrderId.data },
       data: {
         quantityValue: numericQuantity,
         product: cleanProduct,
         service: cleanService,
         quantity: cleanQuantity,
-        deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+        deliveryDate: parsedDeliveryDate,
         requirements: cleanRequirements,
         ...(pricing
           ? {
@@ -1164,6 +1403,10 @@ export async function updateAdminOrderAction({
           : {}),
       },
     });
+    await invalidateOrderCaches(updated.userId, {
+      revenue: Boolean(pricing),
+      services: cleanService !== existingOrder.service,
+    });
 
     return { success: true };
   } catch (error) {
@@ -1182,10 +1425,10 @@ export async function getAdminDashboardData() {
   }
 
   const now = new Date();
-  const stats = await getAdminStatsSnapshot();
 
-  const [monthlyRevenueMap, activity] = await Promise.all([
-    getCompletedRevenueByMonth(now.getFullYear()),
+  const [stats, monthlyRevenueMap, activity] = await Promise.all([
+    getAdminStatsSnapshot(),
+    getCachedCompletedRevenueByMonth(now.getFullYear()),
     getAdminDashboardActivitySnapshot(),
   ]);
 
@@ -1194,21 +1437,9 @@ export async function getAdminDashboardData() {
     revenue: monthlyRevenueMap.get(index + 1) ?? 0,
   }));
 
-  const orderOverviewPayload = adminOrdersOverviewPayloadSchema.parse({
-    data: [
-      { name: "Completed", value: stats.completedOrders, color: "var(--success)" },
-      { name: "In Progress", value: stats.inProgressOrders, color: "var(--info)" },
-      { name: "Processing", value: stats.processingOrders, color: "var(--violet)" },
-      { name: "Pending", value: stats.pendingOrders, color: "var(--warning)" },
-      { name: "Cancelled", value: stats.cancelledOrders, color: "var(--destructive)" },
-    ],
-    totalOrders: stats.totalOrders,
-  });
-
   const dashboardData = {
     stats,
     statsCards: buildAdminStatsCards(stats),
-    orderOverview: orderOverviewPayload.data,
     monthlyRevenue,
     popularServices: activity.popularServices,
     latestOrders: activity.latestOrders,

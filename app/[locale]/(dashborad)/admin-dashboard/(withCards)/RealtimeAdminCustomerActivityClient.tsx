@@ -1,15 +1,19 @@
 "use client";
 
-import { useAdminDashboardStore } from "@/app/store/admin-dashboard-store";
-import type { AdminStats } from "@/app/schemas/admin-dashboard-schema";
 import { AdminCustomerActivityPanel } from "@/components/charts/admin-charts/admin-stats-panels";
+import { useAdminStats } from "@/lib/query/hooks/use-admin-dashboard";
 
 export default function RealtimeAdminCustomerActivityClient({
-  initialStats,
+  adminId,
 }: {
-  initialStats: AdminStats;
+  adminId: string;
 }) {
-  const stats = useAdminDashboardStore((state) => state.stats);
+  const { data } = useAdminStats(adminId);
+  const stats = data?.stats;
 
-  return <AdminCustomerActivityPanel stats={stats ?? initialStats} />;
+  if (!stats) {
+    return null;
+  }
+
+  return <AdminCustomerActivityPanel stats={stats} />;
 }

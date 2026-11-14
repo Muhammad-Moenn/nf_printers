@@ -6,6 +6,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 import { Poppins } from "next/font/google"
 import { AuthProvider } from "@/components/auth-provider";
+import { QueryAuthSync } from "@/components/query-auth-sync";
+import { SupabaseAuthSync } from "@/components/supabase-auth-sync";
+import { QueryProvider } from "@/lib/query/query-provider";
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -24,12 +27,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"  suppressHydrationWarning={true} >
-      <body
-     
-       className={poppins.variable}
-      >
+    <html lang="en" suppressHydrationWarning={true}>
+      <body className={poppins.variable}>
         <ClerkProvider>
+          <SupabaseAuthSync />
           <AuthProvider>
             <ThemeProvider
               attribute="class"
@@ -37,7 +38,10 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              {children}
+              <QueryProvider>
+                {children}
+                <QueryAuthSync />
+              </QueryProvider>
             </ThemeProvider>
           </AuthProvider>
         </ClerkProvider>

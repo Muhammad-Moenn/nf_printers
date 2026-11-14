@@ -1,30 +1,20 @@
 import { NextResponse } from "next/server";
 import { GetDBUser } from "@/app/actions/user_action";
-import { getMonthlyPaidAmount } from "@/app/actions/monthly-amount";
-import {
-  fetchCardsDataAndAllOrders,
-  getMonthlyOrdersAction,
-} from "@/app/actions/order-action";
+import { getUserDashboardSummary } from "@/lib/user-dashboard-summary";
 
 export async function GET() {
   const user = await GetDBUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const monthlyTotal = await getMonthlyPaidAmount();
-  const monthlyOrders = await getMonthlyOrdersAction();
-  const { allOrders,activeOrders,
-    pendingOrders,
-    completedOrders,
-    totalPaid,
-    weeklyData, } = await fetchCardsDataAndAllOrders();
+  if (!user) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: { "Cache-Control": "no-store" } }
+    );
+  }
 
-  return NextResponse.json({
-    monthlyTotal,
-    monthlyOrders,
-    allOrders,
-    activeOrders,
-    pendingOrders,
-    completedOrders,
-    totalPaid,
-    weeklyData,
+  // Realtime invalidation must not be served from the 20s cache.
+  const data = await getUserDashboardSummary(user.id, { fresh: true });
+
+  return NextResponse.json(data, {
+    headers: { "Cache-Control": "no-store" },
   });
 }

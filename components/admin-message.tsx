@@ -1,31 +1,112 @@
 "use client";
 
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, CheckCheck, FileText, Inbox, LoaderCircle, Paperclip, Search, Send, Trash2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
 import { decodeChatMessage, isImageAttachment, type ChatAttachment } from "@/lib/chat-message";
+import {
+  fetchAdminReadStatus,
+  markAdminConversationSeen,
+  type ConversationDetail,
+  type ConversationListPage,
+  type ConversationRecord,
+  type MessageRecord,
+} from "@/lib/data/messages";
+import { applyAdminRealtimeEvents } from "@/lib/query/admin-message-cache";
+import {
+  useRealtimeTables,
+  type RealtimePayload,
+  type RealtimeTable,
+} from "@/lib/realtime-bus";
+import {
+  useAdminConversation,
+  useAdminConversationOlderPages,
+  useAdminConversations,
+  useDeleteAdminConversation,
+  useSendAdminMessage,
+} from "@/lib/query/hooks/use-messages";
+import { queryKeys } from "@/lib/query/query-keys";
 import { useUploadThing } from "@/utils/uploadthing";
 
+type AdminInboxMessage = MessageRecord;
+
+const EMPTY_CURSORS: string[] = [];
+
+// Realtime owns normal seen updates; this poll is only a slow fallback.
+const READ_STATUS_POLL_INTERVAL_MS = 20_000;
+
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+function isOptimisticMessageMatch(
+  pending: AdminInboxMessage,
+  message: MessageRecord
+) {
+  return (
+    message.senderId === pending.senderId &&
+    message.text === pending.text &&
+    Math.abs(
+      new Date(message.createdAt).getTime() -
+        new Date(pending.createdAt).getTime()
+    ) < 30_000
+  );
+}
+
 export default function AdminDashboardMessages({ user }: { user: any }) {
+  const adminId = user.userId as string;
+  const queryClient = useQueryClient();
   const [isClient, setIsClient] = useState(false);
-  const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [newmessage, setNewMessage] = useState<any[]>([]);
+  const [pendingMessages, setPendingMessages] = useState<AdminInboxMessage[]>(
+    []
+  );
   const [text, setText] = useState("");
   const [conversationSearch, setConversationSearch] = useState("");
-  const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState("");
-  const [deletingConversationId, setDeletingConversationId] = useState<string | null>(null);
+  const [deletingConversationId, setDeletingConversationId] = useState<
+    string | null
+  >(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [olderPagination, setOlderPagination] = useState<{
+    conversationId: string | null;
+    cursors: string[];
+  }>({ conversationId: null, cursors: [] });
+  const olderAnchorRef = useRef<{
+    conversationId: string | null;
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
+  const loadingOlderRef = useRef(false);
+  const olderCursorsRef = useRef<string[]>([]);
+  const conversationsKey = useMemo(
+    () => queryKeys.messages.adminConversations(adminId),
+    [adminId]
+  );
+  const unseenKey = useMemo(
+    () => queryKeys.messages.unseen(adminId, "ADMIN"),
+    [adminId]
+  );
+  const conversationsQuery = useAdminConversations(adminId);
+  const conversationQuery = useAdminConversation(adminId, activeConversationId);
+  const olderCursors =
+    olderPagination.conversationId === activeConversationId
+      ? olderPagination.cursors
+      : EMPTY_CURSORS;
+  const olderPageQueries = useAdminConversationOlderPages(
+    adminId,
+    activeConversationId,
+    olderCursors
+  );
+  const sendMutation = useSendAdminMessage(adminId);
+  const deleteMutation = useDeleteAdminConversation(adminId);
   const { startUpload, isUploading } = useUploadThing("imageUploader", {
     onUploadError: (error) => setSendError(error.message || "File upload failed."),
   });
@@ -34,115 +115,330 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
     setIsClient(true);
   }, []);
 
-  const refreshConversations = useCallback(async (selectFirst = false) => {
-    try {
-      const response = await fetch("/api/admin-message/all-conversations", {
-        cache: "no-store",
-      });
-      if (!response.ok) return;
-
-      const data = await response.json();
-      if (!Array.isArray(data)) return;
-
-      setConversations(data);
-      setActiveConversationId((currentId) => {
-        if (currentId && data.some((conversation) => conversation.id === currentId)) {
-          return currentId;
-        }
-        return selectFirst ? data[0]?.id ?? null : null;
-      });
-    } catch (error) {
-      console.error("Fetch conversations error:", error);
-    }
-  }, []);
-
-  // Load all conversations
   useEffect(() => {
-    void refreshConversations(true);
-  }, [refreshConversations]);
+    olderCursorsRef.current = olderCursors;
+  }, [olderCursors]);
 
-  // Load messages when conversation changes
-  useEffect(() => {
-    if (!activeConversationId) return;
+  const conversations = useMemo(() => {
+    const seen = new Set<string>();
+    const result: ConversationRecord[] = [];
 
-    async function fetchMessages() {
-      try {
-        setLoading(true);
-
-        const res = await fetch(
-          `/api/admin-message/all-conversations/${activeConversationId}`
-        );
-        if (!res.ok) return;
-
-        const conversation = await res.json();
-
-        // 🔹 Set messages correctly
-        setMessages(conversation.messages ?? []);
-        // 🔹 Mark seen
-        await fetch(
-          `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
-          { method: "POST" }
-        );
-        const lastmessage = conversation.messages.length;
-
-        // 🔹 Reset unread count locally (no full refetch)
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.id === activeConversationId
-              ? {
-                  ...conv,
-                  messages: conversation.messages?.length
-                    ? [conversation.messages[lastmessage - 1]] // latest message preview
-                    : [],
-                  _count: { messages: 0 },
-                }
-              : conv
-          )
-        );
-      } catch (err) {
-        console.error("Fetch messages error:", err);
-      } finally {
-        setLoading(false);
+    for (const page of conversationsQuery.data?.pages ?? []) {
+      for (const conversation of page.conversations) {
+        if (seen.has(conversation.id)) continue;
+        seen.add(conversation.id);
+        result.push(conversation);
       }
-
     }
 
-    fetchMessages();
-  }, [activeConversationId]);
+    return result;
+  }, [conversationsQuery.data?.pages]);
+  const serverMessages = conversationQuery.data?.messages;
+  const olderMessages = useMemo(() => {
+    const pages = olderPageQueries.map((query) => query.data?.messages ?? []);
+    return pages.slice().reverse().flat();
+  }, [olderPageQueries]);
+  const messages = useMemo<AdminInboxMessage[]>(() => {
+    const server = serverMessages ?? [];
+    const stillPending = pendingMessages.filter(
+      (pending) =>
+        !server.some((message) => isOptimisticMessageMatch(pending, message))
+    );
+    const indexById = new Map<string, number>();
+    const combined: AdminInboxMessage[] = [];
 
-  // Keep outgoing read receipts current even when Supabase Realtime is not
-  // available in the deployment. This endpoint only returns id/seen pairs.
+    for (const message of [...olderMessages, ...server, ...stillPending]) {
+      const index = indexById.get(message.id);
+      if (index === undefined) {
+        indexById.set(message.id, combined.length);
+        combined.push(message);
+      } else {
+        combined[index] = message;
+      }
+    }
+
+    return combined;
+  }, [olderMessages, serverMessages, pendingMessages]);
+
+  const lastOlderQuery = olderPageQueries[olderPageQueries.length - 1];
+  const hasOlderMessages =
+    olderCursors.length === 0
+      ? Boolean(conversationQuery.data?.hasMore)
+      : Boolean(lastOlderQuery?.data?.hasMore);
+  const nextOlderCursor =
+    olderCursors.length === 0
+      ? conversationQuery.data?.nextCursor ?? null
+      : lastOlderQuery?.data?.nextCursor ?? null;
+  const loadingOlder =
+    olderCursors.length > 0 && Boolean(lastOlderQuery?.isFetching);
+
+  function loadOlderMessages() {
+    if (
+      !activeConversationId ||
+      !nextOlderCursor ||
+      loadingOlderRef.current ||
+      loadingOlder
+    ) {
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    if (container) {
+      olderAnchorRef.current = {
+        conversationId: activeConversationId,
+        scrollHeight: container.scrollHeight,
+        scrollTop: container.scrollTop,
+      };
+    }
+
+    loadingOlderRef.current = true;
+    setOlderPagination((current) => ({
+      conversationId: activeConversationId,
+      cursors:
+        current.conversationId === activeConversationId
+          ? [...current.cursors, nextOlderCursor]
+          : [nextOlderCursor],
+    }));
+  }
+
+  const loading = conversationQuery.isLoading || sendMutation.isPending;
+  const loadError =
+    conversationsQuery.isError || conversationQuery.isError
+      ? "Unable to load conversations. Please try again."
+      : "";
+
+  // Keep a valid selection as the list loads, changes, or a chat is deleted.
+  useEffect(() => {
+    if (!conversations.length) {
+      if (activeConversationId) setActiveConversationId(null);
+      return;
+    }
+
+    if (
+      !activeConversationId ||
+      !conversations.some(
+        (conversation) => conversation.id === activeConversationId
+      )
+    ) {
+      setActiveConversationId(conversations[0].id);
+    }
+  }, [activeConversationId, conversations]);
+
+  // Mark the open conversation as read once it loads and whenever a new message
+  // arrives. The server also retires the conversation/unseen caches.
+  const latestNewestId = serverMessages?.[serverMessages.length - 1]?.id;
+  useEffect(() => {
+    if (!activeConversationId || conversationQuery.isLoading) return;
+
+    let cancelled = false;
+    const markSeen = async () => {
+      try {
+        await markAdminConversationSeen(activeConversationId);
+        if (cancelled) return;
+
+        queryClient.setQueryData<
+          InfiniteData<ConversationListPage, string | null>
+        >(
+          conversationsKey,
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  pages: current.pages.map((page) => ({
+                    ...page,
+                    conversations: page.conversations.map((conversation) =>
+                      conversation.id === activeConversationId
+                        ? { ...conversation, _count: { messages: 0 } }
+                        : conversation
+                    ),
+                  })),
+                }
+              : current
+        );
+        void queryClient.invalidateQueries(
+          { queryKey: unseenKey },
+          { cancelRefetch: false }
+        );
+      } catch (error) {
+        console.error("Mark conversation seen error:", error);
+      }
+    };
+
+    void markSeen();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeConversationId,
+    conversationQuery.isLoading,
+    latestNewestId,
+    conversationsKey,
+    unseenKey,
+    queryClient,
+  ]);
+
+  const newestMessageId = messages[messages.length - 1]?.id;
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container && activeConversationId) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    }
+  }, [activeConversationId, newestMessageId]);
+
+  const latestOldestId = serverMessages?.[0]?.id;
+  const latestWindowRef = useRef<{
+    conversationId: string | null;
+    id: string | null;
+  }>({ conversationId: null, id: null });
+
+  useEffect(() => {
+    if (!activeConversationId || !latestOldestId) return;
+
+    const previous = latestWindowRef.current;
+    latestWindowRef.current = {
+      conversationId: activeConversationId,
+      id: latestOldestId,
+    };
+
+    if (
+      previous.conversationId === activeConversationId &&
+      previous.id &&
+      previous.id !== latestOldestId &&
+      olderCursors.length > 0
+    ) {
+      olderAnchorRef.current = null;
+      loadingOlderRef.current = false;
+      setOlderPagination({ conversationId: activeConversationId, cursors: [] });
+    }
+  }, [activeConversationId, latestOldestId, olderCursors.length]);
+
+  useIsomorphicLayoutEffect(() => {
+    const anchor = olderAnchorRef.current;
+    if (!anchor) return;
+
+    if (anchor.conversationId !== activeConversationId) {
+      olderAnchorRef.current = null;
+      loadingOlderRef.current = false;
+      return;
+    }
+
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.scrollTop =
+      container.scrollHeight - anchor.scrollHeight + anchor.scrollTop;
+    olderAnchorRef.current = null;
+    loadingOlderRef.current = false;
+  }, [activeConversationId, olderMessages.length]);
+
+  useEffect(() => {
+    const anchor = olderAnchorRef.current;
+    if (!anchor || anchor.conversationId !== activeConversationId) return;
+
+    const lastQuery = olderPageQueries[olderPageQueries.length - 1];
+    if (!lastQuery || lastQuery.isFetching || lastQuery.isPending) return;
+
+    if (
+      lastQuery.isError ||
+      (lastQuery.data && lastQuery.data.messages.length === 0)
+    ) {
+      olderAnchorRef.current = null;
+      loadingOlderRef.current = false;
+    }
+  }, [activeConversationId, olderPageQueries]);
+
+  // Realtime patches seen state for normal updates. This slower request is only
+  // a fallback when Realtime is unavailable: it never overlaps a request, and it
+  // stops completely while the tab is hidden.
   useEffect(() => {
     if (!activeConversationId) return;
+
     let stopped = false;
     let requestInFlight = false;
+    let timer: number | null = null;
+
+    const clearTimer = () => {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    const schedule = () => {
+      clearTimer();
+      if (stopped || document.visibilityState !== "visible") return;
+      timer = window.setTimeout(() => {
+        timer = null;
+        void refreshReadStatus();
+      }, READ_STATUS_POLL_INTERVAL_MS);
+    };
+
     const refreshReadStatus = async () => {
-      if (requestInFlight || document.visibilityState !== "visible") return;
+      if (
+        stopped ||
+        requestInFlight ||
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
       requestInFlight = true;
       try {
-        const response = await fetch(
-          `/api/admin-message/all-conversations/${activeConversationId}/read-status`,
-          { cache: "no-store" },
-        );
-        if (!response.ok || stopped) return;
-        const statuses = await response.json() as { id: string; seen: boolean }[];
+        const statuses = await fetchAdminReadStatus(activeConversationId);
+        if (stopped) return;
         const statusById = new Map(statuses.map((message) => [message.id, message.seen]));
-        setMessages((current) => current.map((message) => statusById.has(message.id)
-          ? { ...message, seen: statusById.get(message.id)! }
-          : message));
+        const patchSeen = (current: ConversationDetail | undefined) => {
+          if (!current) return current;
+
+          let changed = false;
+          const nextMessages = current.messages.map((message) => {
+            const seen = statusById.get(message.id);
+            if (seen === undefined || seen === message.seen) return message;
+            changed = true;
+            return { ...message, seen };
+          });
+
+          return changed ? { ...current, messages: nextMessages } : current;
+        };
+
+        queryClient.setQueryData<ConversationDetail>(
+          queryKeys.messages.adminConversation(adminId, activeConversationId),
+          patchSeen
+        );
+        for (const cursor of olderCursorsRef.current) {
+          queryClient.setQueryData<ConversationDetail>(
+            queryKeys.messages.adminConversationOlder(
+              adminId,
+              activeConversationId,
+              cursor
+            ),
+            patchSeen
+          );
+        }
       } catch (error) {
         console.error("Refresh message read status error:", error);
       } finally {
         requestInFlight = false;
+        schedule();
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        clearTimer();
+        return;
+      }
+      void refreshReadStatus();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     void refreshReadStatus();
-    const interval = window.setInterval(() => void refreshReadStatus(), 5000);
+
     return () => {
       stopped = true;
-      window.clearInterval(interval);
+      clearTimer();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [activeConversationId]);
+  }, [activeConversationId, adminId, queryClient]);
 
   // ✅ SUPABASE REALTIME SUBSCRIPTION
   // useEffect(() => {
@@ -231,93 +527,34 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   //   };
   // }, [activeConversationId, user.userId]);
 
-  useEffect(() => {
-    const channel = supabase
-      .channel("messages-listener")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Message" },
-        async (payload) => {
-          // console.log("Event:", payload.eventType);
+  // Message events share the notification bell's centralized bus, so the bell
+  // and inbox never open two channels for the same table. Conversation events
+  // stay on an inbox-only bus. Each hook registers its own listener, so the bus
+  // ref-counts them and tears a channel down when its last subscriber leaves.
+  const handleAdminInboxEvents = (
+    _table: RealtimeTable,
+    events: RealtimePayload[]
+  ) => {
+    applyAdminRealtimeEvents(queryClient, {
+      adminId,
+      activeConversationId,
+      events,
+    });
+  };
 
-          if (payload.eventType === "INSERT") {
-            if (!activeConversationId) return;
+  useRealtimeTables(
+    "messages-realtime",
+    ["Message"] as const,
+    handleAdminInboxEvents,
+    { enabled: Boolean(adminId) }
+  );
 
-            try {
-              // 🔹 Fetch all conversations ONCE
-              const res = await fetch("/api/admin-message/all-conversations");
-              if (!res.ok) return;
-
-              const updatedConversations = await res.json();
-
-              // 🔹 Sort by latest message
-              const sorted = [...updatedConversations].sort((a, b) => {
-                const aTime = a.messages?.[0]?.createdAt ?? 0;
-                const bTime = b.messages?.[0]?.createdAt ?? 0;
-                return new Date(bTime).getTime() - new Date(aTime).getTime();
-              });
-
-              setConversations(sorted);
-
-              // 🔹 Find active conversation from NEW data (not old state)
-              const activeConv = sorted.find(
-                (c: any) => c.id === activeConversationId
-              );
-
-              if (!activeConv) return;
-
-              const latestMessage = activeConv.messages?.[0];
-              if (!latestMessage) return;
-
-              // 🔹 Append if not exists
-              setMessages((prev) => {
-                if (prev.some((m) => m.id === latestMessage.id)) return prev;
-                return [...prev, latestMessage];
-              });
-
-              messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: "smooth" });
-
-              // 🔹 Mark seen only if from other user
-              if (latestMessage.senderId !== user.userId) {
-                await fetch(
-                  `/api/admin-message/all-conversations/${activeConversationId}/mark-seen`,
-                  { method: "POST" }
-                );
-
-                // 🔹 Update unread count locally instead of refetching again
-                setConversations((prev) =>
-                  prev.map((conv) =>
-                    conv.id === activeConversationId
-                      ? { ...conv, _count: { messages: 0 } }
-                      : conv
-                  )
-                );
-              }
-            } catch (err) {
-              console.error("Realtime error:", err);
-            }
-          }
-
-          if (payload.eventType === "UPDATE") {
-            if (!activeConversationId) return;
-            const updatedMessage = payload.new as { id: string; conversationId: string; seen: boolean };
-            if (updatedMessage.conversationId !== activeConversationId) return;
-            setMessages((previous) => previous.map((message) => message.id === updatedMessage.id
-              ? { ...message, seen: updatedMessage.seen }
-              : message));
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          void refreshConversations(true);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [activeConversationId, user.userId]);
+  useRealtimeTables(
+    "admin-inbox-conversations",
+    ["Conversation"] as const,
+    handleAdminInboxEvents,
+    { enabled: Boolean(adminId) }
+  );
 
   //   useEffect(() => {
   //     const channel = supabase
@@ -433,104 +670,48 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
   //   }, [activeConversationId, user.userId]);
 
 
-  useEffect(() => {
-    if (!activeConversationId) return;
 
-    const channel = supabase
-      .channel("conversation-listener")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Conversation",
-        },
-        async (payload) => {
-          // console.log("🔥 CHANGE DETECTED for conversation:", payload);
-
-          try {
-            setLoading(true);
-
-            const res = await fetch(`/api/admin-message/latest-converstaion`);
-            const data = await res.json();
-            //  console.log("🔥latest conversation:", payload);
-            setConversations((prev) => {
-              if (prev.some((c) => c.id === data.id)) return prev;
-              return [...prev, data];
-            });
-          } catch (error) {
-            console.error("Fetch error:", error);
-          } finally {
-            setLoading(false);
-          }
-        }
-      )
-      .subscribe((status) => {
-        // console.log("Subscription Status:", status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-new-conversation-listener")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Conversation",
-        },
-        () => {
-          void refreshConversations(true);
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          void refreshConversations(true);
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refreshConversations]);
 
   async function sendMessage(attachment?: ChatAttachment) {
     const messageText = text.trim();
     if ((!messageText && !attachment) || !activeConversationId || loading) return;
 
     const optimisticId = `pending-${Date.now()}`;
-    const optimisticMessage = {
-      id: optimisticId, text: messageText, attachment, senderId: user.userId,
-      createdAt: new Date().toISOString(), seen: false,
+    const optimisticMessage: AdminInboxMessage = {
+      id: optimisticId,
+      text: messageText,
+      attachment: attachment ?? null,
+      senderId: user.userId,
+      createdAt: new Date().toISOString(),
+      seen: false,
     };
     const targetConversationId = activeConversationId;
-    setLoading(true);
     setSendError("");
     setText("");
-    setMessages((previous) => [...previous, optimisticMessage]);
+    setPendingMessages((previous) => [...previous, optimisticMessage]);
 
     try {
-      const response = await fetch(`/api/admin-message/all-conversations/${targetConversationId}/send-message`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: messageText, attachment }),
+      const data = await sendMutation.mutateAsync({
+        conversationId: targetConversationId,
+        payload: { text: messageText, attachment },
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to send message.");
-      setMessages((previous) => previous.some((message) => message.id === data.id)
-        ? previous.filter((message) => message.id !== optimisticId)
-        : previous.map((message) => message.id === optimisticId ? data : message));
+      queryClient.setQueryData<ConversationDetail>(
+        queryKeys.messages.adminConversation(adminId, targetConversationId),
+        (current) => {
+          if (!current) return current;
+          if (current.messages.some((message) => message.id === data.id)) {
+            return current;
+          }
+          return { ...current, messages: [...current.messages, data] };
+        }
+      );
     } catch (error) {
-      setMessages((previous) => previous.filter((message) => message.id !== optimisticId));
       setText((current) => current || messageText);
       setSendError(error instanceof Error ? error.message : "Failed to send message.");
     } finally {
-      setLoading(false);
+      setPendingMessages((previous) =>
+        previous.filter((message) => message.id !== optimisticId)
+      );
     }
   }
 
@@ -596,20 +777,9 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
 
     setDeletingConversationId(conversationId);
     try {
-      const response = await fetch(
-        `/api/admin-message/all-conversations/${conversationId}`,
-        { method: "DELETE" }
-      );
-      if (!response.ok) {
-        const result = await response.json().catch(() => null);
-        throw new Error(result?.error ?? "Unable to delete conversation.");
-      }
-
-      const remaining = conversations.filter((item) => item.id !== conversationId);
-      setConversations(remaining);
+      await deleteMutation.mutateAsync(conversationId);
       if (activeConversationId === conversationId) {
-        setActiveConversationId(remaining[0]?.id ?? null);
-        setMessages([]);
+        setActiveConversationId(null);
       }
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Unable to delete conversation.");
@@ -637,7 +807,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
           <div className="flex items-center justify-between border-b border-border-subtle px-4 py-4 dark:border-[var(--border)] dark:bg-[var(--surface-3)]">
             <div>
               <h2 className="text-sm font-semibold text-foreground dark:text-neutral-100">Conversations</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground dark:text-neutral-400">{conversations.length} total</p>
+              <p className="mt-0.5 text-xs text-muted-foreground dark:text-neutral-400">{conversations.length} {conversationsQuery.hasNextPage ? "recent" : "total"}</p>
             </div>
             <span className="rounded-badge bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-text dark:bg-primary/15 dark:text-primary-soft-foreground">
               {conversations.reduce((count, conversation) => count + (conversation._count?.messages ?? 0), 0)} unread
@@ -687,7 +857,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      {conv._count?.messages > 0 && (
+                      {(conv._count?.messages ?? 0) > 0 && (
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-badge bg-primary px-1.5 text-[10px] font-bold text-on-color">
                           {conv._count?.messages}
                         </span>
@@ -712,6 +882,23 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
               {!visibleConversations.length && (
                 <p className="px-3 py-8 text-center text-sm text-muted-foreground dark:text-neutral-400">No conversations found.</p>
               )}
+              {conversationsQuery.hasNextPage && (
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => void conversationsQuery.fetchNextPage()}
+                    disabled={conversationsQuery.isFetchingNextPage}
+                  >
+                    {conversationsQuery.isFetchingNextPage ? (
+                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Load more conversations
+                  </Button>
+                </div>
+              )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -732,11 +919,11 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
               )}
               <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground dark:text-neutral-100">
-                {activeConversation?.user.firstName}{" "}
-                {activeConversation?.user.lastName}
+                {activeConversation?.user?.firstName}{" "}
+                {activeConversation?.user?.lastName}
               </p>
               <p className="truncate text-xs text-muted-foreground dark:text-neutral-400">
-                {activeConversation?.user.email}
+                {activeConversation?.user?.email}
               </p>
               </div>
             </div>
@@ -750,6 +937,22 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
                   </span>
                   <p className="mt-3 text-sm font-semibold text-foreground dark:text-neutral-200">Select a conversation</p>
                   <p className="mt-1 text-xs text-muted-foreground dark:text-neutral-400">Choose a customer from the list to view messages.</p>
+                </div>
+              )}
+              {hasOlderMessages && (
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={loadOlderMessages}
+                    disabled={loadingOlder}
+                  >
+                    {loadingOlder ? (
+                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Load older messages
+                  </Button>
                 </div>
               )}
               {messages?.map((msg) => {
@@ -808,7 +1011,7 @@ export default function AdminDashboardMessages({ user }: { user: any }) {
             </div>
             {/* Input */}
             <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="border-t border-border-subtle bg-card p-3 dark:border-[var(--border)] dark:bg-[var(--surface-3)] sm:p-4">
-              {sendError && <p role="alert" className="mb-2 text-xs text-destructive">{sendError}</p>}
+              {(sendError || loadError) && <p role="alert" className="mb-2 text-xs text-destructive">{sendError || loadError}</p>}
               <div className="flex gap-2">
                 <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.gif,.webp,.avif,.pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf" className="hidden" onChange={(event) => void handleFileSelected(event)} />
                 <Button type="button" variant="outline" size="icon" aria-label="Attach an image or document" title="Attach an image or document" onClick={() => fileInputRef.current?.click()} disabled={loading || isUploading || !activeConversationId}>

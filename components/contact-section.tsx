@@ -15,6 +15,8 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "react-toastify";
 
+import { submitContactRequest } from "@/lib/data/contact";
+
 import { Badge } from "@/components/ui/badge";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
 import { Button } from "@/components/ui/button";
@@ -119,14 +121,7 @@ const ContactSection = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-      const data = await response.json();
+      const data = await submitContactRequest(form);
 
       if (data.success) {
         setSuccess(true);

@@ -8,16 +8,9 @@ import {
   Radio,
   ShoppingBag,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { getAdminOrdersPageData } from "@/app/actions/admin-dashboard-action";
 import type {
   AdminOrderItem,
   AdminOrdersPagePayload,
@@ -34,7 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/lib/supabaseClient";
+import type { AdminOrdersQuery } from "@/lib/query/admin-defaults";
+import { markAdminMutationSync } from "@/lib/query/admin-invalidation";
+import { useAdminOrders } from "@/lib/query/hooks/use-admin-orders";
+import { queryKeys } from "@/lib/query/query-keys";
+import { useDebouncedValue } from "@/lib/query/use-debounced-value";
 
 import AdminOrdersAnalyticsPanel, {
   AdminOrdersAnalyticsMetrics,
@@ -238,126 +235,65 @@ function OrdersNeedingActionPanel({ orders }: { orders: AdminOrderItem[] }) {
 }
 
 export default function RealtimeAdminOrdersClient({
-  initialData,
+  adminId,
 }: {
-  initialData: AdminOrdersPagePayload;
+  adminId: string;
 }) {
-  const [payload, setPayload] = useState(initialData);
-  const [page, setPage] = useState(initialData.pagination.page);
-  const [pageSize, setPageSize] = useState(initialData.pagination.pageSize);
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("latest");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const refreshInFlight = useRef(false);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didMount = useRef(false);
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   const sortDirection: "asc" | "desc" =
     sortMode === "za" || sortMode === "latest" ? "desc" : "asc";
 
-  const buildQuery = useCallback(
-    (targetPage = page) => ({
-      page: targetPage,
+  const filters = useMemo<AdminOrdersQuery>(
+    () => ({
+      page,
       pageSize,
       status: statusFilter,
-      search,
+      search: debouncedSearch,
       sortKey: sortKey ?? "createdAt",
       sortDirection,
     }),
-    [page, pageSize, statusFilter, search, sortKey, sortDirection]
+    [page, pageSize, statusFilter, debouncedSearch, sortKey, sortDirection]
   );
 
-  const fetchOrders = useCallback(
-    (query: ReturnType<typeof buildQuery>) => {
-      if (refreshInFlight.current) {
-        return;
-      }
-
-      refreshInFlight.current = true;
-      startTransition(async () => {
-        try {
-          const nextPayload = await getAdminOrdersPageData(query);
-
-          if (!nextPayload) {
-            setError("Admin orders are unavailable.");
-            return;
-          }
-
-          setPayload(nextPayload);
-          setError(null);
-
-          if (nextPayload.pagination.page !== query.page) {
-            setPage(nextPayload.pagination.page);
-          }
-        } catch {
-          setError("Unable to refresh orders. Please try again.");
-        } finally {
-          refreshInFlight.current = false;
-        }
-      });
-    },
-    [startTransition]
-  );
+  const ordersQuery = useAdminOrders(adminId, filters);
+  const payload = ordersQuery.data;
+  const isPending = ordersQuery.isFetching;
+  const error = ordersQuery.isError
+    ? "Unable to refresh orders. Please try again."
+    : null;
 
   const refreshOrders = useCallback(() => {
-    fetchOrders(buildQuery());
-  }, [buildQuery, fetchOrders]);
+    // Refetch now; the Supabase echo for this write is ignored for a moment so
+    // the same change is not fetched twice.
+    markAdminMutationSync(adminId, "Order");
+    // Invalidate every cached filter/page variant, not just the active one:
+    // the server retired them all when it bumped the orders version counter.
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.admin.ordersRoot(adminId),
+    });
+  }, [queryClient, adminId]);
 
-  const scheduleRefresh = useCallback(() => {
-    if (refreshTimer.current) {
-      clearTimeout(refreshTimer.current);
-    }
+  // The server clamps an out-of-range page and reports it in `pagination`, which
+  // the table renders. Do not copy it back into `page` state: that changes the
+  // query key and fetches the same, already-clamped page a second time.
 
-    refreshTimer.current = setTimeout(() => {
-      refreshTimer.current = null;
-      refreshOrders();
-    }, 750);
-  }, [refreshOrders]);
+  const cards = useMemo(() => (payload ? buildCards(payload) : []), [payload]);
 
-  useEffect(() => {
-    setPayload(initialData);
-  }, [initialData]);
-
-  useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true;
-      return;
-    }
-
-    const timer = setTimeout(
-      () => fetchOrders(buildQuery()),
-      search ? 300 : 0
+  if (!payload) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        {error ?? "Loading orders…"}
+      </div>
     );
-
-    return () => clearTimeout(timer);
-  }, [buildQuery, fetchOrders, search]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-orders-page-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Order",
-        },
-        scheduleRefresh
-      )
-      .subscribe();
-
-    return () => {
-      if (refreshTimer.current) {
-        clearTimeout(refreshTimer.current);
-      }
-      channel.unsubscribe();
-    };
-  }, [scheduleRefresh]);
-
-  const cards = useMemo(() => buildCards(payload), [payload]);
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1800px] overflow-x-hidden px-4 pb-8 md:px-6 dark:text-[var(--foreground)]">

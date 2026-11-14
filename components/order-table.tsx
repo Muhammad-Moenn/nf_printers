@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import CustomTable, { Column } from "@/components/custom-table";
+import React, { useState } from "react";
+import CustomTable, { type Column, type SortMode } from "@/components/custom-table";
 import { StatusBadge } from "@/components/status-badge";
 import { toast } from "react-toastify";
-import { UpdateOrder } from "@/app/actions/order-action";
-import { Order } from "@/types/order";
+import { useUpdateOrder, useUserOrdersPage } from "@/lib/query/hooks/use-orders";
+import { Order, type DashboardOrder } from "@/types/order";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import OrderFields from "./order-fields";
 import { Button } from "./ui/button";
@@ -30,7 +30,7 @@ export type OrderStatus = "pending" | "in_progress" | "completed" | "cancelled" 
 
 /* ================= TABLE COLUMNS ================= */
 
-const orderColumns: Column<Order>[] = [
+const orderColumns: Column<DashboardOrder>[] = [
   {
     key: "designs",
     label: "Design",
@@ -101,11 +101,24 @@ const orderColumns: Column<Order>[] = [
 
 const viewOrder = (id: string) => {};
 
-export default function OrderTable({ordersData}: {ordersData: Order[]}) {
+export default function OrderTable({ userId }: { userId: string }) {
+  const updateOrder = useUpdateOrder(userId);
   const [statusFilter, setStatusFilter] = useState("all");
-  const visibleOrders = useMemo(() => statusFilter === "all"
-    ? ordersData
-    : ordersData.filter((order) => order.status === statusFilter), [ordersData, statusFilter]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("latest");
+  const ordersQuery = useUserOrdersPage(userId, {
+    page,
+    pageSize,
+    status: statusFilter,
+    search,
+    sortKey: sortKey ?? undefined,
+    sortMode,
+  });
+  const ordersData = ordersQuery.data?.orders ?? [];
+  const totalOrders = ordersQuery.data?.total ?? 0;
   const addToCart = useCartStore((state) => state.addToCart);
   const [isLoading, setIsLoading] = useState(false);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -158,12 +171,6 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
         message: "Please select weight (gsm) before updating the order.",
       },
     ];
-    const completedOrders = ordersData.filter(
-      (order: Order) =>
-        order.status === "completed" ||
-        (order.isReorder &&
-          (order.status === "processing" || order.status === "pending"))
-    );
     const reorder = (id: string) => {
       const selectedOrder = ordersData.find((o: Order) => o.id === id);
       if (!selectedOrder) return;
@@ -200,7 +207,7 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
   
       try {
         setIsLoading(true);
-        await UpdateOrder( orderDraft);
+        await updateOrder.mutateAsync(orderDraft);
   
         toast.success("Reorder placed successfully!");
         setDialogOpen(false);
@@ -266,7 +273,13 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
     <div className="">
       <div className="mb-3 flex flex-col gap-2 px-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
         <span className="mr-auto text-sm text-muted-foreground">Filter orders by status</span>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value);
+            setPage(1);
+          }}
+        >
           <SelectTrigger className="h-9 w-full border-border bg-card sm:w-[185px]">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
@@ -281,10 +294,36 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
         </Select>
       </div>
       <CustomTable
-        data={visibleOrders}
+        data={ordersData}
         columns={orderColumns}
-        defaultPageSize={10}
-       renderActions={(order) => (
+        defaultPageSize={pageSize}
+        loading={ordersQuery.isPending}
+        serverState={{
+          page,
+          pageSize,
+          total: totalOrders,
+          onPageChange: setPage,
+          onPageSizeChange: (size) => {
+            setPageSize(size);
+            setPage(1);
+          },
+          search,
+          onSearchChange: (value) => {
+            setSearch(value);
+            setPage(1);
+          },
+          sortKey,
+          sortMode,
+          onSortKeyChange: (key) => {
+            setSortKey(key);
+            setPage(1);
+          },
+          onSortModeChange: (mode) => {
+            setSortMode(mode);
+            setPage(1);
+          },
+        }}
+        renderActions={(order) => (
           <div className="flex gap-2">
             <button
               className="bg-primary text-on-color px-2  py-1 cursor-pointer rounded"
@@ -320,6 +359,7 @@ export default function OrderTable({ordersData}: {ordersData: Order[]}) {
                   <OrderFields
                     orderDraft={orderDraft}
                     setorderDraft={setorderDraft}
+                    userId={userId}
                   />
                   <div className=" px-4 md:px-6 mt-8   w-full flex justify-center gap-4 items-center ">
                     <div className="w-full cursor-pointer">

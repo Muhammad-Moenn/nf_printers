@@ -1,7 +1,10 @@
 "use server";
-import { clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 
 import { getCurrentUser } from "@/lib/auth";
+import { CACHE_TTL, cacheKeys } from "@/lib/cache/keys";
+import { cacheDelete, getOrSet } from "@/lib/cache/store";
+import { invalidateAdminCustomerCaches } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/prisma";
 
 function isDynamicServerError(error: unknown) {
@@ -23,6 +26,42 @@ export const GetDBUser = async () => {
     return null;
   }
 };
+
+export type ProfileData = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+};
+
+export async function getProfileAction(): Promise<ProfileData | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  return getOrSet<ProfileData | null>(
+    cacheKeys.user.profile(userId),
+    CACHE_TTL.userProfile,
+    async () => {
+      const user = await GetDBUser();
+      if (!user) return null;
+
+      return {
+        id: user.id,
+        firstName: user.firstName ?? "",
+        lastName: user.lastName ?? "",
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt.toISOString(),
+        emailNotifications: user.emailNotifications,
+        marketingEmails: user.marketingEmails,
+      };
+    }
+  );
+}
 
 // update the user name 
 
@@ -51,6 +90,14 @@ export async function updateProfileAction(formData: FormData) {
       where: { id: user.id },
       data: { firstName, lastName },
     });
+    // Names are embedded in cached admin order rows and the latest-orders feed.
+    const { userId: clerkUserId } = await auth();
+    await Promise.all([
+      invalidateAdminCustomerCaches(),
+      clerkUserId
+        ? cacheDelete(cacheKeys.user.profile(clerkUserId))
+        : Promise.resolve(),
+    ]);
   } catch (error) {
     console.error("updateProfileAction error:", error);
     return { error: "Unable to save your profile right now. Please try again." };
@@ -78,6 +125,10 @@ export async function updateEmailPreferencesAction(input: {
         marketingEmails: input.marketingEmails,
       },
     });
+    const { userId: clerkUserId } = await auth();
+    if (clerkUserId) {
+      await cacheDelete(cacheKeys.user.profile(clerkUserId));
+    }
     return { success: true };
   } catch (error) {
     console.error("updateEmailPreferencesAction error:", error);

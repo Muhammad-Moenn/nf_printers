@@ -332,17 +332,45 @@ export async function getUserOrderAggregates(): Promise<
   );
 }
 
-export async function getOrderCountInRange(
-  from: Date,
-  to: Date,
-  userId?: string
-): Promise<number> {
-  return prisma.order.count({
-    where: {
-      ...(userId ? { userId } : {}),
-      ...orderDateRangeWhere(from, to),
-    },
-  });
+export type OrderCountSummary = {
+  today: number;
+  week: number;
+  month: number;
+};
+
+/**
+ * Today/week/month order counts in one scan. Uses the same effective date
+ * (`orderDate`, falling back to `createdAt`) as `orderDateRangeWhere`.
+ */
+export async function getOrderCountSummary({
+  now,
+  today,
+  weekStart,
+  monthStart,
+}: {
+  now: Date;
+  today: Date;
+  weekStart: Date;
+  monthStart: Date;
+}): Promise<OrderCountSummary> {
+  const [row] = await prisma.$queryRaw<OrderCountSummary[]>`
+    SELECT
+      COUNT(*) FILTER (
+        WHERE COALESCE("orderDate", "createdAt") >= ${today}
+          AND COALESCE("orderDate", "createdAt") <= ${now}
+      )::int AS "today",
+      COUNT(*) FILTER (
+        WHERE COALESCE("orderDate", "createdAt") >= ${weekStart}
+          AND COALESCE("orderDate", "createdAt") <= ${now}
+      )::int AS "week",
+      COUNT(*) FILTER (
+        WHERE COALESCE("orderDate", "createdAt") >= ${monthStart}
+          AND COALESCE("orderDate", "createdAt") <= ${now}
+      )::int AS "month"
+    FROM "Order"
+  `;
+
+  return row ?? { today: 0, week: 0, month: 0 };
 }
 
 export async function getCompletedOrderAverageValue(
@@ -359,21 +387,15 @@ export async function getCompletedOrderAverageValue(
 export async function getTopServiceCounts(
   limit = 5
 ): Promise<{ name: string; value: number }[]> {
-  const groups = await prisma.order.groupBy({
-    by: ["service"],
-    _count: { _all: true },
-  });
-
-  const counts = new Map<string, number>();
-  for (const group of groups) {
-    const key = group.service || "Other";
-    counts.set(key, (counts.get(key) ?? 0) + group._count._all);
-  }
-
-  return Array.from(counts.entries())
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, limit);
+  return prisma.$queryRaw<{ name: string; value: number }[]>`
+    SELECT
+      COALESCE(NULLIF("service", ''), 'Other') AS name,
+      COUNT(*)::int AS value
+    FROM "Order"
+    GROUP BY 1
+    ORDER BY value DESC
+    LIMIT ${limit}
+  `;
 }
 
 export async function getExpenseTotal(
@@ -435,4 +457,72 @@ export function localDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+export type UserOrderSummary = {
+  total: number;
+  pending: number;
+  processing: number;
+  inProgress: number;
+  completed: number;
+  cancelled: number;
+  totalPaid: number;
+  currentWeekPaid: number;
+  currentMonthPaid: number;
+};
+
+export async function getUserOrderSummary(
+  userId: string,
+  {
+    weekStart,
+    weekEnd,
+    monthStart,
+    monthEnd,
+  }: { weekStart: Date; weekEnd: Date; monthStart: Date; monthEnd: Date }
+): Promise<UserOrderSummary> {
+  const [row] = await prisma.$queryRaw<UserOrderSummary[]>`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
+      COUNT(*) FILTER (WHERE status = 'processing')::int AS processing,
+      COUNT(*) FILTER (WHERE status = 'in_progress')::int AS "inProgress",
+      COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+      COUNT(*) FILTER (WHERE status = 'cancelled')::int AS cancelled,
+      COALESCE(
+        SUM("finalAmount") FILTER (WHERE status = 'completed'),
+        0
+      )::float8 AS "totalPaid",
+      COALESCE(
+        SUM("finalAmount") FILTER (
+          WHERE status = 'completed'
+            AND COALESCE("orderDate", "createdAt") >= ${weekStart}
+            AND COALESCE("orderDate", "createdAt") <= ${weekEnd}
+        ),
+        0
+      )::float8 AS "currentWeekPaid",
+      COALESCE(
+        SUM("finalAmount") FILTER (
+          WHERE status = 'completed'
+            AND COALESCE("orderDate", "createdAt") >= ${monthStart}
+            AND COALESCE("orderDate", "createdAt") <= ${monthEnd}
+        ),
+        0
+      )::float8 AS "currentMonthPaid"
+    FROM "Order"
+    WHERE "userId" = ${userId}
+  `;
+
+  return (
+    row ?? {
+      total: 0,
+      pending: 0,
+      processing: 0,
+      inProgress: 0,
+      completed: 0,
+      cancelled: 0,
+      totalPaid: 0,
+      currentWeekPaid: 0,
+      currentMonthPaid: 0,
+    }
+  );
 }

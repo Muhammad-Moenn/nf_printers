@@ -1,6 +1,7 @@
 // app/api/admin/conversations/[conversationId]/send/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { invalidateAdminMessageCaches } from "@/lib/cache/invalidate";
 import { GetDBUser } from "@/app/actions/user_action";
 import { isUserUploadOwner } from "@/lib/auth";
 import { encodeChatMessage, type ChatAttachment } from "@/lib/chat-message";
@@ -75,6 +76,8 @@ export async function POST(req: Request, { params }: Params) {
       receiverId,
     },
   });
+
+  await invalidateAdminMessageCaches();
 
   return NextResponse.json(message);
 }

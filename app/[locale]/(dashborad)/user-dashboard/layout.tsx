@@ -1,6 +1,6 @@
 import { GetDBUser } from "@/app/actions/user_action";
 import { AppSidebar } from "@/components/app-sidebar";
-import { DashboardNavigationLoading } from "@/components/dashboard-navigation-loading";
+import { OrdersRealtimeSync } from "@/components/orders-realtime-sync";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { redirect } from "@/i18n/navigation";
@@ -70,6 +70,7 @@ if (dbUser) {
         } as React.CSSProperties
       }
     >
+      <OrdersRealtimeSync userId={dbUser?.id ?? ""} />
       <AppSidebar variant="sidebar" {...data} />
       <SidebarInset className="bg-[var(--surface-2)] dark:bg-background">
         <SiteHeader />
@@ -77,8 +78,7 @@ if (dbUser) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-5 md:py-4">
-              <div className="relative flex flex-1 flex-col">
-                <DashboardNavigationLoading />
+              <div className="flex flex-1 flex-col">
                 {children}
               </div>
               

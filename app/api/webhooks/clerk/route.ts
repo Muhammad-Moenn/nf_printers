@@ -2,6 +2,12 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { removeUserFromClerk, syncUserFromClerk } from "@/lib/auth";
+import { cacheKeys } from "@/lib/cache/keys";
+import { cacheDelete } from "@/lib/cache/store";
+import {
+  invalidateAdminCustomerCaches,
+  invalidateAdminUserCaches,
+} from "@/lib/cache/invalidate";
 
 export const runtime = "nodejs";
 
@@ -50,9 +56,22 @@ export async function POST(request: NextRequest) {
         lastName: event.data.last_name,
         avatarUrl: event.data.image_url,
       });
+      if (event.type === "user.updated") {
+        // Name/email changes appear in cached admin order rows.
+        await Promise.all([
+          invalidateAdminCustomerCaches(),
+          cacheDelete(cacheKeys.user.profile(event.data.id)),
+        ]);
+      } else {
+        await invalidateAdminUserCaches();
+      }
     } else if (event.type === "user.deleted") {
       if (event.data.id) {
         await removeUserFromClerk(event.data.id);
+        await Promise.all([
+          invalidateAdminUserCaches(),
+          cacheDelete(cacheKeys.user.profile(event.data.id)),
+        ]);
       }
     }
   } catch (error) {

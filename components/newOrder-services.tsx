@@ -1,11 +1,8 @@
 "use client";
 
-import {
-  getUserDesigns,
-  saveDesign,
-  type Design,
-} from "@/app/actions/designs-action";
-import { getOrderForReorder } from "@/app/actions/order-action";
+import { useSaveDesign, useUserDesigns } from "@/lib/query/hooks/use-designs";
+import { useReorderOrder } from "@/lib/query/hooks/use-orders";
+import { usePricingEstimate } from "@/lib/query/hooks/use-pricing";
 import { useCartStore } from "@/app/store/cart-store";
 import { services } from "@/data/services";
 import type { Order } from "@/types/order";
@@ -158,7 +155,7 @@ const fieldClass =
   "h-9 w-full rounded-control border-border bg-card text-sm shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:border-on-color/15 dark:bg-neutral-900";
 type CustomFieldKey = "paperType" | "sides" | "size" | "gsm" | "colorMode";
 
-export default function NewOrderServices() {
+export default function NewOrderServices({ userId }: { userId: string }) {
   const addToCart = useCartStore((s) => s.addToCart);
   const [draft, setDraft] = useState<Order>(freshOrder);
   const [customFields, setCustomFields] = useState<
@@ -166,19 +163,40 @@ export default function NewOrderServices() {
   >({});
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const [savedDesigns, setSavedDesigns] = useState<Design[]>([]);
   const [designDialog, setDesignDialog] = useState(false);
-  const [pricing, setPricing] = useState<{
-    formattedAmount: string;
-    predictedAmount: number;
-  } | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submitLock = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [reorderSourceId, setReorderSourceId] = useState("");
+  const { data: savedDesigns = [] } = useUserDesigns(userId);
+  const saveDesignMutation = useSaveDesign(userId);
+  const [reorderId, setReorderId] = useState<string | null>(null);
+  const { data: reorderSource, isError: reorderError } = useReorderOrder(
+    userId,
+    reorderId
+  );
+  const appliedReorderRef = useRef<string | null>(null);
+  const {
+    data: pricingResult,
+    isFetching: pricingLoading,
+    isError: pricingError,
+  } = usePricingEstimate(draft as unknown as Record<string, unknown>, {
+    enabled: Boolean(draft.service),
+    debounceMs: 350,
+  });
+  const pricing =
+    draft.service && pricingResult && !pricingError
+      ? {
+          formattedAmount: pricingResult.formattedAmount,
+          predictedAmount: pricingResult.predictedAmount,
+        }
+      : null;
+
+  useEffect(() => {
+    setReorderId(new URLSearchParams(window.location.search).get("reorder"));
+  }, []);
 
   const visibleServices = useMemo(() => {
     const list =
@@ -193,120 +211,66 @@ export default function NewOrderServices() {
   const selectedDesigns = (draft.designs ?? []) as DesignFile[];
 
   useEffect(() => {
-    getUserDesigns()
-      .then(setSavedDesigns)
-      .catch(() => setSavedDesigns([]));
-  }, []);
-
-  useEffect(() => {
-    const reorderId = new URLSearchParams(window.location.search).get(
-      "reorder",
-    );
-    if (!reorderId) return;
-    let active = true;
-    getOrderForReorder(reorderId)
-      .then((source) => {
-        if (!active) return;
-        const sourceDesigns = Array.isArray(source.designs)
-          ? source.designs
-          : [];
-        setDraft({
-          ...freshOrder(),
-          service: source.service || "",
-          product: source.product || source.service || "",
-          quantity: source.quantity || "1",
-          paperType: source.paperType || "",
-          sides: source.sides || "",
-          size: source.size || "",
-          gsm: source.gsm || "",
-          colorMode: source.colorMode || "",
-          requirements: source.requirements || "",
-          finishingOptions: Array.isArray(source.finishingOptions)
-            ? source.finishingOptions
-            : [],
-          designs: sourceDesigns as Order["designs"],
-          isReorder: true,
-        });
-        setCustomFields({
-          paperType: Boolean(
-            source.paperType &&
-            !fieldOptions.paperType.includes(source.paperType),
-          ),
-          sides: Boolean(
-            source.sides && !fieldOptions.sides.includes(source.sides),
-          ),
-          size: Boolean(
-            source.size && !fieldOptions.size.includes(source.size),
-          ),
-          gsm: Boolean(source.gsm && !fieldOptions.gsm.includes(source.gsm)),
-          colorMode: Boolean(
-            source.colorMode &&
-            !fieldOptions.colorMode.includes(source.colorMode),
-          ),
-        });
-        setReorderSourceId(source.id);
-        toast.info(
-          `Order #${source.id.slice(-6).toUpperCase()} loaded. Review the details before adding it to your cart.`,
-        );
-      })
-      .catch(() =>
-        toast.error(
-          "Could not load that order for reorder. Please choose another order.",
-        ),
-      );
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!draft.service) {
-      setPricing(null);
+    if (!reorderSource || appliedReorderRef.current === reorderSource.id) {
       return;
     }
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      setPricingLoading(true);
-      try {
-        const response = await fetch("/api/pricing/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(draft),
-          signal: controller.signal,
-        });
-        if (!response.ok) throw new Error("Unable to estimate the price");
-        const result = await response.json();
-        setPricing({
-          formattedAmount: result.formattedAmount,
-          predictedAmount: result.predictedAmount,
-        });
-        setDraft((current) => ({
-          ...current,
-          amount: String(result.predictedAmount),
-        }));
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          setPricing(null);
-        }
-      } finally {
-        if (!controller.signal.aborted) setPricingLoading(false);
-      }
-    }, 350);
-    return () => {
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [
-    draft.service,
-    draft.quantity,
-    draft.paperType,
-    draft.size,
-    draft.gsm,
-    draft.colorMode,
-    draft.sides,
-    draft.finishingOptions,
-    draft.requirements,
-  ]);
+
+    appliedReorderRef.current = reorderSource.id;
+    const source = reorderSource;
+
+    setDraft({
+      ...freshOrder(),
+      service: source.service || "",
+      product: source.product || source.service || "",
+      quantity: source.quantity || "1",
+      paperType: source.paperType || "",
+      sides: source.sides || "",
+      size: source.size || "",
+      gsm: source.gsm || "",
+      colorMode: source.colorMode || "",
+      requirements: source.requirements || "",
+      finishingOptions: Array.isArray(source.finishingOptions)
+        ? source.finishingOptions
+        : [],
+      designs: source.designs,
+      isReorder: true,
+    });
+    setCustomFields({
+      paperType: Boolean(
+        source.paperType && !fieldOptions.paperType.includes(source.paperType)
+      ),
+      sides: Boolean(
+        source.sides && !fieldOptions.sides.includes(source.sides)
+      ),
+      size: Boolean(source.size && !fieldOptions.size.includes(source.size)),
+      gsm: Boolean(source.gsm && !fieldOptions.gsm.includes(source.gsm)),
+      colorMode: Boolean(
+        source.colorMode && !fieldOptions.colorMode.includes(source.colorMode)
+      ),
+    });
+    setReorderSourceId(source.id);
+    toast.info(
+      `Order #${source.id.slice(-6).toUpperCase()} loaded. Review the details before adding it to your cart.`
+    );
+  }, [reorderSource]);
+
+  useEffect(() => {
+    if (reorderError) {
+      toast.error(
+        "Could not load that order for reorder. Please choose another order."
+      );
+    }
+  }, [reorderError]);
+
+  useEffect(() => {
+    if (!pricingResult) return;
+
+    setDraft((current) =>
+      current.amount === String(pricingResult.predictedAmount)
+        ? current
+        : { ...current, amount: String(pricingResult.predictedAmount) }
+    );
+  }, [pricingResult]);
 
   const update = (key: keyof Order, value: unknown) => {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -372,7 +336,6 @@ export default function NewOrderServices() {
     toast.success("Order added to your cart.");
     setDraft(freshOrder());
     setCustomFields({});
-    setPricing(null);
     setErrors({});
     setReorderSourceId("");
     const url = new URL(window.location.href);
@@ -388,7 +351,6 @@ export default function NewOrderServices() {
   const handleCancel = () => {
     setDraft(freshOrder());
     setCustomFields({});
-    setPricing(null);
     setErrors({});
     setReorderSourceId("");
     const url = new URL(window.location.href);
@@ -429,7 +391,7 @@ export default function NewOrderServices() {
 
     // Keep newly uploaded files available in the user's existing designs list.
     const saved = await Promise.allSettled(
-      designs.map((design) => saveDesign(design)),
+      designs.map((design) => saveDesignMutation.mutateAsync(design)),
     );
     const failedSaves = saved.filter(
       (result) => result.status === "rejected",
@@ -439,12 +401,6 @@ export default function NewOrderServices() {
         "The files are attached to this order, but some could not be saved to My Designs.",
       );
     } else {
-      setSavedDesigns((current) => [
-        ...designs,
-        ...current.filter(
-          (item) => !designs.some((design) => design.key === item.key),
-        ),
-      ]);
       toast.success(
         `${designs.length} design ${designs.length === 1 ? "file uploaded" : "files uploaded"}.`,
       );

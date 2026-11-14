@@ -1,175 +1,59 @@
 "use client";
 
 import { ShieldCheck, UserCheck, UserPlus, Users } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useMemo, useState } from "react";
 
-import { getAdminUsersDashboardDataAction } from "@/app/actions/admin-users-action";
 import UserCharts from "@/components/charts/admin-charts/users-page-charts";
 import StatCard from "@/components/user-stat-cards";
 import UsersTable, { type UserSortKey } from "@/components/user-table";
-import { supabase } from "@/lib/supabaseClient";
-import type { MockUser } from "@/data/mockUsers";
-
-type AdminUsersPayload = {
-  stats: {
-    totalUsers: number;
-    activeUsers: number;
-    newThisMonth: number;
-    staffUsers: number;
-  };
-  users: MockUser[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
-  charts: {
-    monthlySignups: { month: string; users: number }[];
-    topSpenders: { name: string; spent: number }[];
-  };
-};
+import type { AdminUsersQuery } from "@/lib/query/admin-defaults";
+import { useAdminUsers } from "@/lib/query/hooks/use-admin-users";
+import { useDebouncedValue } from "@/lib/query/use-debounced-value";
 
 export default function RealtimeAdminUsersClient({
-  initialData,
+  adminId,
 }: {
-  initialData: AdminUsersPayload;
+  adminId: string;
 }) {
-  const [payload, setPayload] = useState(initialData);
-  const [page, setPage] = useState(initialData.pagination.page);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
   const [sortBy, setSortBy] = useState<UserSortKey>("joinedDate");
   const [sortAsc, setSortAsc] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const refreshInFlight = useRef(false);
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didMount = useRef(false);
+  const debouncedSearch = useDebouncedValue(search, 300);
 
-  const buildQuery = useCallback(
-    (targetPage = page) => ({
-      page: targetPage,
-      pageSize: initialData.pagination.pageSize,
-      search,
+  const filters = useMemo<AdminUsersQuery>(
+    () => ({
+      page,
+      pageSize: 20,
+      search: debouncedSearch,
       role: roleFilter,
       status: statusFilter,
       sortBy,
-      sortDirection: (sortAsc ? "asc" : "desc") as "asc" | "desc",
+      sortDirection: sortAsc ? "asc" : "desc",
     }),
-    [
-      page,
-      initialData.pagination.pageSize,
-      search,
-      roleFilter,
-      statusFilter,
-      sortBy,
-      sortAsc,
-    ]
+    [page, debouncedSearch, roleFilter, statusFilter, sortBy, sortAsc]
   );
 
-  const fetchUsers = useCallback(
-    (query: ReturnType<typeof buildQuery>) => {
-      if (refreshInFlight.current) {
-        return;
-      }
+  const usersQuery = useAdminUsers(adminId, filters);
+  const payload = usersQuery.data;
+  const isPending = usersQuery.isFetching;
+  const error = usersQuery.isError
+    ? "Unable to refresh users. Please try again."
+    : null;
 
-      refreshInFlight.current = true;
-      startTransition(async () => {
-        try {
-          const nextPayload = await getAdminUsersDashboardDataAction(query);
+  // The server clamps an out-of-range page and reports it in `pagination`, which
+  // the table renders. Copying it back into `page` state would change the query
+  // key and fetch the same, already-clamped page a second time.
 
-          if (!nextPayload) {
-            setError("Users data is unavailable.");
-            return;
-          }
-
-          setPayload(nextPayload);
-          setError(null);
-
-          if (nextPayload.pagination.page !== query.page) {
-            setPage(nextPayload.pagination.page);
-          }
-        } catch {
-          setError("Unable to refresh users. Please try again.");
-        } finally {
-          refreshInFlight.current = false;
-        }
-      });
-    },
-    [startTransition]
-  );
-
-  const refreshUsers = useCallback(() => {
-    fetchUsers(buildQuery());
-  }, [buildQuery, fetchUsers]);
-
-  const scheduleRefresh = useCallback(() => {
-    if (refreshTimer.current) {
-      clearTimeout(refreshTimer.current);
-    }
-
-    refreshTimer.current = setTimeout(() => {
-      refreshTimer.current = null;
-      refreshUsers();
-    }, 750);
-  }, [refreshUsers]);
-
-  useEffect(() => {
-    setPayload(initialData);
-  }, [initialData]);
-
-  useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true;
-      return;
-    }
-
-    const timer = setTimeout(
-      () => fetchUsers(buildQuery()),
-      search ? 300 : 0
+  if (!payload) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        {error ?? "Loading users…"}
+      </div>
     );
-
-    return () => clearTimeout(timer);
-  }, [buildQuery, fetchUsers, search]);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("admin-users-page-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "User",
-        },
-        scheduleRefresh
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "Order",
-        },
-        scheduleRefresh
-      )
-      .subscribe();
-
-    return () => {
-      if (refreshTimer.current) {
-        clearTimeout(refreshTimer.current);
-      }
-      channel.unsubscribe();
-    };
-  }, [scheduleRefresh]);
+  }
 
   const handleSort = (key: UserSortKey) => {
     if (key === sortBy) {

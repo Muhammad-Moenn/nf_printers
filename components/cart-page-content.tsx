@@ -1,6 +1,6 @@
 "use client";
 
-import { SaveOrder, UpdateOrder } from "@/app/actions/order-action";
+import { useSaveOrder, useUpdateOrder } from "@/lib/query/hooks/use-orders";
 import { useCartStore } from "@/app/store/cart-store";
 import CartItemCard from "@/components/cart-item-card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,13 @@ import { toast } from "react-toastify";
 
 interface Props {
   newOrderHref?: string;
+  userId: string;
 }
 
-export default function CartPageContent({ newOrderHref }: Props) {
+export default function CartPageContent({ newOrderHref, userId }: Props) {
   const [isLoading, setIsLoading] = useState(false);
+  const saveOrder = useSaveOrder(userId);
+  const updateOrder = useUpdateOrder(userId);
 
   const items = useCartStore((state) => state.items);
   const total = useCartStore((state) => state.getTotalAmount());
@@ -36,10 +39,10 @@ export default function CartPageContent({ newOrderHref }: Props) {
     setIsLoading(true);
     try {
       if (orderItems.length > 0) {
-        await SaveOrder(orderItems);
+        await saveOrder.mutateAsync(orderItems);
       }
       if (reorderItems.length > 0) {
-        await UpdateOrder(reorderItems);
+        await updateOrder.mutateAsync(reorderItems);
       }
       useCartStore.getState().clearCart();
       toast.success("Cart items placed successfully!");

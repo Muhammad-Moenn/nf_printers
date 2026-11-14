@@ -1,29 +1,10 @@
-import { services } from '@/data/services'
 import { ServiceCard } from './service-card'
 import Link from 'next/link'
 import clsx from 'clsx'
-import { prisma } from '@/lib/prisma'
+import { getPublicServiceCatalog } from '@/lib/data/services'
 
 async function AllServicesSection({className=""}: { className?: string }) {
-  let catalog = services;
-  try {
-    const records = await prisma.service.findMany({ where: { isActive: true }, orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }] });
-    if (records.length) {
-      catalog = records.map((service) => ({
-        id: service.id,
-        title: service.name,
-        description: service.description,
-        icon: service.icon,
-        iconColor: 'text-primary-text',
-        iconBg: 'bg-primary/10',
-        details: service.details ?? undefined,
-        link: `/services/${service.slug}`,
-        slug: service.slug,
-      }));
-    }
-  } catch (error) {
-    console.error('Unable to load service catalog; showing built-in services.', error);
-  }
+  const catalog = await getPublicServiceCatalog();
 
   return (
      <section   className={clsx(
