@@ -2,7 +2,7 @@
 
 import { useAuthUser } from "@/components/auth-provider";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
-import { ArrowRight, LayoutDashboard, LogIn, Menu, X } from "lucide-react";
+import { ArrowRight, ChevronDown, LayoutDashboard, LogIn, Menu } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -11,6 +11,20 @@ import { Link, usePathname } from "@/i18n/navigation";
 import LanguageSelector from "./language-selector";
 import NotificationButton from "./notification-btn";
 import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "./ui/sheet";
 import { ModeToggle } from "./ui/mode-toggle";
 
 type HeaderUser = {
@@ -26,6 +40,7 @@ type NavItem = {
 export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
   const t = useTranslations("home.header");
   const items = t.raw("navItems") as NavItem[];
+  const aboutLinks = t.raw("aboutSubmenu") as NavItem[];
   const locale = useLocale();
   const pathname = usePathname();
   const isUrdu = locale === "ur";
@@ -33,6 +48,7 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAboutMenuOpen, setIsAboutMenuOpen] = useState(false);
 
   const dashboardHref =
     dbUser?.role === "ADMIN" ? "/admin-dashboard" : "/user-dashboard";
@@ -52,6 +68,21 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
     if (item.link === "home") return pathname === "/";
     if (item.link === "services") return pathname.startsWith("/services");
     return false;
+  };
+
+  const handleSectionLink = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    item: NavItem,
+  ) => {
+    if (pathname !== "/") return;
+    const section = document.getElementById(item.link);
+    if (!section) return;
+
+    event.preventDefault();
+    window.history.pushState(null, "", `/#${item.link}`);
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+    setIsMobileMenuOpen(false);
+    setIsAboutMenuOpen(false);
   };
 
   return (
@@ -89,24 +120,45 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
           <ul className="flex items-center gap-0.5 xl:gap-1">
             {items.map((item) => (
               <li key={item.link}>
-                <Link
-                  href={getNavHref(item)}
-                  aria-current={isActive(item) ? "page" : undefined}
-                  className={`relative flex h-10 items-center px-2.5 text-sm font-semibold transition-colors after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-primary after:transition-transform after:duration-200 hover:text-primary-text hover:after:scale-x-100 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px] xl:after:inset-x-3 ${
-                    isActive(item)
-                      ? "text-primary-text after:scale-x-100 dark:text-primary-soft-foreground"
-                      : "text-muted-foreground after:scale-x-0 dark:text-neutral-300"
-                  }`}
-                >
-                  {item.name}
-                </Link>
+                {item.link === "about" ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="group flex h-10 items-center gap-1.5 px-2.5 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-primary-text focus-visible:text-primary-text dark:text-neutral-300 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px]">
+                      {item.name}
+                      <ChevronDown aria-hidden="true" className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align={isUrdu ? "end" : "start"} className="min-w-52 p-1.5">
+                      {aboutLinks.map((subItem) => (
+                        <DropdownMenuItem key={subItem.link} asChild className="min-h-10 rounded-lg px-3 font-medium">
+                          <Link
+                            href={getNavHref(subItem)}
+                            onClick={(event) => handleSectionLink(event, subItem)}
+                          >
+                            {subItem.name}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link
+                    href={getNavHref(item)}
+                    aria-current={isActive(item) ? "page" : undefined}
+                    className={`relative flex h-10 items-center px-2.5 text-sm font-semibold transition-colors after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-primary after:transition-transform after:duration-200 hover:text-primary-text hover:after:scale-x-100 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px] xl:after:inset-x-3 ${
+                      isActive(item)
+                        ? "text-primary-text after:scale-x-100 dark:text-primary-soft-foreground"
+                        : "text-muted-foreground after:scale-x-0 dark:text-neutral-300"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 lg:flex">
-          <div className="hidden xl:block">
+        <div className="hidden shrink-0 items-center gap-2.5 lg:flex">
+          <div className="hidden xl:me-1 xl:block">
             <LanguageSelector />
           </div>
           <ModeToggle variant="icon" />
@@ -138,56 +190,99 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 lg:hidden">
-          <ModeToggle variant="icon" />
-          <button
-            suppressHydrationWarning
-            type="button"
-            aria-label={isMobileMenuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={isMobileMenuOpen}
-            onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-surface-2 dark:border-on-color/10 dark:text-neutral-200 dark:hover:bg-on-color/[0.06]"
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-      </div>
+        <Sheet
+          open={isMobileMenuOpen}
+          onOpenChange={(open) => {
+            setIsMobileMenuOpen(open);
+            if (!open) setIsAboutMenuOpen(false);
+          }}
+        >
+          <div className="flex items-center gap-2 lg:hidden">
+            <ModeToggle variant="icon" />
+            <SheetTrigger asChild>
+              <button
+                suppressHydrationWarning
+                type="button"
+                aria-label={isUrdu ? "نیویگیشن کھولیں" : "Open navigation"}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-surface-2 dark:border-on-color/10 dark:text-neutral-200 dark:hover:bg-on-color/[0.06]"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+          </div>
 
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden border-t border-border bg-card dark:border-on-color/10 dark:bg-background lg:hidden"
-          >
-            <div
-              dir={isUrdu ? "rtl" : "ltr"}
-              className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] py-4 sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
-            >
+      <SheetContent
+        side={isUrdu ? "left" : "right"}
+        dir={isUrdu ? "rtl" : "ltr"}
+        className="w-[min(24rem,88vw)] gap-0 border-border bg-card p-0 text-foreground shadow-[var(--shadow-xl)] dark:border-on-color/10 dark:bg-background lg:hidden"
+      >
+        <SheetHeader className="border-b border-border px-5 py-5 pe-14 text-start dark:border-on-color/10">
+          <SheetTitle className="text-lg font-bold text-heading">
+            {t("menuTitle")}
+          </SheetTitle>
+          <SheetDescription>{t("menuDescription")}</SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
               <div className="mb-4">
                 <LanguageSelector />
               </div>
-              <nav>
-                <ul className="grid gap-1 sm:grid-cols-2">
+              <nav aria-label={t("menuTitle")}>
+                <ul className="grid gap-1">
                   {items.map((item) => (
                     <li key={item.link}>
-                      <Link
-                        href={getNavHref(item)}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex min-h-11 items-center border-l-2 px-3 text-sm font-semibold transition-colors rtl:border-l-0 rtl:border-r-2 ${
-                          isActive(item)
-                            ? "border-primary bg-primary-soft text-primary-text dark:border-primary dark:bg-primary/10 dark:text-primary-soft-foreground"
-                            : "border-transparent text-foreground hover:border-border-strong hover:bg-surface-2 dark:text-neutral-200 dark:hover:border-on-color/20 dark:hover:bg-on-color/[0.05]"
-                        }`}
-                      >
-                        {item.name}
-                      </Link>
+                      {item.link === "about" ? (
+                        <>
+                          <button
+                            type="button"
+                            aria-expanded={isAboutMenuOpen}
+                            aria-controls="mobile-about-submenu"
+                            onClick={() => setIsAboutMenuOpen((open) => !open)}
+                            className="flex min-h-12 w-full items-center justify-between rounded-xl px-3 text-start text-sm font-semibold text-foreground transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:text-neutral-200 dark:hover:bg-on-color/[0.05]"
+                          >
+                            {item.name}
+                            <ChevronDown className={`size-4 shrink-0 transition-transform duration-200 ${isAboutMenuOpen ? "rotate-180" : ""}`} />
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {isAboutMenuOpen && (
+                              <motion.ul
+                                id="mobile-about-submenu"
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                className="ms-3 mt-1 grid overflow-hidden border-s-2 border-primary/25 ps-3"
+                              >
+                                {aboutLinks.map((subItem) => (
+                                  <li key={subItem.link}>
+                                    <Link
+                                      href={getNavHref(subItem)}
+                                      onClick={(event) => {
+                                        handleSectionLink(event, subItem);
+                                        setIsMobileMenuOpen(false);
+                                      }}
+                                      className="flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary-soft hover:text-primary-text dark:hover:bg-primary/10 dark:hover:text-primary-soft-foreground"
+                                    >
+                                      {subItem.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </motion.ul>
+                            )}
+                          </AnimatePresence>
+                        </>
+                      ) : (
+                        <Link
+                          href={getNavHref(item)}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className={`flex min-h-12 items-center rounded-xl px-3 text-sm font-semibold transition-colors ${
+                            isActive(item)
+                              ? "bg-primary-soft text-primary-text dark:bg-primary/10 dark:text-primary-soft-foreground"
+                              : "text-foreground hover:bg-surface-2 dark:text-neutral-200 dark:hover:bg-on-color/[0.05]"
+                          }`}
+                        >
+                          {item.name}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -236,9 +331,9 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
                 </Button>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </SheetContent>
+      </Sheet>
+      </div>
     </motion.header>
   );
 }

@@ -422,7 +422,14 @@
           "name": "رابطہ",
           "link": "contact"
         }
-      ]
+      ],
+      "aboutSubmenu": [
+        { "name": "ہمارے بارے میں", "link": "about" },
+        { "name": "قابل اعتماد ادارے", "link": "partners" },
+        { "name": "ہمیں کیوں منتخب کریں", "link": "why-choose-us" }
+      ],
+      "menuTitle": "نیویگیشن",
+      "menuDescription": "صفحے دیکھیں اور این ایف پرنٹرز کے بارے میں مزید جانیں۔"
     },
     "hero_title": "پیشہ ورانہ پرنٹنگ، پروف سے فنشنگ تک مکمل درستگی۔",
     "servic_section": {

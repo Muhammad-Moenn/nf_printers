@@ -53,13 +53,13 @@ export default function TrustedBySection() {
     <section
       id="partners"
       aria-labelledby="trusted-heading"
-      className="relative isolate w-full overflow-hidden py-[var(--space-12)] sm:py-[var(--space-16)]"
+      className="relative isolate w-full scroll-mt-24 overflow-hidden py-[var(--space-12)] sm:py-[var(--space-16)]"
     >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div
+        {/* <div
           className={cn(
             "absolute -start-40 -top-24 h-56 w-[42rem] rounded-[100%] bg-gradient-to-r from-primary/15 via-landing-sky/20 to-transparent blur-3xl",
             styles.waveOne,
@@ -70,7 +70,7 @@ export default function TrustedBySection() {
             "absolute -end-40 -bottom-24 h-52 w-[38rem] rounded-[100%] bg-gradient-to-l from-primary/15 via-landing-sky/20 to-transparent blur-3xl",
             styles.waveTwo,
           )}
-        />
+        /> */}
         <div
           className="absolute end-6 top-8 h-20 w-20 opacity-40 sm:end-10 sm:h-24 sm:w-24"
           style={dotPattern}
@@ -113,7 +113,7 @@ export default function TrustedBySection() {
       </motion.div>
 
       <div className="relative mt-[var(--space-8)] w-full sm:mt-[var(--space-10)]">
-        <div className="relative border-y border-primary-border/35 bg-gradient-to-r from-primary-soft/20 via-card/60 to-primary-soft/20 dark:border-on-color/10 dark:from-primary/5 dark:via-background/40 dark:to-primary/5">
+        <div className={cn("relative border-y border-primary-border/35 bg-gradient-to-r from-primary-soft/20 via-card/60 to-primary-soft/20 dark:border-on-color/10 dark:from-primary/5 dark:via-background/40 dark:to-primary/5", styles.marqueeRail)}>
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent"
@@ -135,10 +135,15 @@ export default function TrustedBySection() {
 
                     return (
                       <Fragment key={`${copy}-${brand.logo}-${brand.name}`}>
-                        <div className={styles.logoItem}>
+                        <div
+                          className={styles.logoItem}
+                          role="img"
+                          aria-label={copy === 0 ? brand.name : undefined}
+                          tabIndex={copy === 0 ? 0 : undefined}
+                        >
                           <Image
                             src={brand.logo}
-                            alt={copy === 0 ? brand.name : ""}
+                            alt=""
                             width={dimensions.width}
                             height={dimensions.height}
                             sizes="(max-width: 639px) 110px, (max-width: 1023px) 150px, 190px"

@@ -422,7 +422,14 @@
           "name": "Contact",
           "link": "contact"
         }
-      ]
+      ],
+      "aboutSubmenu": [
+        { "name": "About", "link": "about" },
+        { "name": "Trusted By", "link": "partners" },
+        { "name": "Why Choose Us", "link": "why-choose-us" }
+      ],
+      "menuTitle": "Navigation",
+      "menuDescription": "Explore pages and learn more about NF Printers."
     },
     "hero_title": "Professional printing, precise from proof to finish.",
     "servic_section": {

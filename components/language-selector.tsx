@@ -41,7 +41,7 @@ export default function LanguageSelector() {
     return (
       <div
         aria-hidden="true"
-        className="h-9 w-[88px] shrink-0 rounded-full border border-primary-border/60 bg-card/80 backdrop-blur-md"
+        className="h-9 w-24 shrink-0 rounded-full border border-primary-border/60 bg-card/80 backdrop-blur-md"
       />
     );
   }
@@ -54,7 +54,7 @@ export default function LanguageSelector() {
       <SelectTrigger
         aria-label="Select language"
         className={cn(
-          "h-9 w-[88px] cursor-pointer gap-1.5 rounded-full px-2.5",
+          "h-9 w-24 cursor-pointer gap-2 rounded-full px-3",
           "border border-primary-border/60 bg-card/80 text-heading backdrop-blur-md",
           "shadow-[0_2px_10px_-2px_rgba(18,101,233,0.25)]",
           "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-border hover:bg-card",
