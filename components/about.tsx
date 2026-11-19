@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, Check, Play } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
@@ -9,13 +9,14 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 import { cn } from "@/lib/utils";
 
 export default function About() {
   const t = useTranslations("home.about_us");
   const locale = useLocale();
   const isRTL = locale === "ur";
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useHydratedReducedMotion();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const benefits = (t.raw("features") as string[]) ?? [];
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Gem, HandCoins, Headset, Zap, type LucideIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
+import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 import { cn } from "@/lib/utils";
 
 type BenefitCard = {
@@ -18,7 +19,7 @@ export default function WhyChooseUsSection() {
   const t = useTranslations("home.why_choose_us");
   const locale = useLocale();
   const isRTL = locale === "ur";
-  const reduceMotion = Boolean(useReducedMotion());
+  const reduceMotion = useHydratedReducedMotion();
   const cards = t.raw("cards") as BenefitCard[];
 
   const revealVariants = {

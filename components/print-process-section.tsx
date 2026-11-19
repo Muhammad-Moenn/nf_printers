@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   CheckCircle,
@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { cn } from "@/lib/utils";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 
 const icons: LucideIcon[] = [
   CloudUpload,
@@ -29,7 +30,7 @@ export default function PrintProcessSection() {
   const locale = useLocale();
   const t = useTranslations("home.landing");
   const isRTL = locale === "ur";
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useHydratedReducedMotion();
   const steps = (t.raw("process_steps") as {
     title: string;
     description: string;

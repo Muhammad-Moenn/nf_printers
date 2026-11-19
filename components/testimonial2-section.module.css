@@ -1,12 +1,11 @@
-.testimonialSwiper.testimonialSwiper {
-  --swiper-wrapper-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+.testimonialSwiper {
+  width: 100%;
   overflow: visible;
 }
 
 .testimonialSwiper :global(.swiper-wrapper) {
   align-items: stretch;
   height: auto;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .testimonialSwiper :global(.swiper-slide) {

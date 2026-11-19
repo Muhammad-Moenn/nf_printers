@@ -10,12 +10,13 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -37,7 +38,7 @@ const statIcons: Record<HeroStat["icon"], LucideIcon> = {
 const HeroSection = ({ className }: Props) => {
   const locale = useLocale();
   const landing = useTranslations("home.landing");
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useHydratedReducedMotion();
   const isRTL = locale === "ur";
   const stats = (landing.raw("hero_stats") as HeroStat[]) ?? [];
 
