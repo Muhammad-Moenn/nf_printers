@@ -85,29 +85,20 @@ export function ServicesSection() {
       />
       <div className="relative mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
         <motion.div {...reveal()} className="mx-auto max-w-3xl text-center">
-          <div className="flex items-center justify-center gap-3 sm:gap-4">
-            <span
-              aria-hidden="true"
-              className="h-px w-8 bg-primary-border sm:w-12"
-            />
-            <span className="font-hero text-badge font-bold text-primary-text">
-              {landing("services_label")}
-            </span>
-            <span
-              aria-hidden="true"
-              className="h-px w-8 bg-primary-border sm:w-12"
-            />
-          </div>
+          <span className="landing-eyebrow">
+            <Printer aria-hidden="true" className="size-4 shrink-0" />
+            {landing("services_label")}
+          </span>
 
           <h2
             id="services-heading"
-            className="mt-[var(--space-4)] font-hero text-landing-section font-bold leading-tight tracking-tight text-heading sm:mt-[var(--space-5)]"
+            className="landing-section-title mt-[var(--space-4)]"
           >
             {t("heading_lead")}{" "}
-            <span className="text-primary-text">{t("heading_highlight")}</span>
+            <span className="landing-section-title-highlight">{t("heading_highlight")}</span>
           </h2>
 
-          <p className="mx-auto mt-[var(--space-3)] max-w-3xl font-hero text-sm leading-6 text-muted-foreground sm:mt-[var(--space-4)] sm:text-base sm:leading-7">
+          <p className="landing-section-description mx-auto mt-[var(--space-3)]">
             {t("description")}
           </p>
         </motion.div>
@@ -149,7 +140,7 @@ export function ServicesSection() {
         <div className="mt-[var(--space-6)] flex justify-center sm:mt-[var(--space-8)]">
           <Link
             href="/services"
-            className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:text-control ${isRTL ? "flex-row-reverse" : ""}`}
+            className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary !px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:text-control ${isRTL ? "flex-row-reverse" : ""}`}
           >
             {landing("view_all")}
             <MoveRight

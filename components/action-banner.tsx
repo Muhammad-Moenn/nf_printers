@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Link as ScrollLink } from "react-scroll";
-import { LayoutDashboard, LogInIcon, MoveRight, Sparkles } from "lucide-react";
+import { LogInIcon, MoveRight } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useAuthUser } from "@/components/auth-provider";
 import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { highlightLastWord } from "@/components/ui/highlight-last-word";
 import { Button } from "@/components/ui/button";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 export default function ActionBanner() {
@@ -35,183 +33,120 @@ export default function ActionBanner() {
   const secondaryText = t("secondaryText");
   const secondaryHref = t("secondaryHref");
   const showPrimary = t("showPrimary") === "true";
+  const showSecondary = t("showSecondary") === "true";
 
   const reveal = (delay = 0) => ({
-    initial: reduceMotion ? false : { opacity: 0, y: 20 },
+    initial: reduceMotion ? false : { opacity: 0, y: 16 },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-60px" },
+    viewport: { once: true, amount: 0.25 },
     transition: reduceMotion
       ? { duration: 0 }
-      : {
-          duration: 0.5,
-          delay,
-          ease: [0.22, 1, 0.36, 1] as const,
-        },
+      : { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
   });
-
-  const buttonClassName = cn(
-    "h-[var(--space-12)] w-full rounded-full! px-[var(--space-6)]",
-    "text-[length:var(--font-size-sm)] font-semibold",
-    "transition-all duration-300 motion-reduce:transition-none",
-    "hover:-translate-y-0.5 motion-reduce:hover:translate-y-0",
-    "sm:w-auto",
-  );
 
   return (
     <section
       id="cta"
       aria-labelledby="action-banner-heading"
       dir={isRTL ? "rtl" : "ltr"}
-      className="relative overflow-hidden py-[var(--space-12)] scroll-mt-24 sm:py-[var(--space-16)]"
+      className="relative overflow-hidden py-[var(--space-8)] scroll-mt-24 sm:py-[var(--space-10)] lg:py-[var(--space-12)]"
     >
-      <div className="mx-auto max-w-7xl px-[var(--space-4)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
+      <div className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
         <div
           className={cn(
-            "relative overflow-hidden rounded-[var(--radius-2xl)]",
-            "bg-gradient-to-br from-primary to-primary-hover",
-            "px-[var(--space-6)] py-[var(--space-10)] shadow-[var(--shadow-lg)]",
-            "sm:px-[var(--space-8)] sm:py-[var(--space-12)]",
-            "lg:px-[var(--space-12)] lg:py-[var(--space-16)]",
+            "relative isolate flex min-h-[18rem] overflow-hidden rounded-[var(--radius-3xl)] border border-primary-border/50 px-[var(--space-5)] py-[var(--space-7)] shadow-[var(--shadow-lg)] sm:min-h-[17rem] sm:px-[var(--space-8)] sm:py-[var(--space-8)] lg:min-h-[15rem] lg:items-center lg:px-[var(--space-10)] lg:py-[var(--space-8)]",
+            isRTL
+              ? "bg-gradient-to-l from-[var(--landing-footer)] via-primary-hover to-primary"
+              : "bg-gradient-to-bl from-primary  to-[var(--landing-footer)]",
           )}
         >
-          <div
+          <Image
+            src="/03-testimonial-print-materials.png"
+            alt=""
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 overflow-hidden"
+            width={960}
+            height={640}
+            sizes="(max-width: 639px) 72vw, (max-width: 1023px) 58vw, 48vw"
+            className={cn(
+              "pointer-events-none absolute bottom-0 end-0 z-0 h-full w-[72%] object-contain object-right-bottom mix-blend-luminosity opacity-75 sm:w-[58%] lg:w-[50%]",
+              isRTL && "object-left-bottom",
+            )}
+          />
+
+          <div
+            className={cn(
+              "relative z-10 w-full max-w-2xl",
+              isRTL ? "text-end" : "text-start",
+            )}
           >
-            <Image
-              src="/03-testimonial-print-materials.png"
-              alt=""
-              width={720}
-              height={390}
-              sizes="(max-width: 640px) 74vw, (max-width: 1024px) 56vw, 46vw"
-              className="absolute bottom-0 end-0 w-[74%] max-w-none object-contain opacity-20 mix-blend-luminosity sm:w-[56%] sm:opacity-30 lg:w-[46%]"
-            />
-            <div
-              className={cn(
-                "absolute inset-0",
-                isRTL
-                  ? "bg-gradient-to-l from-primary via-primary/85 to-primary/35"
-                  : "bg-gradient-to-r from-primary via-primary/85 to-primary/35",
-              )}
-            />
-          </div>
-
-          <div className="relative z-10 mx-auto max-w-2xl text-center lg:mx-0 lg:text-start">
-            <motion.div {...reveal()}>
-              <Badge
-                variant="outline"
-                className={cn(
-                  "inline-flex items-center gap-[var(--space-2)] rounded-full!",
-                  "border-on-color/25 bg-on-color/10 px-[var(--space-3)] py-[var(--space-1)]",
-                  "text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.18em]",
-                  "text-on-color shadow-[var(--shadow-sm)]",
-                  "[&>svg]:size-[var(--space-4)]",
-                )}
-              >
-                <Sparkles aria-hidden="true" />
-                {landing("contact_cta")}
-              </Badge>
-            </motion.div>
-
             <motion.h2
               id="action-banner-heading"
-              {...reveal(0.06)}
-              className="mt-[var(--space-4)] text-2xl font-bold leading-tight tracking-tight text-on-color sm:text-3xl lg:text-4xl xl:text-5xl"
+              {...reveal()}
+              className="landing-section-title text-on-color"
             >
-              {highlightLastWord(heading, "text-sky-200")}
+              {heading}
             </motion.h2>
 
             <motion.p
-              {...reveal(0.12)}
-              className="mx-auto mt-[var(--space-3)] max-w-xl text-[length:var(--font-size-sm)] leading-6 text-on-color/80 sm:text-[length:var(--font-size-base)] sm:leading-7 lg:mx-0"
+              {...reveal(0.06)}
+              className="landing-section-description mt-[var(--space-2)] max-w-xl text-on-color/85 sm:mt-[var(--space-3)]"
             >
               {description}
             </motion.p>
 
             <motion.div
-              {...reveal(0.18)}
-              className="mt-[var(--space-8)] flex flex-col justify-center gap-[var(--space-3)] sm:flex-row lg:justify-start"
+              {...reveal(0.12)}
+              className={cn(
+                "mt-[var(--space-4)] flex flex-col gap-[var(--space-3)] sm:mt-[var(--space-5)] sm:flex-row sm:items-center",
+                isRTL && "sm:flex-row-reverse",
+              )}
             >
-              {showPrimary && (
-                <Button
-                  asChild
+              <Button
+                asChild
+                className="group min-h-12 w-full rounded-full! bg-on-color !px-[var(--space-5)] font-hero text-control font-bold text-primary-text shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-soft hover:shadow-[var(--shadow-lg)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:w-auto"
+              >
+                <ScrollLink
+                  to="contact"
+                  smooth
+                  offset={-70}
+                  duration={500}
                   className={cn(
-                    buttonClassName,
-                    "group bg-on-color text-primary-text shadow-[var(--shadow-md)]",
-                    "hover:bg-primary-soft hover:shadow-[var(--shadow-lg)]",
+                    "flex cursor-pointer items-center justify-center gap-2",
+                    isRTL && "flex-row-reverse",
                   )}
                 >
+                  {landing("cta_contact")}
+                  <MoveRight
+                    className={cn(
+                      "size-4 transition-transform duration-300",
+                      isRTL
+                        ? "rotate-180 group-hover:-translate-x-1"
+                        : "group-hover:translate-x-1",
+                    )}
+                    aria-hidden="true"
+                  />
+                </ScrollLink>
+              </Button>
+
+              {!user && showPrimary ? (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                   <Link
                     href={primaryHref}
-                    className={cn(
-                      "flex items-center gap-[var(--space-2)]",
-                      isRTL && "flex-row-reverse",
-                    )}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-hero text-sm font-semibold text-on-color/90 underline decoration-on-color/40 underline-offset-4 transition-colors hover:text-on-color focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-color/70"
                   >
                     {primaryText}
-                    <MoveRight
-                      className={cn(
-                        "h-[var(--space-4)] w-[var(--space-4)] transition-transform duration-300",
-                        isRTL
-                          ? "rotate-180 group-hover:-translate-x-1"
-                          : "group-hover:translate-x-1",
-                      )}
-                      aria-hidden="true"
-                    />
                   </Link>
-                </Button>
-              )}
-
-              {!user ? (
-                <Button
-                  asChild
-                  className={cn(
-                    buttonClassName,
-                    "border border-on-color/30 bg-on-color/10 text-on-color",
-                    "hover:border-on-color/40 hover:bg-on-color/20",
-                  )}
-                >
-                  <Link
-                    href={secondaryHref}
-                    className={cn(
-                      "flex items-center gap-[var(--space-2)]",
-                      isRTL && "flex-row-reverse",
-                    )}
-                  >
-                    {secondaryText}
-                    <LogInIcon
-                      className="h-[var(--space-4)] w-[var(--space-4)]"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  asChild
-                  className={cn(
-                    buttonClassName,
-                    "border border-on-color/30 bg-on-color/10 text-on-color",
-                    "hover:border-on-color/40 hover:bg-on-color/20",
-                  )}
-                >
-                  <ScrollLink
-                    to="contact"
-                    smooth={true}
-                    offset={-70}
-                    duration={500}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-[var(--space-2)]",
-                      isRTL && "flex-row-reverse",
-                    )}
-                  >
-                    {landing("cta_contact")}
-                    <LayoutDashboard
-                      className="h-[var(--space-4)] w-[var(--space-4)]"
-                      aria-hidden="true"
-                    />
-                  </ScrollLink>
-                </Button>
-              )}
+                  {showSecondary ? (
+                    <Link
+                      href={secondaryHref}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-hero text-sm font-semibold text-on-color/90 underline decoration-on-color/40 underline-offset-4 transition-colors hover:text-on-color focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-color/70"
+                    >
+                      {secondaryText}
+                      <LogInIcon className="size-4" aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
             </motion.div>
           </div>
         </div>

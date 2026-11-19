@@ -39,8 +39,8 @@
       ]
     },
     "actionbanner": {
-      "description": "Join thousands of satisfied clients who trust us for high-quality printing solutions.",
-      "heading": "Ready to Take Your Printing Business to the Next Level?",
+      "description": "Get in touch with us today for a free quote!",
+      "heading": "Ready to Print Something Great?",
       "primaryHref": "/sign-up",
       "primaryText": "Get Started",
       "secondaryHref": "/sign-in",
@@ -51,36 +51,44 @@
     "brand_description": "Our printing solutions are trusted by top organizations and businesses.",
     "brands": [
       {
-        "name": "Multan Public",
-        "logo": "/Multan_public_school.jpeg"
+        "name": "Multan Public School & College",
+        "logo": "/brand-images/Multan_public_school.jpeg"
       },
       {
-        "name": "American ",
-        "logo": "/American_school .jpg"
+        "name": "American School",
+        "logo": "/brand-images/American_school .jpg"
       },
       {
-        "name": "Defense ",
-        "logo": "/Defense_school.jpeg"
+        "name": "Defence Grammar School",
+        "logo": "/brand-images/Defense_school.jpeg"
       },
       {
-        "name": "Eden School",
-        "logo": "/eden-school.jpeg"
+        "name": "Eden School System",
+        "logo": "/brand-images/eden-school.jpeg"
       },
       {
-        "name": "Laureate",
-        "logo": "/Larat_school .jpeg"
+        "name": "Laureate Group of Schools",
+        "logo": "/brand-images/Larat_school .jpeg"
       },
       {
-        "name": "British International",
-        "logo": "/British_international_school .jpeg"
+        "name": "British International School",
+        "logo": "/brand-images/British_international_school .jpeg"
       },
       {
-        "name": "Punjab College ",
-        "logo": "/Punjab_college .png"
+        "name": "Punjab Group of Colleges",
+        "logo": "/brand-images/Punjab_college .png"
       },
       {
         "name": "Ramada Hotel",
-        "logo": "/Ramada_hotel.png"
+        "logo": "/brand-images/Ramada_hotel.png"
+      },
+      {
+        "name": "British Grammar School",
+        "logo": "/brand-images/British_grammar_school.jpeg"
+      },
+      {
+        "name": "Nishat Group of Schools & Colleges",
+        "logo": "/brand-images/Nishat_school .jpeg"
       }
     ],
     "hero_features": [
@@ -189,7 +197,12 @@
       "about_card_2_text": "Sharp color, clean binding, reliable finishing.",
       "contact_label": "Get In Touch",
       "contact_title": "Let's Bring Your Ideas to Print",
-      "contact_description": "Share your printing requirements and our team will respond with clear guidance, pricing, and production timing.",
+      "contact_description": "Share your printing requirements and our team will respond with the best solution, pricing, and production timeline.",
+      "contact_card_title": "Contact",
+      "contact_card_highlight": "Us",
+      "contact_card_description": "We’re here to help. Reach out to us through any of the following channels.",
+      "contact_form_description": "Fill out the form below and we’ll get back to you shortly.",
+      "open_maps": "Open in Maps",
       "press_name": "NF Printers",
       "press_heading": "Visit or call our Multan press",
       "call_label": "Call Us",
@@ -260,43 +273,35 @@
     "employees_description": "Behind every high-quality print is a team of experienced professionals dedicated to precision, quality, and timely delivery.",
     "employees_title": " Our Skilled Printing Professionals",
     "faq_section": {
-      "description": "Find answers to common questions about our printing services, quality, and delivery process.",
+      "description": "Everything you need to know about our printing services, process, and delivery.",
+      "help_card_title": "Need help with",
+      "help_card_highlight": "your order?",
+      "help_card_description": "Our team is here to guide you from quote to delivery.",
+      "image_alt": "Commercial printing press and freshly printed materials in our production facility",
       "faqs": [
         {
           "question": "What types of printing services do you offer?",
-          "answer": "We offer a wide range of printing services including books, registers, test sheets, admission forms, prospectuses, notebooks etc."
+          "answer": "We print books, registers, test sheets, admission forms, prospectuses, notebooks, diaries, calendars, stickers, labels, and more."
         },
         {
           "question": "Which file formats do you accept for printing?",
           "answer": "We accept PDF, AI, PSD, INDD, DOC/DOCX, and high-resolution JPG/PNG files. PDF files with CMYK color and 3 mm bleed are preferred for the best print results."
         },
         {
-          "question": "Can I customize the size, paper quality, and layout?",
-          "answer": "Yes, all our printing services are fully customizable. You can choose page size (A4, A3, custom), paper quality (80gsm, 100gsm, etc.), ruling style, cover type, and layout according to your requirements."
+          "question": "Can I customize the size, paper, and finishing?",
+          "answer": "Yes. Choose the size, paper stock, binding, lamination, and other finishing options to suit your project. Our team can help you select the right specifications."
         },
         {
-          "question": "What is the minimum order quantity?",
-          "answer": "Our minimum order quantity depends on the product type. For registers and notebooks, bulk orders are preferred, but small orders can also be discussed."
+          "question": "Is there a minimum order quantity?",
+          "answer": "Minimum quantities depend on the product and printing method. Tell us what you need and we will confirm the available options for your order."
         },
         {
-          "question": "How long does order processing and delivery take?",
-          "answer": "Standard orders usually take 3–7 working days. Large or customized orders may take longer depending on quantity and specifications."
+          "question": "How long does printing and delivery take?",
+          "answer": "Timing depends on the order size, finishing, and delivery location. We will share an estimated production and delivery schedule with your quote."
         },
         {
-          "question": "Do you provide sample prints before final production?",
-          "answer": "Yes, we can provide a sample or digital proof before final printing to ensure complete satisfaction and accuracy."
-        },
-        {
-          "question": "Do you offer bulk discounts?",
-          "answer": "Yes, we offer special pricing for bulk and long-term orders from schools, colleges, offices, and organizations."
-        },
-        {
-          "question": "Can you print logos and custom branding?",
-          "answer": "Absolutely. We offer logo printing, branding, and custom designs for covers, pages, and office stationery."
-        },
-        {
-          "question": "What payment methods do you accept?",
-          "answer": "We accept cash, bank transfer, and online payments. Payment terms can be discussed for bulk or recurring orders."
+          "question": "Can I request a quote before placing an order?",
+          "answer": "Of course. Share your product, quantity, size, paper, and finishing requirements, and our team will prepare a quote before you place your order."
         }
       ],
       "title": "Frequently Asked Questions"
@@ -313,112 +318,83 @@
         }
       ],
       "copyright": "© 2026 NF Printers. All rights reserved.",
-      "moreServices": "See More Services",
+      "moreServices": "And More...",
       "backToHome": "Back to home",
       "logo": {
-        "alt": "blocks for shadcn/ui",
+        "alt": "NF Printers — Print, Publish, Grow",
         "src": "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/block-1.svg",
         "title": "Shadcnblocks.com",
         "url": "https://www.shadcnblocks.com"
       },
       "menuItems": [
         {
-          "title": "Services",
+          "title": "Quick Links",
           "links": [
             {
-              "text": "Offset Printing",
-              "url": "#"
+              "text": "Home",
+              "url": "/"
             },
             {
-              "text": "Digital Printing",
-              "url": "#"
+              "text": "Services",
+              "url": "/services"
             },
             {
-              "text": "Large Format Printing",
-              "url": "#"
+              "text": "About",
+              "url": "/#about"
             },
             {
-              "text": "Packaging & Labels",
-              "url": "#"
-            },
-            {
-              "text": "Binding & Finishing",
-              "url": "#"
+              "text": "Contact",
+              "url": "/#contact"
             }
           ]
         },
         {
-          "title": "Company",
+          "title": "Our Services",
           "links": [
             {
-              "text": "About Us",
-              "url": "#"
+              "text": "Book Printing",
+              "url": "/services/book-printing"
             },
             {
-              "text": "Our Team",
-              "url": "#"
+              "text": "Register Printing",
+              "url": "/services/register-printing"
             },
             {
-              "text": "Our Clients",
-              "url": "#"
+              "text": "Binding",
+              "url": "/services/book-binding"
             },
             {
-              "text": "Careers",
-              "url": "#"
-            },
-            {
-              "text": "Contact Us",
-              "url": "#"
-            }
-          ]
-        },
-        {
-          "title": "Resources",
-          "links": [
-            {
-              "text": "Get a Quote",
-              "url": "#"
-            },
-            {
-              "text": "Design Guidelines",
-              "url": "#"
-            },
-            {
-              "text": "FAQs",
-              "url": "#"
-            },
-            {
-              "text": "Delivery Information",
-              "url": "#"
-            },
-            {
-              "text": "Blog",
-              "url": "#"
-            }
-          ]
-        },
-        {
-          "title": "Social",
-          "links": [
-            {
-              "text": "Twitter",
-              "url": "#",
-              "icon": "twitter"
-            },
-            {
-              "text": "Instagram",
-              "url": "#",
-              "icon": "instagram"
-            },
-            {
-              "text": "LinkedIn",
-              "url": "#",
-              "icon": "linkedin"
+              "text": "And More...",
+              "url": "/services"
             }
           ]
         }
       ],
-      "tagline": "Professional printing solutions delivering precision, quality, and reliability for businesses and individuals."
+      "tagline": "Your trusted printing partner in Multan and beyond.",
+      "socialLinks": [
+        {
+          "text": "Facebook",
+          "icon": "facebook"
+        },
+        {
+          "text": "WhatsApp",
+          "icon": "whatsapp"
+        },
+        {
+          "text": "YouTube",
+          "icon": "youtube"
+        },
+        {
+          "text": "LinkedIn",
+          "icon": "linkedin"
+        }
+      ],
+      "contact_title": "Contact Us",
+      "contact_address": "Mohalla Faridabad, Multan",
+      "contact_email": "nfprinter3610@gmail.com",
+      "social_platforms": "Social platforms",
+      "home_label": "NF Printers home",
+      "brand_motto": "Print • Publish • Grow"
     },
     "header": {
       "navItems": [
@@ -748,7 +724,8 @@
       "show_testimonial": "Show testimonial {index}",
       "rating_label": "{rating} out of 5 stars",
       "carousel_role": "carousel"
-    }
+    },
+    "brand_strip_label": "Trusted brand logos"
   },
   "services": {}
 }

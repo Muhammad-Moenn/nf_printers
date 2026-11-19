@@ -67,7 +67,7 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
     >
       <div
         dir={isUrdu ? "rtl" : "ltr"}
-        className="mx-auto flex h-[76px] w-full max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
+        className="mx-auto flex h-[76px] w-full max-w-[var(--hero-max-width)] items-center justify-between gap-4 px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
       >
         <Link
           href="/"
@@ -168,7 +168,7 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
           >
             <div
               dir={isUrdu ? "rtl" : "ltr"}
-              className="mx-auto max-w-[1280px] px-4 py-4 sm:px-6"
+              className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] py-4 sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
             >
               <div className="mb-4">
                 <LanguageSelector />

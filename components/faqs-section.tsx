@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { HelpCircle } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { motion } from "framer-motion";
+import { ArrowRight, CircleHelp, Printer } from "lucide-react";
 
 import {
   Accordion,
@@ -11,8 +11,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 import { cn } from "@/lib/utils";
 
 type Faq = {
@@ -23,28 +23,18 @@ type Faq = {
 export default function FAQSection() {
   const t = useTranslations("home.faq_section");
   const landing = useTranslations("home.landing");
-  const faqs = (t.raw("faqs") as Faq[]) ?? [];
   const locale = useLocale();
   const isRTL = locale === "ur";
-  const prefersReducedMotion = useReducedMotion();
-  const [hasMounted, setHasMounted] = useState(false);
-  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
+  const reduceMotion = useHydratedReducedMotion();
+  const faqs = (t.raw("faqs") as Faq[]) ?? [];
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  const reveal = (delay = 0) => ({
-    initial: reduceMotion ? false : { opacity: 0, y: 18 },
+  const reveal = (delay = 0, distance = 18) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: distance },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-60px" },
+    viewport: { once: true, amount: 0.18 },
     transition: reduceMotion
       ? { duration: 0 }
-      : {
-          duration: 0.45,
-          delay,
-          ease: [0.22, 1, 0.36, 1] as const,
-        },
+      : { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
   });
 
   return (
@@ -52,130 +42,110 @@ export default function FAQSection() {
       id="faqs"
       aria-labelledby="faq-heading"
       dir={isRTL ? "rtl" : "ltr"}
-      className="relative overflow-hidden py-[var(--space-12)] scroll-mt-24 sm:py-[var(--space-16)]"
+      className="relative py-[var(--space-8)] scroll-mt-24 text-foreground sm:py-[var(--space-10)] lg:py-[var(--space-12)] dark:text-on-color"
     >
-      <div className="relative mx-auto max-w-7xl px-[var(--space-4)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-[var(--radius-4xl)]",
-            "border border-primary-border/60 bg-gradient-to-br from-primary-soft via-card to-primary-soft/70",
-            "px-[var(--space-4)] py-[var(--space-8)] shadow-[var(--shadow-sm)]",
-            "sm:px-[var(--space-6)] sm:py-[var(--space-10)]",
-            "lg:px-[var(--space-10)] lg:py-[var(--space-12)]",
-            "dark:border-on-color/10 dark:from-[var(--neutral-900)] dark:via-[var(--neutral-900)] dark:to-[var(--neutral-800)]",
-          )}
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl sm:h-72 sm:w-72"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-28 -right-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl sm:h-80 sm:w-80"
-          />
+      <div className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
+        <motion.div {...reveal()} className="mx-auto max-w-5xl text-center">
+          <span className="landing-eyebrow">
+            <CircleHelp aria-hidden="true" className="size-4 shrink-0" />
+            {landing("faq_label")}
+          </span>
 
-          <div className="relative mx-auto max-w-4xl">
-            <motion.div
-              {...reveal()}
-              className="mx-auto max-w-3xl text-center"
-            >
-              <Badge
-                variant="outline"
+          <h2
+            id="faq-heading"
+            className="landing-section-title mt-[var(--space-4)]"
+          >
+            {highlightLastWord(t("title"), "landing-section-title-highlight")}
+          </h2>
+
+          <p className="landing-section-description mx-auto mt-[var(--space-3)]">
+            {t("description")}
+          </p>
+
+          <div aria-hidden="true" className="mt-[var(--space-3)] flex items-center justify-center gap-4 text-primary sm:mt-[var(--space-4)]">
+            <span className="h-0.5 w-16 rounded-full bg-primary-border sm:w-20" />
+            <Printer className="size-6" strokeWidth={2.2} />
+            <span className="h-0.5 w-16 rounded-full bg-primary-border sm:w-20" />
+          </div>
+        </motion.div>
+
+        <div className="mt-[var(--space-5)] grid items-stretch gap-[var(--space-4)] sm:mt-[var(--space-6)] sm:gap-[var(--space-5)] lg:grid-cols-[minmax(17rem,0.78fr)_minmax(0,1.42fr)] lg:gap-12">
+          <motion.aside
+            {...reveal(0.05, 22)}
+            aria-label={t("help_card_title")}
+            className="group relative isolate flex min-h-[25rem] overflow-hidden rounded-[var(--radius-3xl)] border border-primary-border/60 bg-landing-navy shadow-[var(--shadow-lg)] sm:min-h-[29rem] lg:min-h-0 p-4 md:p-6"
+          >
+            <Image
+              src="/faq-machine-image.png"
+              alt={t("image_alt")}
+              fill
+              sizes="(max-width: 1023px) 92vw, 34vw"
+              className="-z-20 object-cover transition-transform duration-700 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+            />
+            <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-landing-navy via-landing-navy/90 via-45% to-landing-navy/0" />
+            <div className="mt-auto w-full p-[var(--space-5)] text-on-color sm:p-[var(--space-6)] lg:p-[var(--space-7)]">
+              <h3 className="max-w-sm font-hero text-3xl font-bold leading-[1.05] tracking-tight sm:text-4xl">
+                {t("help_card_title")} {" "}
+                <span className="text-landing-sky">{t("help_card_highlight")}</span>
+              </h3>
+              <span aria-hidden="true" className="mt-[var(--space-3)] block h-1 w-20 rounded-full bg-primary" />
+              <p className="mt-[var(--space-3)] max-w-sm font-hero text-base leading-snug text-on-color/90 sm:text-lg">
+                {t("help_card_description")}
+              </p>
+              <a
+                href="#contact"
                 className={cn(
-                  "inline-flex items-center gap-[var(--space-2)] rounded-full!",
-                  "border-primary-border/70 bg-primary-soft px-[var(--space-3)] py-[var(--space-1)]",
-                  "text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.18em]",
-                  "text-primary-text shadow-[var(--shadow-sm)]",
-                  "[&>svg]:size-[var(--space-4)]",
+                  "group/link mt-[var(--space-4)] inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary !px-[var(--space-5)] font-hero text-control font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-landing-navy motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+                  isRTL && "flex-row-reverse",
                 )}
               >
-                <HelpCircle aria-hidden="true" />
-                {landing("faq_label")}
-              </Badge>
+                {landing("cta_contact")}
+                <ArrowRight className={cn("size-4 transition-transform duration-300 group-hover/link:translate-x-1", isRTL && "rotate-180 group-hover/link:-translate-x-1")} aria-hidden="true" />
+              </a>
+            </div>
+          </motion.aside>
 
-              <h2
-                id="faq-heading"
-                className="mt-[var(--space-4)] text-2xl font-bold leading-tight tracking-tight text-heading sm:text-3xl lg:text-4xl xl:text-5xl"
-              >
-                {highlightLastWord(t("title"))}
-              </h2>
-
-              <p className="mx-auto mt-[var(--space-3)] max-w-2xl text-[length:var(--font-size-sm)] leading-6 text-foreground/80 sm:text-[length:var(--font-size-base)] sm:leading-7 dark:text-muted-foreground">
-                {t("description")}
-              </p>
-            </motion.div>
-
-            <Accordion
-              type="single"
-              collapsible
-              defaultValue="faq-0"
-              dir={isRTL ? "rtl" : "ltr"}
-              className="mt-[var(--space-8)] space-y-[var(--space-3)] sm:mt-[var(--space-10)]"
-            >
-              {faqs.map((faq, index) => (
-                <motion.div
-                  key={faq.question}
-                  {...reveal(0.04 + index * 0.03)}
+          <Accordion
+            type="single"
+            collapsible
+            defaultValue="faq-0"
+            dir={isRTL ? "rtl" : "ltr"}
+            className="space-y-[var(--space-2)] sm:space-y-[var(--space-3)]"
+          >
+            {faqs.map((faq, index) => (
+              <motion.div key={faq.question} {...reveal(0.06 + index * 0.035, 14)}>
+                <AccordionItem
+                  value={`faq-${index}`}
+                  className={cn(
+                    "group overflow-hidden rounded-[var(--radius-2xl)] border border-primary-border/70 bg-card/95 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-primary-border hover:shadow-[var(--shadow-md)] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
+                    "data-[state=open]:border-primary-border data-[state=open]:shadow-[var(--shadow-md)]",
+                  )}
                 >
-                  <AccordionItem
-                    value={`faq-${index}`}
+                  <AccordionTrigger
                     className={cn(
-                      "group overflow-hidden rounded-[var(--radius-2xl)] border border-border bg-card",
-                      "shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-300",
-                      "motion-reduce:transition-none last:border-b",
-                      "hover:border-primary-border",
-                      "data-[state=open]:border-primary-border data-[state=open]:shadow-[var(--shadow-md)]",
+                      "flex min-h-16 w-full items-center gap-[var(--space-3)] rounded-none px-[var(--space-3)] py-[var(--space-3)] text-start hover:bg-primary-soft/35 hover:no-underline focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset motion-reduce:transition-none sm:min-h-[4.75rem] sm:gap-[var(--space-4)] sm:px-[var(--space-4)] sm:py-[var(--space-3)]",
+                      "dark:hover:bg-primary/10 data-[state=open]:bg-primary-soft/35 dark:data-[state=open]:bg-primary/10",
+                      "[&>svg]:box-content [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:rounded-full [&>svg]:bg-primary-soft [&>svg]:p-2 [&>svg]:text-primary [&>svg]:transition-all [&>svg]:duration-300",
+                      "[&[data-state=open]>svg]:bg-primary [&[data-state=open]>svg]:text-primary-foreground",
                     )}
                   >
-                    <AccordionTrigger
-                      className={cn(
-                        "flex w-full cursor-pointer items-center gap-[var(--space-3)]",
-                        "rounded-none px-[var(--space-4)] py-[var(--space-4)] text-start",
-                        "font-semibold transition-colors duration-300 hover:bg-primary-soft/40 hover:no-underline",
-                        "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
-                        "motion-reduce:transition-none sm:px-[var(--space-5)] sm:py-[var(--space-5)]",
-                        "dark:hover:bg-primary/10",
-                        "data-[state=open]:bg-primary-soft/40 dark:data-[state=open]:bg-primary/10",
-                        "[&>svg]:box-content [&>svg]:size-[var(--space-4)] [&>svg]:translate-y-0",
-                        "[&>svg]:rounded-full [&>svg]:border [&>svg]:border-primary-border/70",
-                        "[&>svg]:bg-primary-soft [&>svg]:p-[var(--space-2)] [&>svg]:text-primary-text",
-                        "[&>svg]:transition-all [&>svg]:duration-300",
-                        "[&[data-state=open]>svg]:border-primary [&[data-state=open]>svg]:bg-primary [&[data-state=open]>svg]:text-on-color",
-                      )}
+                    <span
+                      aria-hidden="true"
+                      className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-primary-border bg-primary-soft font-hero text-control font-bold text-primary-text transition-colors duration-300 group-data-[state=open]:border-primary group-data-[state=open]:bg-primary group-data-[state=open]:text-primary-foreground motion-reduce:transition-none"
                     >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "hidden h-[var(--space-10)] w-[var(--space-10)] shrink-0 items-center justify-center",
-                          "rounded-[var(--radius-control)] border border-primary-border bg-primary-soft",
-                          "text-[length:var(--font-size-xs)] font-bold text-primary-text",
-                          "transition-colors duration-300 motion-reduce:transition-none sm:flex",
-                          "group-data-[state=open]:border-primary group-data-[state=open]:bg-primary group-data-[state=open]:text-on-color",
-                        )}
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-
-                      <span className="min-w-0 flex-1 text-[length:var(--font-size-sm)] font-semibold leading-6 text-heading sm:text-[length:var(--font-size-base)] sm:leading-7">
-                        {faq.question}
-                      </span>
-                    </AccordionTrigger>
-
-                    <AccordionContent
-                      className={cn(
-                        "px-[var(--space-4)] pb-[var(--space-5)] text-[length:var(--font-size-sm)] leading-7",
-                        "text-muted-foreground",
-                        "sm:pe-[var(--space-5)] sm:ps-[calc(var(--space-5)+var(--space-10)+var(--space-3))]",
-                        "sm:text-[length:var(--font-size-base)]",
-                      )}
-                    >
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                </motion.div>
-              ))}
-            </Accordion>
-          </div>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0 flex-1 font-hero text-sm font-bold leading-snug tracking-tight text-heading sm:text-base lg:text-lg">
+                      {faq.question}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-[var(--space-4)] pb-[var(--space-4)] font-hero text-sm leading-relaxed text-muted-foreground sm:ps-[calc(var(--space-4)+2.75rem+var(--space-4))] sm:text-base">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              </motion.div>
+            ))}
+          </Accordion>
         </div>
       </div>
     </section>

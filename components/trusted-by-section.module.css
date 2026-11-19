@@ -1,0 +1,202 @@
+.marqueeViewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding-block: 3rem 1.75rem;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 7%,
+    #000 93%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 7%,
+    #000 93%,
+    transparent 100%
+  );
+}
+
+.waveOne,
+.waveTwo {
+  animation: trusted-wave-float 18s ease-in-out infinite alternate;
+}
+
+.waveOne {
+  rotate: -12deg;
+}
+
+.waveTwo {
+  animation-duration: 22s;
+  animation-delay: -6s;
+  rotate: 12deg;
+}
+
+.track {
+  display: flex;
+  width: max-content;
+  animation: trusted-marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.75rem);
+  padding-inline-end: clamp(1.25rem, 3vw, 2.75rem);
+}
+
+.logoItem {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoImage {
+  height: 2.25rem;
+  width: auto;
+  max-width: none;
+  object-fit: contain;
+  opacity: 0.82;
+  transition:
+    transform 300ms var(--ease-out-emphasis, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity 300ms ease;
+}
+
+.logoSeparator {
+  display: block;
+  height: 1.5rem;
+  width: 1px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--primary-border),
+    transparent
+  );
+  opacity: 0.8;
+}
+
+.logoTooltip {
+  position: absolute;
+  bottom: calc(100% + 0.6rem);
+  left: 50%;
+  z-index: 30;
+  transform: translate(-50%, 0.35rem);
+  border-radius: var(--radius-lg);
+  background-color: var(--landing-footer);
+  padding: 0.4rem 0.75rem;
+  color: var(--on-color);
+  font-family: var(--font-family);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  box-shadow:
+    0 12px 28px -10px rgba(21, 87, 245, 0.55),
+    var(--shadow-md);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 180ms ease;
+}
+
+.logoTooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--landing-footer);
+}
+
+@media (min-width: 640px) {
+  .marqueeViewport {
+    padding-block: 3.25rem 2rem;
+  }
+
+  .logoImage {
+    height: 2.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marqueeViewport {
+    padding-block: 3.75rem 2.25rem;
+  }
+
+  .track {
+    animation-duration: 46s;
+  }
+
+  .logoImage {
+    height: 3.5rem;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .track:hover {
+    animation-play-state: paused;
+  }
+
+  .logoItem:hover .logoImage {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+
+  .logoItem:hover .logoTooltip {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation: none;
+    transform: none;
+  }
+
+  .waveOne,
+  .waveTwo {
+    animation: none;
+  }
+
+  .marqueeViewport {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .logoImage {
+    transition: none;
+  }
+}
+
+@keyframes trusted-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-33.3333%, 0, 0);
+  }
+}
+
+@keyframes trusted-wave-float {
+  from {
+    transform: translate3d(0, -6px, 0) scale(1);
+  }
+  to {
+    transform: translate3d(0, 10px, 0) scale(1.05);
+  }
+}

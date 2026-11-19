@@ -81,17 +81,14 @@ export default function WhyChooseUsSection() {
           variants={revealVariants}
           className="mx-auto max-w-3xl text-center"
         >
-          <div className="flex items-center justify-center gap-[var(--space-3)]">
-            <span aria-hidden="true" className="h-px w-8 bg-primary-border sm:w-12" />
-            <span className="font-hero text-badge font-bold text-primary-text">
-              {t("eyebrow")}
-            </span>
-            <span aria-hidden="true" className="h-px w-8 bg-primary-border sm:w-12" />
-          </div>
+          <span className="landing-eyebrow">
+            <Gem aria-hidden="true" className="size-4 shrink-0" />
+            {t("eyebrow")}
+          </span>
 
           <h2
             id="why-choose-us-heading"
-            className="mt-[var(--space-2)] font-hero text-landing-section font-bold leading-tight tracking-tight text-heading"
+            className="landing-section-title mt-[var(--space-4)]"
           >
             {t("title")}
           </h2>

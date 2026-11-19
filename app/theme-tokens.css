@@ -281,6 +281,33 @@
   --hero-image-mobile-width: 38rem;
   --hero-image-desktop-width: 64%;
   --hero-image-overhang: 3rem;
+
+  /* Landing section typography system -------------------------------
+     One shared scale for every section eyebrow, title and description.
+     Mobile -> tablet -> desktop values are fluid via clamp(). */
+  --landing-eyebrow-size: clamp(0.65rem, 0.72rem + 0.15vw, 0.8125rem);
+  --landing-eyebrow-weight: 600;
+  --landing-eyebrow-color: #1760e9;
+  --landing-eyebrow-bg: #eaf2ff;
+  --landing-eyebrow-border: #d8e6ff;
+  --landing-eyebrow-radius: 50px;
+  --landing-eyebrow-padding-y: 7px;
+  --landing-eyebrow-padding-x: 14px;
+  --landing-eyebrow-tracking: 1.2px;
+  --landing-eyebrow-line-height: 1.2;
+
+  --landing-title-size: clamp(1.75rem, 1.31rem + 1.47vw, 3rem);
+  --landing-title-weight: 700;
+  --landing-title-color: #10285b;
+  --landing-title-highlight-color: #1760f5;
+  --landing-title-line-height: 1.2;
+  --landing-title-tracking: -0.6px;
+
+  --landing-description-size: clamp(0.9375rem, 0.88rem + 0.185vw, 1rem);
+  --landing-description-weight: 400;
+  --landing-description-color: #425779;
+  --landing-description-line-height: 1.6;
+  --landing-description-max-width: 650px;
 }
 
 /* ---------------- LIGHT THEME ---------------- */
@@ -518,6 +545,15 @@
   --landing-border: #264a7e;
   --landing-footer: #03112c;
 
+  /* Landing section typography system (dark-theme equivalents) */
+  --landing-eyebrow-color: #93b8ff;
+  --landing-eyebrow-bg: rgba(59, 130, 246, 0.14);
+  --landing-eyebrow-border: rgba(59, 130, 246, 0.35);
+
+  --landing-title-color: #f1f5fb;
+  --landing-title-highlight-color: #7db2ff;
+  --landing-description-color: #b4c4dd;
+
   /* About image glow (dark-mode lift for the boxless artwork) */
   --about-image-glow: rgba(191, 215, 255, 0.95);
 
@@ -628,5 +664,55 @@
 
   [data-slot="accordion-content"] {
     animation: none !important;
+  }
+}
+
+/* ---------------- LANDING SECTION TYPOGRAPHY ---------------- */
+@layer components {
+  .landing-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--landing-eyebrow-padding-y) var(--landing-eyebrow-padding-x);
+    border: 1px solid var(--landing-eyebrow-border);
+    border-radius: var(--landing-eyebrow-radius);
+    background-color: var(--landing-eyebrow-bg);
+    color: var(--landing-eyebrow-color);
+    font-family: var(--font-family);
+    font-size: var(--landing-eyebrow-size);
+    font-weight: var(--landing-eyebrow-weight);
+    line-height: var(--landing-eyebrow-line-height);
+    letter-spacing: var(--landing-eyebrow-tracking);
+    text-transform: uppercase;
+    text-align: start;
+    max-width: 100%;
+  }
+
+  .landing-section-title {
+    margin: 0;
+    color: var(--landing-title-color);
+    font-family: var(--font-family);
+    font-size: var(--landing-title-size);
+    font-weight: var(--landing-title-weight);
+    line-height: var(--landing-title-line-height);
+    letter-spacing: var(--landing-title-tracking);
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+
+  .landing-section-title-highlight {
+    color: var(--landing-title-highlight-color);
+  }
+
+  .landing-section-description {
+    margin: 0;
+    max-width: var(--landing-description-max-width);
+    color: var(--landing-description-color);
+    font-family: var(--font-family);
+    font-size: var(--landing-description-size);
+    font-weight: var(--landing-description-weight);
+    line-height: var(--landing-description-line-height);
+    text-wrap: pretty;
+    overflow-wrap: break-word;
   }
 }

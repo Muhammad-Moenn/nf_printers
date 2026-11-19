@@ -66,7 +66,7 @@ const HeroSection = ({ className }: Props) => {
       >
         <div className={cn("relative z-10 min-w-0", isRTL ? "text-end" : "text-start")}>
           <motion.div {...reveal(0)}>
-            <span className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary-border bg-primary-soft/90 px-[var(--space-4)] py-[var(--space-2)] font-hero text-badge font-semibold text-primary-text shadow-[var(--shadow-sm)] backdrop-blur-sm">
+            <span className="landing-eyebrow">
               <Printer className="size-4 shrink-0" aria-hidden="true" />
               {landing("hero_badge")}
             </span>
@@ -77,15 +77,17 @@ const HeroSection = ({ className }: Props) => {
             {...reveal(0.04, 12)}
             className="mt-[var(--space-4)] max-w-[var(--hero-title-width)] font-hero text-hero font-bold leading-hero tracking-hero text-heading sm:mt-[var(--space-5)]"
           >
-            <span className="block">{landing("hero_title_line1")}</span>
-            <span className="block text-primary-text">
+            <span className="block">
+              {landing("hero_title_line1")}
+            </span>
+            <span className="landing-section-title-highlight block">
               {landing("hero_title_line2")}
             </span>
           </motion.h1>
 
           <motion.p
             {...reveal(0.1, 12)}
-            className="mt-[var(--space-4)] max-w-[var(--hero-description-width)] font-hero text-hero-lead font-normal leading-relaxed text-foreground/80 dark:text-foreground"
+            className="landing-section-description mt-[var(--space-4)] max-w-[var(--hero-description-width)]"
           >
             {landing("hero_description")}
           </motion.p>
@@ -100,7 +102,7 @@ const HeroSection = ({ className }: Props) => {
             <Button
               asChild
               size="lg"
-              className="group min-h-12 rounded-full bg-primary px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-primary-hover sm:text-control"
+              className="group min-h-12 rounded-full bg-primary !px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-primary-hover sm:text-control"
             >
               <Link
                 href="/services"
@@ -123,7 +125,7 @@ const HeroSection = ({ className }: Props) => {
               asChild
               size="lg"
               variant="ghost"
-              className="group min-h-12 rounded-full px-[var(--space-4)] font-hero text-sm font-semibold text-heading transition-transform duration-300 hover:-translate-y-0.5 hover:bg-primary-soft hover:text-primary-text sm:text-control"
+              className="group min-h-12 rounded-full !px-[var(--space-4)] font-hero text-sm font-semibold text-heading transition-transform duration-300 hover:-translate-y-0.5 hover:bg-primary-soft hover:text-primary-text sm:text-control"
             >
               <a
                 href="/heroSection-video.mp4"

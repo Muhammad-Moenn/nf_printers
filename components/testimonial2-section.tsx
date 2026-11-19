@@ -300,30 +300,19 @@ const Testimonials2Section = () => {
         className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
       >
         <header className="mx-auto max-w-3xl text-center">
-          <div className="flex items-center justify-center gap-[var(--space-3)]">
-            <span
-              aria-hidden="true"
-              className="h-px w-8 bg-primary-border sm:w-12"
-            />
-
-            <span className="font-hero text-badge font-bold text-primary-text">
-              {t("eyebrow")}
-            </span>
-
-            <span
-              aria-hidden="true"
-              className="h-px w-8 bg-primary-border sm:w-12"
-            />
-          </div>
+          <span className="landing-eyebrow">
+            <Quote aria-hidden="true" className="size-4 shrink-0" />
+            {t("eyebrow")}
+          </span>
 
           <h2
             id="testimonials-heading"
-            className="mt-[var(--space-2)] font-hero text-landing-section font-bold leading-tight tracking-tight text-heading"
+            className="landing-section-title mt-[var(--space-4)]"
           >
-            {highlightLastWord(t("title"))}
+            {highlightLastWord(t("title"), "landing-section-title-highlight")}
           </h2>
 
-          <p className="mx-auto mt-[var(--space-2)] max-w-2xl font-hero text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+          <p className="landing-section-description mx-auto mt-[var(--space-3)]">
             {t("description")}
           </p>
         </header>

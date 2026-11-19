@@ -1,138 +1,189 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import {
-  BookOpen,
-  Briefcase,
-  GraduationCap,
-  Landmark,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Fragment } from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import { ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
 
-import { cn } from "@/lib/utils";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
+import { cn } from "@/lib/utils";
 
-type TrustedByItem = {
-  label: string;
-  icon: "graduationCap" | "bookOpen" | "briefcase" | "users" | "landmark";
+import styles from "./trusted-by-section.module.css";
+
+type Brand = {
+  name: string;
+  logo: string;
 };
 
-const trustIcons: Record<TrustedByItem["icon"], LucideIcon> = {
-  graduationCap: GraduationCap,
-  bookOpen: BookOpen,
-  briefcase: Briefcase,
-  users: Users,
-  landmark: Landmark,
+const brandLogoDimensions: Record<string, { width: number; height: number }> = {
+  "/brand-images/Multan_public_school.jpeg": { width: 225, height: 225 },
+  "/brand-images/American_school .jpg": { width: 700, height: 528 },
+  "/brand-images/Defense_school.jpeg": { width: 226, height: 223 },
+  "/brand-images/eden-school.jpeg": { width: 259, height: 194 },
+  "/brand-images/Larat_school .jpeg": { width: 225, height: 225 },
+  "/brand-images/British_international_school .jpeg": {
+    width: 225,
+    height: 225,
+  },
+  "/brand-images/Punjab_college .png": { width: 225, height: 225 },
+  "/brand-images/Ramada_hotel.png": { width: 425, height: 119 },
+  "/brand-images/British_grammar_school.jpeg": { width: 225, height: 225 },
+  "/brand-images/Nishat_school .jpeg": { width: 200, height: 200 },
 };
+
+const dotPattern = {
+  backgroundImage:
+    "radial-gradient(color-mix(in oklab, var(--primary) 55%, transparent) 1.5px, transparent 1.5px)",
+  backgroundSize: "14px 14px",
+} as const;
+
+const MARQUEE_COPIES = [0, 1, 2];
 
 export default function TrustedBySection() {
   const t = useTranslations("home");
   const landing = useTranslations("home.landing");
   const locale = useLocale();
-  const prefersReducedMotion = useReducedMotion();
-  const [hasMounted, setHasMounted] = useState(false);
-  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
-  const items = (t.raw("brand_items") as TrustedByItem[]) ?? [];
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  const containerVariants = {
-    hidden: {},
-    show: {
-      transition: {
-        staggerChildren: reduceMotion ? 0 : 0.07,
-        delayChildren: reduceMotion ? 0 : 0.05,
-      },
-    },
-  };
-
-  const childVariants = {
-    hidden: reduceMotion ? {} : { opacity: 0, y: 18 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: reduceMotion
-        ? { duration: 0 }
-        : { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
-    },
-  };
+  const isRTL = locale === "ur";
+  const reduceMotion = useHydratedReducedMotion();
+  const brands = (t.raw("brands") as Brand[]) ?? [];
 
   return (
     <section
       id="partners"
       aria-labelledby="trusted-heading"
-      className="relative overflow-hidden py-[var(--space-12)] sm:py-[var(--space-16)]"
+      className="relative isolate w-full overflow-hidden py-[var(--space-12)] sm:py-[var(--space-16)]"
     >
-      <motion.div
-        dir={locale === "ur" ? "rtl" : "ltr"}
-        initial={reduceMotion ? false : "hidden"}
-        whileInView="show"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={containerVariants}
-        className="mx-auto w-full max-w-6xl px-[var(--space-4)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <motion.div
-          variants={childVariants}
-          className="mx-auto max-w-3xl text-center"
-        >
-          <span className="inline-flex items-center rounded-full border border-primary-border/70 bg-primary-soft px-[var(--space-3)] py-1 text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.18em] text-primary-text shadow-[var(--shadow-sm)]">
+        <div
+          className={cn(
+            "absolute -start-40 -top-24 h-56 w-[42rem] rounded-[100%] bg-gradient-to-r from-primary/15 via-landing-sky/20 to-transparent blur-3xl",
+            styles.waveOne,
+          )}
+        />
+        <div
+          className={cn(
+            "absolute -end-40 -bottom-24 h-52 w-[38rem] rounded-[100%] bg-gradient-to-l from-primary/15 via-landing-sky/20 to-transparent blur-3xl",
+            styles.waveTwo,
+          )}
+        />
+        <div
+          className="absolute end-6 top-8 h-20 w-20 opacity-40 sm:end-10 sm:h-24 sm:w-24"
+          style={dotPattern}
+        />
+        <div
+          className="absolute bottom-8 start-6 h-16 w-16 opacity-35 sm:start-10 sm:h-20 sm:w-20"
+          style={dotPattern}
+        />
+      </div>
+
+      <motion.div
+        dir={isRTL ? "rtl" : "ltr"}
+        initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+        }
+        className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
+      >
+        <header className="mx-auto max-w-3xl text-center">
+          <span className="landing-eyebrow">
+            <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
             {landing("partners_label")}
           </span>
 
           <h2
             id="trusted-heading"
-            className="mt-[var(--space-4)] text-2xl font-bold leading-tight tracking-tight text-heading sm:text-3xl lg:text-4xl xl:text-5xl"
+            className="landing-section-title mt-[var(--space-4)]"
           >
-            {highlightLastWord(t("brand_title"))}
+            {highlightLastWord(t("brand_title"), "landing-section-title-highlight")}
           </h2>
 
-          <p className="mx-auto mt-[var(--space-3)] max-w-2xl text-sm leading-6 text-foreground/80 sm:text-base sm:leading-7 dark:text-muted-foreground">
+          <p className="landing-section-description mx-auto mt-[var(--space-3)]">
             {t("brand_description")}
           </p>
-        </motion.div>
-
-        <ul
-          role="list"
-          className="mt-[var(--space-8)] flex flex-wrap justify-center gap-[var(--space-3)] sm:mt-[var(--space-10)] sm:gap-[var(--space-4)] lg:gap-[var(--space-5)]"
-        >
-          {items.map((entry) => {
-            const Icon = trustIcons[entry.icon] ?? GraduationCap;
-
-            return (
-              <motion.li
-                key={entry.label}
-                variants={childVariants}
-                className="min-w-0 basis-[calc(50%-0.375rem)] sm:basis-[calc(33.333%-0.667rem)] lg:basis-[calc(20%-1rem)]"
-              >
-                <div
-                  className={cn(
-                    "group flex h-full flex-col items-center justify-center gap-[var(--space-2)]",
-                    "rounded-[var(--radius-lg)] border border-primary-border bg-card/70 bg-gradient-to-b from-primary-soft to-primary-border/35",
-                    "px-[var(--space-3)] py-[var(--space-3)] text-center shadow-[var(--shadow-sm)] backdrop-blur-sm",
-                    "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-border hover:to-primary-border/50",
-                    "hover:shadow-[var(--shadow-md)] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-                    "sm:py-[var(--space-4)]",
-                  )}
-                >
-                  <Icon
-                    className="h-6 w-6 text-primary-text transition-transform duration-300 group-hover:-translate-y-0.5 motion-reduce:transform-none sm:h-7 sm:w-7"
-                    strokeWidth={1.8}
-                    aria-hidden="true"
-                  />
-                  <span className="text-badge font-semibold leading-tight text-heading">
-                    {entry.label}
-                  </span>
-                </div>
-              </motion.li>
-            );
-          })}
-        </ul>
+        </header>
       </motion.div>
+
+      <div className="relative mt-[var(--space-8)] w-full sm:mt-[var(--space-10)]">
+        <div className="relative border-y border-primary-border/35 bg-gradient-to-r from-primary-soft/20 via-card/60 to-primary-soft/20 dark:border-on-color/10 dark:from-primary/5 dark:via-background/40 dark:to-primary/5">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent"
+          />
+
+          <div className={styles.marqueeViewport} dir="ltr">
+            <div className={styles.track}>
+              {MARQUEE_COPIES.map((copy) => (
+                <div
+                  key={copy}
+                  className={styles.group}
+                  aria-hidden={copy === 0 ? undefined : true}
+                >
+                  {brands.map((brand) => {
+                    const dimensions = brandLogoDimensions[brand.logo] ?? {
+                      width: 225,
+                      height: 225,
+                    };
+
+                    return (
+                      <Fragment key={`${copy}-${brand.logo}-${brand.name}`}>
+                        <div className={styles.logoItem}>
+                          <Image
+                            src={brand.logo}
+                            alt={copy === 0 ? brand.name : ""}
+                            width={dimensions.width}
+                            height={dimensions.height}
+                            sizes="(max-width: 639px) 110px, (max-width: 1023px) 150px, 190px"
+                            draggable={false}
+                            className={cn(
+                              styles.logoImage,
+                              "mix-blend-multiply dark:mix-blend-normal dark:invert dark:hue-rotate-180",
+                            )}
+                          />
+                          <span
+                            className={styles.logoTooltip}
+                            aria-hidden="true"
+                            dir="auto"
+                          >
+                            {brand.name}
+                          </span>
+                        </div>
+
+                        <span
+                          className={styles.logoSeparator}
+                          aria-hidden="true"
+                        />
+                      </Fragment>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent"
+          />
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="mx-auto h-px w-[min(92vw,80rem)] bg-gradient-to-r from-transparent via-primary/50 to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="mx-auto -mt-1 h-8 w-[min(80vw,64rem)] rounded-full bg-primary/20 blur-2xl"
+        />
+      </div>
     </section>
   );
 }

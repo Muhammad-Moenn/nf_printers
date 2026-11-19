@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Check, Play } from "lucide-react";
+import { ArrowRight, Building2, Check, Play } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -111,11 +111,8 @@ export default function About() {
 
         <div className={cn("min-w-0", isRTL ? "text-end" : "text-start")}>
           <motion.div {...reveal(0.06, 14)}>
-            <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-primary-border bg-primary-soft/90 px-[var(--space-3)] py-[var(--space-2)] font-hero text-badge font-semibold text-primary-text shadow-[var(--shadow-sm)] backdrop-blur-sm">
-              <span
-                aria-hidden="true"
-                className="size-2 rounded-full bg-primary shadow-[0_0_0_4px_var(--primary-soft)]"
-              />
+            <span className="landing-eyebrow">
+              <Building2 aria-hidden="true" className="size-4 shrink-0" />
               {t("badge")}
             </span>
           </motion.div>
@@ -123,14 +120,14 @@ export default function About() {
           <motion.h2
             id="about-heading"
             {...reveal(0.1, 14)}
-            className="mt-[var(--space-4)] max-w-2xl font-hero text-about-heading font-bold leading-tight tracking-tight text-heading sm:mt-[var(--space-5)]"
+            className="landing-section-title mt-[var(--space-4)] max-w-2xl"
           >
-            {highlightLastWord(t("heading"))}
+            {highlightLastWord(t("heading"), "landing-section-title-highlight")}
           </motion.h2>
 
           <motion.p
             {...reveal(0.14, 12)}
-            className="mt-[var(--space-4)] max-w-2xl font-hero text-hero-lead leading-relaxed text-foreground/80 dark:text-foreground sm:mt-[var(--space-5)]"
+            className="landing-section-description mt-[var(--space-3)]"
           >
             {t("description")}
           </motion.p>
@@ -161,7 +158,7 @@ export default function About() {
             <Button
               asChild
               size="lg"
-              className="group min-h-12 rounded-full bg-primary px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:text-control"
+              className="group min-h-11 rounded-full bg-primary px-[var(--space-8)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:text-control"
             >
               <Link
                 href="/services"
