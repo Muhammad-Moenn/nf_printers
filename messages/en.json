@@ -1,21 +1,42 @@
 {
   "home": {
     "about_us": {
-      "badge": "About NFPrinters",
-      "button_text": "Explore Services",
-      "description": [
-        "We deliver high-quality printing with precision, using premium materials and modern technology. From business cards to banners, we bring your ideas to life.",
-        "Our mission is to combine advanced printing technology with expert craftsmanship, while our vision is to be the most trusted printing partner for schools, businesses, and organizations."
-      ],
+      "badge": "About NF Printers",
+      "button_text": "Learn More",
+      "description": "At NF Printers, we combine advanced printing technology with a passion for quality. Whether it's a small order or a large print run, we ensure excellence in every print.",
       "features": [
-        "15+ years of experience",
-        "Quality-first production",
-        "Reliable turnaround",
-        "Customer satisfaction"
+        "High-Quality Output",
+        "Competitive Pricing",
+        "On-Time Delivery",
+        "Dedicated Support"
       ],
-      "heading": "Reliable & Professional Printing Solutions",
-      "image_alt": "Premium printed brochures, business cards, and marketing materials produced by NF Printers",
+      "heading": "Your Local Printing Press with a Big Commitment",
+      "image_alt": "Commercial printing press machinery at work",
+      "play_video": "Play the NF Printers press video",
+      "video_label": "NF Printers commercial printing press video",
       "title": "About Us"
+    },
+    "why_choose_us": {
+      "eyebrow": "Why Choose Us",
+      "title": "Printing Excellence, Always",
+      "cards": [
+        {
+          "title": "Superior Quality",
+          "description": "Crisp and clear prints every time"
+        },
+        {
+          "title": "Fast Turnaround",
+          "description": "Meet your deadlines with ease"
+        },
+        {
+          "title": "Affordable Rates",
+          "description": "Get the best value for your money"
+        },
+        {
+          "title": "Expert Support",
+          "description": "We're here to help always"
+        }
+      ]
     },
     "actionbanner": {
       "description": "Join thousands of satisfied clients who trust us for high-quality printing solutions.",
@@ -94,24 +115,19 @@
     "btn_text": "Explore Services",
     "description": "Books, registers, business stationery, packaging, and large-format work produced with dependable color, careful finishing, and clear turnaround times.",
     "landing": {
-      "hero_badge": "Premium Printing Services",
-      "hero_title_line1": "Professional Printing,",
-      "hero_title_line2": "Precise Quality",
-      "hero_description": "From business cards to large format prints — get high-quality printing solutions with fast delivery.",
-      "hero_cta_primary": "Create Order",
-      "hero_cta_secondary": "Learn More",
-      "hero_trust": "Trusted by 10K+ Happy Clients",
+      "hero_badge": "Professional Printing Press",
+      "hero_title_line1": "Premium Printing Solutions for Your",
+      "hero_title_line2": "Business & Education",
+      "hero_description": "From books to brochures, we deliver high-quality printing with precision, speed and reliability.",
+      "hero_cta_primary": "Explore Services",
+      "hero_cta_secondary": "Watch Video",
+      "hero_trust": "Trusted printing for businesses and education",
       "hero_image_alt": "Industrial offset printing press producing full-color prints",
       "hero_stats": [
         {
           "value": "15+",
           "label": "Years of Experience",
           "icon": "trophy"
-        },
-        {
-          "value": "500+",
-          "label": "Projects Completed",
-          "icon": "folder"
         },
         {
           "value": "10K+",
@@ -135,10 +151,10 @@
       "turnaround_label": "day turnaround",
       "color_label": "color accuracy",
       "partners_label": "Trusted By",
-      "services_label": "What We Offer",
-      "process_label": "Our Process",
-      "process_title": "From Upload to Delivery — Made Simple",
-      "process_description": "A smooth and easy process to get your prints, hassle-free.",
+      "services_label": "Our Services",
+      "process_label": "How It Works",
+      "process_title": "Simple Steps to Get Your Prints",
+      "process_description": "From preparing your files to delivering finished prints, we keep the process simple.",
       "process_steps": [
         {
           "title": "Upload Your File",
@@ -165,7 +181,7 @@
           "description": "At your doorstep."
         }
       ],
-      "order_now": "Order Now",
+      "order_now": "Read More",
       "view_all": "View All Services",
       "about_card_1_title": "Fast production",
       "about_card_1_text": "Built for urgent academic and business jobs.",
@@ -243,7 +259,6 @@
     ],
     "employees_description": "Behind every high-quality print is a team of experienced professionals dedicated to precision, quality, and timely delivery.",
     "employees_title": " Our Skilled Printing Professionals",
-    
     "faq_section": {
       "description": "Find answers to common questions about our printing services, quality, and delivery process.",
       "faqs": [
@@ -435,9 +450,9 @@
     },
     "hero_title": "Professional printing, precise from proof to finish.",
     "servic_section": {
-      "description": "We provide reliable and professional printing solutions for individuals, businesses, and institutions.",
+      "description": "We offer a wide range of printing solutions to meet your needs.",
       "heading": "Our Printing Services",
-      "heading_lead": "Our",
+      "heading_lead": "Comprehensive",
       "heading_highlight": "Printing Services",
       "services": [
         {
@@ -725,8 +740,15 @@
           "src": "https://images.unsplash.com/photo-1624561172888-ac93c696e10c?q=80&w=2592&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
         }
       ],
-      "title": "Trusted by Our Clients"
+      "title": "Trusted by Our Clients",
+      "eyebrow": "Testimonials",
+      "carousel_label": "Client testimonials",
+      "previous": "Previous testimonial",
+      "next": "Next testimonial",
+      "show_testimonial": "Show testimonial {index}",
+      "rating_label": "{rating} out of 5 stars",
+      "carousel_role": "carousel"
     }
   },
-  "services":{}
+  "services": {}
 }

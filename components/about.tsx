@@ -1,10 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Check, Play } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
@@ -15,123 +15,169 @@ export default function About() {
   const t = useTranslations("home.about_us");
   const locale = useLocale();
   const isRTL = locale === "ur";
-  const prefersReducedMotion = useReducedMotion();
-  const [hasMounted, setHasMounted] = useState(false);
-  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
-  const description = (t.raw("description") as string[]) ?? [];
-  const features = (t.raw("features") as string[]) ?? [];
+  const reduceMotion = useReducedMotion();
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const benefits = (t.raw("features") as string[]) ?? [];
 
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  const reveal = (delay = 0, offset = 20) => ({
-    initial: reduceMotion ? false : { opacity: 0, y: offset },
+  const reveal = (delay = 0, distance = 20) => ({
+    initial: reduceMotion ? false : { opacity: 0, y: distance },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-80px" },
+    viewport: { once: true, amount: 0.25 },
     transition: reduceMotion
       ? { duration: 0 }
-      : {
-          duration: 0.55,
-          delay,
-          ease: [0.22, 1, 0.36, 1] as const,
-        },
+      : { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] as const },
   });
+
+  const benefitVariants = {
+    hidden: {},
+    visible: {
+      transition: reduceMotion
+        ? { duration: 0 }
+        : { staggerChildren: 0.08, delayChildren: 0.12 },
+    },
+  };
+
+  const benefitItemVariants = {
+    hidden: reduceMotion ? {} : { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: reduceMotion ? { duration: 0 } : { duration: 0.4 },
+    },
+  };
 
   return (
     <section
       id="about"
       aria-labelledby="about-heading"
-      className="relative overflow-hidden py-16 scroll-mt-24 sm:py-20 lg:py-24"
+      className="relative isolate overflow-hidden py-[var(--space-8)] scroll-mt-24 sm:py-[var(--space-10)] lg:py-[var(--space-12)]"
     >
       <div
+        aria-hidden="true"
+        className="pointer-events-none absolute end-0 top-8 -z-10 h-20 w-20 opacity-80 sm:end-8 lg:end-12"
+        style={{
+          backgroundImage:
+            "radial-gradient(color-mix(in oklab, var(--primary) 75%, transparent) 1.5px, transparent 1.5px)",
+          backgroundSize: "12px 12px",
+        }}
+      />
+
+      <div
         dir={isRTL ? "rtl" : "ltr"}
-        className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+        className="relative mx-auto grid w-full max-w-[var(--hero-max-width)] items-center gap-[var(--space-6)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:grid-cols-2 lg:gap-[var(--space-8)] lg:px-[var(--space-8)]"
       >
-        <div className="grid min-w-0 items-center gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-12">
-          <motion.div
-            {...reveal()}
-            className={cn("min-w-0", isRTL ? "text-right" : "text-left")}
-          >
-            <span className="inline-flex items-center rounded-full border border-primary-border bg-primary-soft px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-primary-text shadow-[var(--shadow-sm)]">
+        <motion.div
+          {...reveal(0, 18)}
+          className="relative min-w-0"
+        >
+          <div className="relative aspect-[3/2] overflow-hidden rounded-[var(--radius-2xl)] border border-primary-border/60 bg-primary-soft shadow-[var(--shadow-lg)]">
+            {isVideoPlaying ? (
+              <video
+                key="about-video"
+                src="/heroSection-video.mp4"
+                autoPlay
+                controls
+                playsInline
+                preload="metadata"
+                aria-label={t("video_label")}
+                onPause={() => setIsVideoPlaying(false)}
+                onEnded={() => setIsVideoPlaying(false)}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <>
+                <Image
+                  src="/printingImage.jpg"
+                  alt={t("image_alt")}
+                  fill
+                  sizes="(max-width: 1023px) 92vw, 50vw"
+                  className="object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsVideoPlaying(true)}
+                  aria-label={t("play_video")}
+                  className="group absolute inset-0 z-10 flex items-center justify-center bg-transparent transition-colors duration-300 hover:bg-heading/5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-primary"
+                >
+                  <span className="flex size-16 items-center justify-center rounded-full border-4 border-card/90 bg-card text-primary shadow-[var(--shadow-lg)] transition-transform duration-300 group-hover:scale-110 sm:size-[4.5rem]">
+                    <Play className="ms-1 size-7 fill-current" aria-hidden="true" />
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
+        </motion.div>
+
+        <div className={cn("min-w-0", isRTL ? "text-end" : "text-start")}>
+          <motion.div {...reveal(0.06, 14)}>
+            <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-primary-border bg-primary-soft/90 px-[var(--space-3)] py-[var(--space-2)] font-hero text-badge font-semibold text-primary-text shadow-[var(--shadow-sm)] backdrop-blur-sm">
+              <span
+                aria-hidden="true"
+                className="size-2 rounded-full bg-primary shadow-[0_0_0_4px_var(--primary-soft)]"
+              />
               {t("badge")}
             </span>
-
-            <h2
-              id="about-heading"
-              className="mt-5 max-w-xl text-2xl font-bold leading-tight tracking-tight text-heading sm:text-3xl lg:text-4xl xl:text-5xl"
-            >
-              {highlightLastWord(t("heading"))}
-            </h2>
-
-            {description[0] ? (
-              <p className="mt-4 max-w-xl text-base leading-7 text-foreground/80 sm:mt-5 sm:text-lg dark:text-muted-foreground">
-                {description[0]}
-              </p>
-            ) : null}
-
-            {description[1] ? (
-              <p className="mt-3 max-w-xl text-sm leading-6 text-foreground/75 dark:text-muted-foreground">
-                {description[1]}
-              </p>
-            ) : null}
-
-            <ul
-              role="list"
-              className="mt-6 grid max-w-xl grid-cols-1 gap-x-5 gap-y-2 sm:grid-cols-2"
-            >
-              {features.map((feature) => (
-                <li
-                  key={feature}
-                  className="flex items-center gap-2 text-sm font-medium text-heading"
-                >
-                  <CheckCircle2
-                    className="h-4 w-4 shrink-0 text-primary-text"
-                    aria-hidden="true"
-                  />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-7">
-              <Button
-                asChild
-                size="lg"
-                className="group h-12 rounded-full bg-primary px-6 font-hero text-sm font-semibold text-on-color shadow-[var(--shadow-md)] hover:bg-primary-hover sm:text-control"
-              >
-                <Link href="/services" className="items-center gap-2">
-                  {t("button_text")}
-                  <ArrowRight
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-300",
-                      isRTL
-                        ? "rotate-180 group-hover:-translate-x-1"
-                        : "group-hover:translate-x-1",
-                    )}
-                    aria-hidden="true"
-                  />
-                </Link>
-              </Button>
-            </div>
           </motion.div>
 
-          <motion.div
-            {...reveal(0.1, 24)}
-            className="relative min-w-0"
+          <motion.h2
+            id="about-heading"
+            {...reveal(0.1, 14)}
+            className="mt-[var(--space-4)] max-w-2xl font-hero text-about-heading font-bold leading-tight tracking-tight text-heading sm:mt-[var(--space-5)]"
           >
-            <div
-              aria-hidden="true"
-              className="about-image-glow pointer-events-none absolute -inset-6 z-0 hidden dark:block"
-            />
-            <Image
-              src="/02-about-print-materials.png"
-              alt={t("image_alt")}
-              width={470}
-              height={180}
-              sizes="(max-width: 1024px) 92vw, 52vw"
-              className="about-image relative z-10 h-auto w-full max-w-none select-none object-contain mix-blend-multiply lg:w-[calc(100%+1rem)] min-[1400px]:w-[calc(100%+3rem)] min-[1600px]:w-[calc(100%+6rem)]"
-            />
+            {highlightLastWord(t("heading"))}
+          </motion.h2>
+
+          <motion.p
+            {...reveal(0.14, 12)}
+            className="mt-[var(--space-4)] max-w-2xl font-hero text-hero-lead leading-relaxed text-foreground/80 dark:text-foreground sm:mt-[var(--space-5)]"
+          >
+            {t("description")}
+          </motion.p>
+
+          <motion.ul
+            initial={reduceMotion ? false : "hidden"}
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.25 }}
+            variants={benefitVariants}
+            role="list"
+            className="mt-[var(--space-5)] grid max-w-2xl grid-cols-1 gap-x-[var(--space-5)] gap-y-[var(--space-3)] sm:grid-cols-2 sm:gap-y-[var(--space-4)]"
+          >
+            {benefits.map((benefit) => (
+              <motion.li
+                key={benefit}
+                variants={benefitItemVariants}
+                className="flex min-w-0 items-center gap-[var(--space-2)] font-hero text-sm font-medium leading-snug text-heading sm:text-control"
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <Check className="size-3.5" strokeWidth={3} aria-hidden="true" />
+                </span>
+                <span>{benefit}</span>
+              </motion.li>
+            ))}
+          </motion.ul>
+
+          <motion.div {...reveal(0.24, 10)} className="mt-[var(--space-6)]">
+            <Button
+              asChild
+              size="lg"
+              className="group min-h-12 rounded-full bg-primary px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:text-control"
+            >
+              <Link
+                href="/services"
+                className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}
+              >
+                {t("button_text")}
+                <ArrowRight
+                  className={cn(
+                    "size-4 transition-transform duration-300",
+                    isRTL
+                      ? "rotate-180 group-hover:-translate-x-1"
+                      : "group-hover:translate-x-1",
+                  )}
+                  aria-hidden="true"
+                />
+              </Link>
+            </Button>
           </motion.div>
         </div>
       </div>

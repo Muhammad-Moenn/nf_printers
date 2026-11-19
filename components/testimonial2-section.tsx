@@ -1,12 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ChevronLeft, ChevronRight, Quote, Star } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import type { Swiper as SwiperInstance } from "swiper";
+import { Autoplay } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 
 import { cn } from "@/lib/utils";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import styles from "./testimonial2-section.module.css";
 
 type Testimonial = {
   id: number;
@@ -17,8 +22,7 @@ type Testimonial = {
   rating: number;
   initials: string;
 };
-
-const testimonials: Testimonial[] = [
+const testimonialsData: Testimonial[] =[
   {
     id: 1,
     name: { en: "Jamel Ali", ur: "جمیل علی" },
@@ -92,368 +96,334 @@ const testimonials: Testimonial[] = [
     initials: "HW",
   },
 ];
+const testimonials: Testimonial[] = [...testimonialsData, ...testimonialsData, ...testimonialsData];
 
-const AUTOPLAY_MS = 5000;
-const SWIPE_THRESHOLD = 56;
-const SLIDE_DISTANCE = 30;
-const EASE = [0.4, 0, 0.2, 1] as const;
+const AUTOPLAY_MS = 4000;
+const SLIDE_SPEED = 900;
+const CARD_ANIMATION_SECONDS = 0.8;
 
 const Testimonials2Section = () => {
-  const [current, setCurrent] = useState(0);
-  const [direction, setDirection] = useState(1);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const [isTabVisible, setIsTabVisible] = useState(true);
-  const [hasMounted, setHasMounted] = useState(false);
+  const [activeIndex, setActiveIndex] = useState({ real: 0, dot: 0 });
+  const swiperRef = useRef<SwiperInstance | null>(null);
+  const isRTL = useLocale() === "ur";
+  const t = useTranslations("home.testimonial_section");
+  const reduceMotion = Boolean(useReducedMotion());
+  const slideSpeed = reduceMotion ? 0 : SLIDE_SPEED;
+  const cardVariants = {
+    active: { opacity: 1, y: 0 },
+    inactive: { opacity: 0.6, y: reduceMotion ? 0 : 24 },
+  };
+  const cardTransition = reduceMotion
+    ? { duration: 0 }
+    : { duration: CARD_ANIMATION_SECONDS, ease: "easeOut" as const };
 
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const locale = useLocale();
-  const isRTL = locale === "ur";
-  const prefersReducedMotion = useReducedMotion();
-  const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
-
-  const t = testimonials[current];
+  const syncActiveIndex = (swiper: SwiperInstance) => {
+    const real = swiper.realIndex;
+    setActiveIndex((previous) =>
+      previous.real === real
+        ? previous
+        : { real, dot: real % testimonialsData.length },
+    );
+  };
 
   useEffect(() => {
-    setHasMounted(true);
-  }, []);
+    const swiper = swiperRef.current;
+    if (!swiper || swiper.destroyed) return;
 
-  // Pause while the tab is in the background.
-  useEffect(() => {
-    const onVisibilityChange = () => setIsTabVisible(!document.hidden);
-
-    onVisibilityChange();
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, []);
-
-  // Only autoplay while the carousel is actually on screen.
-  useEffect(() => {
-    const node = sectionRef.current;
-
-    if (!node || typeof IntersectionObserver === "undefined") {
-      setIsInView(true);
+    if (reduceMotion) {
+      swiper.autoplay.stop();
       return;
     }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(Boolean(entry?.isIntersecting)),
-      { threshold: 0.25 },
-    );
+    if (!swiper.autoplay.running) {
+      swiper.autoplay.start();
+    }
+    if (swiper.autoplay.paused) {
+      swiper.autoplay.resume();
+    }
+  }, [reduceMotion]);
 
-    observer.observe(node);
-
-    return () => observer.disconnect();
-  }, []);
-
-  const goTo = useCallback(
-    (index: number) => {
-      setDirection(index >= current ? 1 : -1);
-      setCurrent(index);
-    },
-    [current],
-  );
-
-  const paginate = useCallback((step: number) => {
-    setDirection(step);
-    setCurrent((index) => (index + step + testimonials.length) % testimonials.length);
-  }, []);
-
-  const isPaused =
-    !isInView || !isTabVisible || isHovered || isFocused || isDragging || reduceMotion;
-
-  // A timeout (rather than an interval) resets the countdown after any manual navigation.
-  useEffect(() => {
-    if (isPaused) return;
-
-    const timer = window.setTimeout(() => paginate(1), AUTOPLAY_MS);
-
-    return () => window.clearTimeout(timer);
-  }, [current, isPaused, paginate]);
-
-  const reveal = {
-    initial: reduceMotion ? false : { opacity: 0, y: 20 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-80px" },
-    transition: reduceMotion ? { duration: 0 } : { duration: 0.55, ease: EASE },
+  const goPrev = () => {
+    const swiper = swiperRef.current;
+    if (!swiper || swiper.destroyed) return;
+    swiper.slidePrev(slideSpeed);
   };
 
-  const slideDirection = isRTL ? -direction : direction;
+  const goNext = () => {
+    const swiper = swiperRef.current;
+    if (!swiper || swiper.destroyed) return;
+    swiper.slideNext(slideSpeed);
+  };
 
-  const cardVariants = {
-    enter: (dir: number) => ({
-      opacity: 0,
-      x: reduceMotion ? 0 : dir * SLIDE_DISTANCE,
-    }),
-    center: {
-      opacity: 1,
-      x: 0,
-      transition: { duration: reduceMotion ? 0 : 0.55, ease: EASE },
-    },
-    exit: (dir: number) => ({
-      opacity: 0,
-      x: reduceMotion ? 0 : dir * -SLIDE_DISTANCE,
-      transition: { duration: reduceMotion ? 0 : 0.3, ease: EASE },
-    }),
+  const goToSlide = (originalIndex: number) => {
+    const swiper = swiperRef.current;
+    if (!swiper || swiper.destroyed) return;
+    if (originalIndex === swiper.realIndex % testimonialsData.length) return;
+
+    let target = originalIndex;
+    let targetDistance = Number.POSITIVE_INFINITY;
+
+    for (
+      let candidate = originalIndex;
+      candidate < testimonials.length;
+      candidate += testimonialsData.length
+    ) {
+      const difference = Math.abs(candidate - swiper.realIndex);
+      const distance = Math.min(
+        difference,
+        testimonials.length - difference,
+      );
+
+      if (distance < targetDistance) {
+        target = candidate;
+        targetDistance = distance;
+      }
+    }
+
+    swiper.slideToLoop(target, slideSpeed);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      paginate(isRTL ? 1 : -1);
+      if (isRTL) goNext();
+      else goPrev();
     } else if (event.key === "ArrowRight") {
       event.preventDefault();
-      paginate(isRTL ? -1 : 1);
+      if (isRTL) goPrev();
+      else goNext();
     }
+  };
+
+  const renderCard = (
+    item: Testimonial,
+    index: number,
+    originalIndex: number,
+  ) => {
+    const isActive = index === activeIndex.real;
+
+    return (
+      <motion.div
+        initial={false}
+        animate={isActive ? "active" : "inactive"}
+        variants={cardVariants}
+        transition={cardTransition}
+        whileHover={!isActive ? { opacity: 0.8 } : undefined}
+        className={cn(
+          "flex w-full",
+          isActive ? "md:opacity-100" : "md:opacity-60",
+        )}
+      >
+        <article
+          onClick={isActive ? undefined : () => goToSlide(originalIndex)}
+          onKeyDown={
+            isActive
+              ? undefined
+              : (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    goToSlide(originalIndex);
+                  }
+                }
+          }
+          role={isActive ? undefined : "button"}
+          tabIndex={isActive ? -1 : 0}
+          aria-current={isActive ? "true" : undefined}
+          aria-label={
+            isActive
+              ? undefined
+              : t("show_testimonial", { index: originalIndex + 1 })
+          }
+          className={cn(
+            "relative flex w-full flex-col rounded-[var(--radius-2xl)] border border-primary-border/60 bg-card/75 p-[var(--space-4)] backdrop-blur-sm transition-[scale,transform,box-shadow] duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:p-[var(--space-5)] motion-reduce:transition-none",
+            isActive
+              ? "z-10 shadow-[var(--shadow-lg)] md:scale-[1.06]"
+              : "shadow-[var(--shadow-sm)] md:scale-[0.94] md:cursor-pointer",
+          )}
+        >
+          <Quote
+            className="size-6 shrink-0 fill-primary text-primary"
+            aria-hidden="true"
+          />
+          <p className="mt-[var(--space-2)] flex-1 font-hero text-sm font-medium leading-6 text-heading sm:text-control sm:leading-6">
+            {item.text[isRTL ? "ur" : "en"]}
+          </p>
+
+          <div className={cn("mt-[var(--space-4)] flex min-w-0 items-center gap-3", isRTL && "flex-row-reverse")}>
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-soft font-hero text-sm font-bold text-primary-text ring-2 ring-card shadow-[var(--shadow-sm)]">
+              {item.initials}
+            </span>
+            <div className={cn("min-w-0 flex-1", isRTL ? "text-end" : "text-start")}>
+              <p className="font-hero text-sm font-bold leading-snug text-heading">
+                {item.name[isRTL ? "ur" : "en"]}
+              </p>
+              <p className="mt-0.5 font-hero text-xs leading-snug text-muted-foreground">
+                {item.role[isRTL ? "ur" : "en"]} · {item.company[isRTL ? "ur" : "en"]}
+              </p>
+              <div className={cn("mt-1.5 flex items-center gap-0.5", isRTL && "flex-row-reverse justify-end")} role="img" aria-label={t("rating_label", { rating: item.rating })}>
+                {Array.from({ length: item.rating }).map((_, starIndex) => (
+                  <Star
+                    key={starIndex}
+                    className="size-3.5 fill-warning text-warning"
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </article>
+      </motion.div>
+    );
   };
 
   return (
     <section
-      ref={sectionRef}
       id="testimonials"
       aria-labelledby="testimonials-heading"
-      className="relative overflow-hidden py-16 scroll-mt-24 sm:py-20 lg:py-24"
+      className="relative overflow-hidden py-[var(--space-8)] scroll-mt-24 sm:py-[var(--space-10)] lg:py-[var(--space-12)]"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-[var(--radius-4xl)]",
-            "border border-primary-border/60 bg-gradient-to-br from-primary-soft via-card to-primary-soft/70",
-            "px-4 py-10 shadow-[var(--shadow-sm)] sm:px-6 sm:py-12 lg:px-10 lg:py-14",
-            "dark:border-on-color/10 dark:from-[var(--neutral-900)] dark:via-[var(--neutral-900)] dark:to-[var(--neutral-800)]",
-          )}
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -left-24 -top-24 h-56 w-56 rounded-full bg-primary/10 blur-3xl sm:h-72 sm:w-72"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-28 -right-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl sm:h-80 sm:w-80"
-          />
-
-          <motion.div
-            {...reveal}
-            className="relative mx-auto max-w-3xl text-center"
-          >
-            <span className="inline-flex items-center rounded-full border border-primary-border/70 bg-primary-soft px-3.5 py-1 text-[length:var(--font-size-xs)] font-semibold uppercase tracking-[0.18em] text-primary-text shadow-[var(--shadow-sm)]">
-              {isRTL ? "تعریفات" : "Testimonials"}
+      <div
+        dir={isRTL ? "rtl" : "ltr"}
+        className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
+      >
+        <header className="mx-auto max-w-3xl text-center">
+          <div className="flex items-center justify-center gap-[var(--space-3)]">
+            <span aria-hidden="true" className="h-px w-8 bg-primary-border sm:w-12" />
+            <span className="font-hero text-badge font-bold text-primary-text">
+              {t("eyebrow")}
             </span>
-
-            <h2
-              id="testimonials-heading"
-              className="mt-3 text-2xl font-bold leading-tight tracking-tight text-heading sm:text-3xl lg:text-4xl xl:text-5xl"
-            >
-              {highlightLastWord(
-                isRTL ? "ہمارے کلائنٹس کا اعتماد" : "Trusted by Our Clients",
-              )}
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-foreground/80 sm:text-base sm:leading-7 dark:text-muted-foreground">
-              {isRTL
-                ? "جانیے ہمارے گاہک ہماری پرنٹنگ خدمات کے بارے میں کیا کہتے ہیں۔"
-                : "Hear what our customers say about our printing services."}
-            </p>
-          </motion.div>
-
-          <motion.div
-            {...reveal}
-            role="region"
-            aria-roledescription="carousel"
-            aria-label={isRTL ? "گاہکوں کی تعریفات" : "Client testimonials"}
-            tabIndex={0}
-            onKeyDown={handleKeyDown}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onFocusCapture={() => setIsFocused(true)}
-            onBlurCapture={() => setIsFocused(false)}
-            className={cn(
-              "relative mt-8 grid grid-cols-1 items-center gap-5 rounded-[var(--radius-3xl)] sm:mt-10",
-              "outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-              "lg:grid-cols-[auto_minmax(0,34rem)_auto] lg:justify-center lg:gap-6",
-            )}
+            <span aria-hidden="true" className="h-px w-8 bg-primary-border sm:w-12" />
+          </div>
+          <h2
+            id="testimonials-heading"
+            className="mt-[var(--space-2)] font-hero text-landing-section font-bold leading-tight tracking-tight text-heading"
           >
-            <div className="order-1 min-w-0 lg:order-2">
-              <div
-                aria-live="polite"
-                aria-atomic="true"
-                className="relative min-h-[19rem] sm:min-h-[17rem] md:min-h-[15.5rem] lg:min-h-[17rem]"
+            {highlightLastWord(t("title"))}
+          </h2>
+          <p className="mx-auto mt-[var(--space-2)] max-w-2xl font-hero text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7">
+            {t("description")}
+          </p>
+        </header>
+
+        <div
+          role="region"
+          aria-roledescription={t("carousel_role")}
+          aria-label={t("carousel_label")}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          className="relative mt-[var(--space-6)] outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:mt-[var(--space-8)]"
+        >
+          <div className="md:px-12 lg:px-0">
+            <div className="overflow-hidden px-3 py-5">
+              <Swiper
+                key={isRTL ? "rtl" : "ltr"}
+                modules={[Autoplay]}
+                dir={isRTL ? "rtl" : "ltr"}
+                loop
+                loopAdditionalSlides={1}
+                centeredSlides
+                slidesPerView={1}
+                spaceBetween={16}
+                breakpoints={{
+                  768: { slidesPerView: 3, spaceBetween: 20 },
+                  1024: { slidesPerView: 3, spaceBetween: 28 },
+                }}
+                speed={slideSpeed}
+                autoplay={{
+                  delay: AUTOPLAY_MS,
+                  disableOnInteraction: false,
+                  pauseOnMouseEnter: false,
+                  waitForTransition: true,
+                  stopOnLastSlide: false,
+                }}
+                onSwiper={(swiper) => {
+                  swiperRef.current = swiper;
+                  syncActiveIndex(swiper);
+                  const systemReducedMotion =
+                    typeof window !== "undefined" &&
+                    window.matchMedia(
+                      "(prefers-reduced-motion: reduce)",
+                    ).matches;
+                  if (reduceMotion || systemReducedMotion) {
+                    swiper.autoplay.stop();
+                  }
+                }}
+                onRealIndexChange={(swiper) => syncActiveIndex(swiper)}
+                className={styles.testimonialSwiper}
               >
-                <AnimatePresence
-                  mode="wait"
-                  initial={false}
-                  custom={slideDirection}
-                >
-                  <motion.article
-                    key={t.id}
-                    custom={slideDirection}
-                    variants={cardVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    drag="x"
-                    dragConstraints={{ left: 0, right: 0 }}
-                    dragElastic={0.18}
-                    dragMomentum={false}
-                    onDragStart={() => setIsDragging(true)}
-                    onDragEnd={(_, info) => {
-                      setIsDragging(false);
-
-                      if (Math.abs(info.offset.x) < SWIPE_THRESHOLD) return;
-
-                      const swipedLeft = info.offset.x < 0;
-                      paginate(isRTL ? (swipedLeft ? -1 : 1) : swipedLeft ? 1 : -1);
-                    }}
-                    className={cn(
-                      "rounded-[var(--radius-2xl)] border border-primary-border/70 bg-card p-5 shadow-[var(--shadow-md)]",
-                      "touch-pan-y sm:p-7",
+                {testimonials.map((item, index) => (
+                  <SwiperSlide key={`${item.id}-${index}`}>
+                    {renderCard(
+                      item,
+                      index,
+                      index % testimonialsData.length,
                     )}
-                  >
-                    <div
-                      className={cn(
-                        "flex items-center gap-1",
-                        isRTL && "flex-row-reverse justify-end",
-                      )}
-                      role="img"
-                      aria-label={
-                        isRTL
-                          ? `${t.rating} میں سے 5 ستارے`
-                          : `${t.rating} out of 5 stars`
-                      }
-                    >
-                      {Array.from({ length: t.rating }).map((_, index) => (
-                        <motion.span
-                          key={index}
-                          initial={reduceMotion ? false : { opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{
-                            duration: reduceMotion ? 0 : 0.3,
-                            delay: reduceMotion ? 0 : 0.1 + index * 0.05,
-                            ease: EASE,
-                          }}
-                          className="inline-flex"
-                        >
-                          <Star
-                            className="h-4 w-4 fill-warning text-warning sm:h-[1.125rem] sm:w-[1.125rem]"
-                            aria-hidden="true"
-                          />
-                        </motion.span>
-                      ))}
-                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          </div>
 
-                    <motion.p
-                      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: reduceMotion ? 0 : 0.45,
-                        delay: reduceMotion ? 0 : 0.16,
-                        ease: EASE,
-                      }}
-                      className="mt-3 text-sm font-semibold leading-6 text-heading sm:text-base sm:leading-7"
-                    >
-                      &ldquo;{t.text[locale as "en" | "ur"]}&rdquo;
-                    </motion.p>
+          <button
+            type="button"
+            onClick={goPrev}
+            aria-label={t("previous")}
+            className="absolute start-0 top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-md)] transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none md:inline-flex lg:-start-5"
+          >
+            <ChevronLeft className={cn("size-5", isRTL && "rotate-180")} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            aria-label={t("next")}
+            className="absolute end-0 top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-md)] transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none md:inline-flex lg:-end-5"
+          >
+            <ChevronRight className={cn("size-5", isRTL && "rotate-180")} aria-hidden="true" />
+          </button>
 
-                    <motion.div
-                      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: reduceMotion ? 0 : 0.45,
-                        delay: reduceMotion ? 0 : 0.24,
-                        ease: EASE,
-                      }}
-                      className={cn(
-                        "mt-5 flex items-center gap-3 sm:mt-6",
-                        isRTL && "flex-row-reverse",
-                      )}
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-hover text-[length:var(--font-size-xs)] font-bold text-on-color shadow-[var(--shadow-sm)] sm:h-11 sm:w-11">
-                        {t.initials}
-                      </span>
-                      <div className={cn("min-w-0", isRTL ? "text-right" : "text-left")}>
-                        <p className="truncate text-sm font-semibold text-heading sm:text-base">
-                          {t.name[locale as "en" | "ur"]}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground sm:text-sm">
-                          {t.role[locale as "en" | "ur"]} ·{" "}
-                          <span className="font-medium text-primary-text">
-                            {t.company[locale as "en" | "ur"]}
-                          </span>
-                        </p>
-                      </div>
-                    </motion.div>
-                  </motion.article>
-                </AnimatePresence>
-              </div>
+          <div className="mt-[var(--space-1)] flex items-center justify-center gap-[var(--space-3)]">
+            <button
+              type="button"
+              onClick={goPrev}
+              aria-label={t("previous")}
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-md)] transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none md:hidden"
+            >
+              <ChevronLeft className={cn("size-5", isRTL && "rotate-180")} aria-hidden="true" />
+            </button>
 
-              <div className="mt-5 flex items-center justify-center gap-2">
-                {testimonials.map((item, index) => {
-                  const isActive = index === current;
-
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => goTo(index)}
-                      aria-label={
-                        isRTL
-                          ? `تعریف ${index + 1} دکھائیں`
-                          : `Show testimonial ${index + 1}`
-                      }
-                      aria-current={isActive ? "true" : undefined}
-                      className={cn(
-                        "h-2.5 cursor-pointer rounded-full transition-all duration-300",
-                        isActive
-                          ? "w-7 bg-primary"
-                          : "w-2.5 bg-muted-foreground/25 hover:bg-muted-foreground/40",
-                      )}
-                    />
-                  );
-                })}
-              </div>
+            <div className="flex items-center justify-center">
+              {testimonialsData.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => goToSlide(index)}
+                  aria-label={t("show_testimonial", { index: index + 1 })}
+                  aria-current={
+                    activeIndex.dot === index ? "true" : undefined
+                  }
+                  className="flex size-6 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <span
+                    className={cn(
+                      "block size-2.5 rounded-full transition-all duration-300",
+                      activeIndex.dot === index
+                        ? "bg-primary"
+                        : "bg-primary/25 hover:bg-primary/50",
+                    )}
+                  />
+                </button>
+              ))}
             </div>
 
-            <div className="order-2 flex items-center justify-center gap-4 lg:contents">
-              <button
-                type="button"
-                onClick={() => paginate(-1)}
-                aria-label={isRTL ? "پچھلی تعریف" : "Previous testimonial"}
-                className={cn(
-                  "inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full sm:h-10 sm:w-10",
-                  "border border-primary-border/70 bg-card text-primary-text shadow-[var(--shadow-sm)]",
-                  "transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary hover:text-on-color hover:shadow-[var(--shadow-md)]",
-                  "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-                  "lg:order-1",
-                )}
-              >
-                <ChevronLeft
-                  className={cn("h-5 w-5", isRTL && "rotate-180")}
-                  aria-hidden="true"
-                />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => paginate(1)}
-                aria-label={isRTL ? "اگلی تعریف" : "Next testimonial"}
-                className={cn(
-                  "inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full sm:h-10 sm:w-10",
-                  "border border-primary-border/70 bg-card text-primary-text shadow-[var(--shadow-sm)]",
-                  "transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary hover:text-on-color hover:shadow-[var(--shadow-md)]",
-                  "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-                  "lg:order-3",
-                )}
-              >
-                <ChevronRight
-                  className={cn("h-5 w-5", isRTL && "rotate-180")}
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          </motion.div>
+            <button
+              type="button"
+              onClick={goNext}
+              aria-label={t("next")}
+              className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[var(--shadow-md)] transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none md:hidden"
+            >
+              <ChevronRight className={cn("size-5", isRTL && "rotate-180")} aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </section>

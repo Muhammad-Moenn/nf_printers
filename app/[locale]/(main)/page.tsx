@@ -3,6 +3,7 @@ import TrustedBySection from "@/components/trusted-by-section";
 import { ServicesSection } from "@/components/services-section";
 import ActionBanner from "@/components/action-banner";
 import About from "@/components/about";
+import WhyChooseUsSection from "@/components/why-choose-us-section";
 import FAQSection from "@/components/faqs-section";
 import { setRequestLocale } from "next-intl/server";
 import ContactSection from '@/components/contact-section';
@@ -31,6 +32,7 @@ export default async function Home({
       <HeroSection/>
       <TrustedBySection/>
       <About/>
+      <WhyChooseUsSection/>
       <PrintProcessSection/>
       <ServicesSection/>
       <Testimonials2Section/>

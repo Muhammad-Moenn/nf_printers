@@ -77,6 +77,17 @@
 
   /* Landing / marketing hero */
   --color-landing-star: var(--landing-star);
+  --color-landing-navy: var(--landing-navy);
+  --color-landing-primary: var(--landing-primary);
+  --color-landing-secondary: var(--landing-secondary);
+  --color-landing-accent: var(--landing-accent);
+  --color-landing-blue: var(--landing-blue);
+  --color-landing-sky: var(--landing-sky);
+  --color-landing-ice: var(--landing-ice);
+  --color-landing-surface: var(--landing-surface);
+  --color-landing-copy: var(--landing-copy);
+  --color-landing-muted: var(--landing-muted);
+  --color-landing-border: var(--landing-border);
 
   /* Borders, inputs, focus */
   --color-border: var(--border);
@@ -136,6 +147,8 @@
   /* Motion */
   --animate-accordion-down: accordion-down var(--duration-accordion) ease-out;
   --animate-accordion-up: accordion-up var(--duration-accordion) ease-out;
+  --animate-landing-reveal: landing-reveal var(--duration-reveal) var(--ease-out-emphasis) both;
+  --animate-landing-float: landing-float var(--duration-float) var(--ease-float) infinite;
 
   /* Radius scale (single source of truth) */
   --radius-sm: 6px;
@@ -149,6 +162,16 @@
   --radius-control: 10px;
   --radius-card: 12px;
   --radius-modal: 14px;
+
+  /* Landing page design foundation */
+  --font-landing: var(--font-family);
+  --text-landing-display: var(--font-size-landing-display);
+  --text-landing-section: var(--font-size-landing-section);
+  --text-landing-lead: var(--font-size-landing-lead);
+  --text-landing-body: var(--font-size-landing-body);
+  --leading-landing-display: var(--line-height-landing-display);
+  --leading-landing-body: var(--line-height-landing-body);
+  --tracking-landing-display: var(--letter-spacing-landing-display);
 
   /* Hero typography & layout aliases (raw values live in :root below) */
   --font-hero: var(--font-family);
@@ -165,6 +188,44 @@
 /* ---------------- TYPOGRAPHY & SPACING SCALE ---------------- */
 :root {
   --font-family: "Inter", "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --font-size-landing-display: clamp(2.25rem, 1.35rem + 2.7vw, 3.5rem);
+  --font-size-landing-section: clamp(1.75rem, 1.25rem + 1.5vw, 2.5rem);
+  --font-size-landing-lead: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
+  --font-size-landing-body: 1rem;
+  --line-height-landing-display: 1.06;
+  --line-height-landing-body: 1.6;
+  --letter-spacing-landing-display: -0.025em;
+  --weight-landing-heading: 700;
+  --weight-landing-body: 400;
+
+  --landing-container-width: 80rem;
+  --landing-container-gutter: clamp(1rem, 4vw, 2rem);
+  --landing-section-space: clamp(4rem, 7vw, 6rem);
+  --landing-section-space-compact: clamp(3rem, 5vw, 4.5rem);
+  --landing-card-radius: 1.25rem;
+  --landing-control-radius: 999px;
+  --landing-card-lift: 0.125rem;
+  --landing-button-lift: 0.0625rem;
+  --landing-reveal-offset: 1rem;
+  --landing-card-shadow: 0 0.5rem 1.5rem rgba(21, 87, 245, 0.1);
+  --landing-card-shadow-hover: 0 0.75rem 2rem rgba(21, 87, 245, 0.16);
+  --landing-gradient-sky: linear-gradient(135deg, var(--landing-ice) 0%, var(--landing-sky) 100%);
+  --landing-gradient-brand: linear-gradient(110deg, var(--landing-blue) 0%, var(--landing-sky) 100%);
+
+  --duration-quick: 150ms;
+  --duration-standard: 250ms;
+  --duration-emphasis: 400ms;
+  --duration-reveal: 550ms;
+  --duration-float: 7s;
+  --duration-float-delayed: 8s;
+  --landing-float-distance: 0.875rem;
+  --landing-float-rotation: 4deg;
+  --landing-stagger-step: 70ms;
+  --landing-button-foreground: #ffffff;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out-emphasis: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-float: ease-in-out;
 
   --font-size-caption: 0.625rem;
   --font-size-xs: 0.75rem;
@@ -212,6 +273,14 @@
   /* Hero layout */
   --hero-padding-x: var(--space-4);
   --hero-padding-y: var(--space-8);
+  --hero-min-height: clamp(38rem, 90svh, 48rem);
+  --hero-desktop-min-height: 36rem;
+  --hero-max-width: 90rem;
+  --hero-title-width: 39rem;
+  --hero-description-width: 32rem;
+  --hero-image-mobile-width: 38rem;
+  --hero-image-desktop-width: 64%;
+  --hero-image-overhang: 3rem;
 }
 
 /* ---------------- LIGHT THEME ---------------- */
@@ -290,6 +359,18 @@
   --pink-border: #fbcfe8;
 
   --landing-star: #f5b301;
+  --landing-navy: #08245b;
+  --landing-blue: #075be8;
+  --landing-sky: #77b7ff;
+  --landing-ice: #eaf3ff;
+  --landing-primary: var(--landing-blue);
+  --landing-secondary: var(--landing-sky);
+  --landing-accent: var(--landing-navy);
+  --landing-surface: #f6faff;
+  --landing-copy: #102c62;
+  --landing-muted: #536b91;
+  --landing-border: #cfe1ff;
+  --landing-footer: #031b49;
 
   /* About image glow (dark-mode lift for the boxless artwork) */
   --about-image-glow: rgba(199, 221, 255, 0.35);
@@ -424,6 +505,18 @@
   --pink-border: rgba(236, 72, 153, 0.35);
 
   --landing-star: #fbbf24;
+  --landing-navy: #dceaff;
+  --landing-blue: #4b91ff;
+  --landing-sky: #2d70d8;
+  --landing-ice: #112648;
+  --landing-primary: var(--landing-blue);
+  --landing-secondary: var(--landing-sky);
+  --landing-accent: var(--landing-navy);
+  --landing-surface: #0c1b34;
+  --landing-copy: #d9e7ff;
+  --landing-muted: #a9bddc;
+  --landing-border: #264a7e;
+  --landing-footer: #03112c;
 
   /* About image glow (dark-mode lift for the boxless artwork) */
   --about-image-glow: rgba(191, 215, 255, 0.95);
@@ -484,6 +577,22 @@
   --neutral-950: #020617;
 }
 
+@keyframes landing-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--landing-reveal-offset, 1rem), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes landing-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, calc(-1 * var(--space-3)), 0); }
+}
+
 /* ---------------- ACCORDION MOTION ---------------- */
 @keyframes accordion-down {
   from {
@@ -508,6 +617,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
   [data-slot="accordion-content"] {
     animation: none !important;
   }

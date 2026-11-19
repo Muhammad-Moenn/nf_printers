@@ -50,6 +50,12 @@ payments, messaging, and role-based dashboards.
 - **i18n:** next-intl with locale-prefixed routes, `en` and `ur`.
 - **Uploads:** UploadThing. **Email:** Resend.
 - **Pricing:** rule-based calculator with optional external model at `PRICING_MODEL_URL`.
+- **Animation:** Framer Motion is already installed (`framer-motion` and the `motion` package,
+  imported as either `framer-motion` or `motion/react`). Both entry points exist in the codebase;
+  follow the nearest file. Do not add another animation library.
+- **Active workstream:** the public landing page at `app/[locale]/(main)/page.tsx` is being
+  redesigned section by section against a shared reference UI. Read **Section 15** before touching
+  any landing-page section.
 
 ### Repository Map
 
@@ -703,3 +709,147 @@ without evidence.
 - Consider deployment and environment compatibility before modifying infrastructure.
 - Ensure critical business workflows remain reliable after implementation.
 - Leave the application in a working state after every incremental change.
+
+## 15. Landing Page Section-by-Section Redesign
+
+The public landing page (`app/[locale]/(main)/page.tsx`) is the active workstream. It is being
+rebuilt **one section at a time** against a reference UI supplied by the user. Every rule in this
+file still applies; this section adds the landing-page-specific requirements.
+
+### Scope and Workflow
+
+- Work on **one section per task** unless the user explicitly asks for several. A section is one
+  of the components composed by the landing page: hero, trusted-by, about, print process,
+  services, testimonials, FAQ, contact, action banner (currently in `components/ui/Hero.tsx`,
+  `components/trusted-by-section.tsx`, `components/about.tsx`,
+  `components/print-process-section.tsx`, `components/services-section.tsx`,
+  `components/testimonial2-section.tsx`, `components/faqs-section.tsx`,
+  `components/contact-section.tsx`, `components/action-banner.tsx`).
+- The reference UI is the source of truth for the requested section. If the reference
+  (screenshot, Figma, link, or spec) for that section is not available, **ask for it before
+  restyling**. Do not invent a different visual direction or "improve" the reference.
+- Restyle only the requested section. Do not rework other sections, the page order, the header,
+  the footer, or the design tokens unless the task explicitly includes them.
+- Preserve existing behavior, data dependencies, links, forms, and integrations while changing
+  presentation. Never delete a section's content or functionality to match a simpler mock.
+- Do not migrate unrelated landing code to new patterns, libraries, or state layers as part of a
+  visual task.
+
+### Design Fidelity
+
+- Match the reference for layout, spacing rhythm, type scale, colors, radii, borders, shadows,
+  iconography, and breakpoint behavior.
+- Use the project design tokens and `dark:` variants; never hardcode colors. Reuse shadcn/ui
+  primitives and `cn` from `lib/utils.ts`.
+- Keep light and dark themes both correct, even if the reference shows only one.
+- If the reference implies a token, font, or asset that does not exist, ask before adding a
+  dependency, font, or asset pipeline.
+
+### Responsive Behavior (Required)
+
+- Build mobile-first and verify at minimum: `360px`, `390px`, `640px`, `768px`, `1024px`,
+  `1280px`, `1440px`, and a large `1920px` viewport.
+- No horizontal overflow, clipped text, overlapping layers, or content hidden behind fixed
+  elements at any breakpoint. The page shell already uses `overflow-x-hidden`; do not rely on it
+  to hide broken layout.
+- Collapse multi-column layouts cleanly, stack cards, resize typography fluidly, and keep media
+  responsive with appropriate `sizes` and aspect ratios.
+- Keep interactive targets at least ~44px on touch, and verify the section does not break the
+  existing mobile navigation behavior.
+- Test long Urdu copy as well as English; Urdu strings frequently wrap differently.
+
+### Localization (English and Urdu) — Required
+
+- Every user-facing string in the section must come from next-intl, never hardcoded.
+- Add or update keys in **both** `messages/en.json` and `messages/ur.json` in the same change.
+  A section is not done until both locales render correctly.
+- Reuse existing keys where they already fit; do not duplicate text under new names.
+- Do not use fixed widths, `h-*`, truncation, or `whitespace-nowrap` in places where Urdu text
+  would clip.
+- Urdu is right-to-left. Use logical utilities and properties (`ms-`/`me-`, `ps-`/`pe-`,
+  `start-`/`end-`, `text-start`/`text-end`) instead of hardcoded left/right where possible, and
+  mirror directional icons, arrows, carousels, and slide animations so they read correctly in
+  RTL.
+- Known gap: `app/layout.tsx` hardcodes `<html lang="en">` and sets no `dir`. Making the landing
+  page truly locale-aware requires `lang`/`dir` driven by the active locale. Changing the root
+  layout affects every route, so include that plan in the task and get explicit approval before
+  applying it; do not leave a half-applied direction change.
+- Locale-aware navigation must use `Link`/`useRouter` from `i18n/navigation.ts`.
+
+### Framer Motion Animation Standard (Required)
+
+Framer Motion is mandatory for every landing section, and animations must feel deliberate and
+high-end — not decorative noise. Hero and testimonials are the flagship sections and must use
+the most advanced, polished treatment. See `components/ui/Hero.tsx` and
+`components/testimonial2-section.tsx` for the existing baseline.
+
+- Use the already-installed Framer Motion (`framer-motion` or `motion/react`). Do not add
+  animation libraries or replace Framer Motion.
+- Each animated component needs `"use client"`; keep it a leaf. The landing page and any
+  data-fetching parent stay Server Components. Do not convert the whole page to a client
+  component for animation.
+- Use scroll reveals with `whileInView` and `viewport={{ once: true }}` plus variants and
+  staggerChildren for section entrances.
+- Advanced techniques are expected where they fit the reference: orchestrated variants,
+  spring physics, parallax via `useScroll`/`useTransform`, text/line reveal masks, hover and tap
+  micro-interactions, card tilt/spotlight, AnimatePresence transitions for testimonial sliders,
+  and marquees for the trusted-by strip. Do not animate everything simultaneously; establish
+  hierarchy.
+- Animate GPU-friendly properties (transform, opacity, filter). Avoid animating layout
+  properties such as width/height/top/left, and avoid large `box-shadow`/`blur` animations on
+  big surfaces.
+- No layout shift and no invisible content: reserve space, keep initial states readable, and do
+  not delay hero text behind long entrance delays. Hero content must be legible almost
+  immediately and must not hurt LCP.
+- Respect `prefers-reduced-motion` everywhere via `useReducedMotion` (existing sections already
+  do). The reduced-motion version must be fully usable with all content visible and all
+  functionality intact.
+- Avoid infinite loops, timers, and scroll listeners without cleanup; remove them on unmount and
+  disable them under reduced motion. Do not create animation-driven feedback loops with
+  realtime or query data.
+- Keep animations deterministic: no `Math.random()` or time-based values in render, to prevent
+  hydration mismatches. Avoid `AnimatePresence` around server-rendered content that must exist
+  on first paint.
+- Accessibility: motion is never the only signal, focus states remain visible and reachable,
+  and keyboard users can reach every control regardless of animation state.
+
+### Functionality (Nothing May Break)
+
+- Every button, link, form, CTA, language link, and navigation affordance in the section must
+  work in both locales. No dead buttons and no placeholder-only UI.
+- Purchase/order, contact, and auth-related CTAs must keep their existing destinations and
+  behavior. Client validation and server validation stay intact; never trust client-only checks.
+- Preserve existing accessibility semantics (headings, lists, labels, alt text, aria attributes,
+  landmarks) when replacing markup.
+- Preserve images and media behavior: use `next/image` where appropriate, keep allowed remote
+  hosts, and keep meaningful `alt` text localized.
+
+### Performance
+
+- Keep the animation and interactive surface small; avoid wrapping large static trees in client
+  components.
+- Do not introduce duplicate data fetching, new API calls, or extra client state for animation.
+- Prefer CSS for simple transitions, Framer Motion for orchestration/scroll-linked effects.
+- Lazy-load genuinely heavy media below the fold; do not lazy-load hero LCP media.
+
+### Verification Checklist (Per Section)
+
+1. `npx tsc --noEmit` passes. Run `npm run build` when the dev server is stopped and the
+   environment allows it.
+2. Section renders correctly at every width listed above, in light and dark themes.
+3. `/en` and `/ur` both render with no missing keys; layout and animation direction are correct
+   in RTL.
+4. All interactive elements work; no console or hydration errors.
+5. Reduced-motion mode is usable and content-complete.
+6. Neighboring sections and the page shell are visually and functionally unchanged.
+7. Report exactly what was verified and what could not be verified (for example, no Clerk session
+   for authenticated flows).
+
+### Done Criteria for a Landing Section
+
+- Visual result matches the supplied reference at all breakpoints.
+- All copy is localized in `en` and `ur`, with correct RTL behavior.
+- Framer Motion animation is present, advanced, hierarchical, reduced-motion safe, and free of
+  layout shift or hydration issues.
+- Every control is functional and existing behavior is preserved.
+- Type-check passes; no regressions in other sections.

@@ -1,33 +1,39 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  Archive,
   BookOpen,
+  CalendarDays,
   FileText,
+  Image as ImageIcon,
   Layers,
   MoveRight,
   NotebookPen,
-  NotebookText,
   Printer,
+  Receipt,
+  Sticker,
   type LucideIcon,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-import type { ServiceProps } from "@/data/services";
-import { cn } from "@/lib/utils";
-
+import { services as serviceCatalog } from "@/data/services";
 import { ServiceShowcaseCard } from "./service-showcase-card";
 
-const showcaseIcons: LucideIcon[] = [
-  NotebookPen,
-  BookOpen,
-  Layers,
-  FileText,
-  NotebookText,
-  Printer,
-];
+const showcaseIcons: Record<string, LucideIcon> = {
+  notebookPen: NotebookPen,
+  bookOpen: BookOpen,
+  layers: Layers,
+  fileText: FileText,
+  archive: Archive,
+  printer: Printer,
+  image: ImageIcon,
+  receipt: Receipt,
+  sticker: Sticker,
+  calendarDays: CalendarDays,
+};
 
 const dotPattern = {
   backgroundImage:
@@ -43,7 +49,11 @@ export function ServicesSection() {
   const prefersReducedMotion = useReducedMotion();
   const [hasMounted, setHasMounted] = useState(false);
   const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
-  const services = ((t.raw("services") as ServiceProps[]) ?? []).slice(0, 6);
+  const services = serviceCatalog.slice(0, 10);
+  const localizedServices = t.raw("services") as {
+    id: number | string;
+    title: string;
+  }[];
 
   useEffect(() => {
     setHasMounted(true);
@@ -66,55 +76,54 @@ export function ServicesSection() {
     <section
       id="services"
       aria-labelledby="services-heading"
-      className="relative overflow-hidden py-16 text-foreground scroll-mt-24 sm:py-20 lg:py-24 dark:text-on-color"
+      className="relative overflow-hidden py-[var(--space-8)] scroll-mt-24 text-foreground sm:py-[var(--space-10)] lg:py-[var(--space-12)] dark:text-on-color"
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-4 top-10 h-20 w-20 opacity-70 sm:left-8 sm:h-24 sm:w-24 lg:left-12"
+        className="pointer-events-none absolute start-4 top-10 h-20 w-20 opacity-70 sm:start-8 sm:h-24 sm:w-24 lg:start-12"
         style={dotPattern}
       />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-10 right-4 h-20 w-20 opacity-70 sm:right-8 sm:h-24 sm:w-24 lg:right-12"
-        style={dotPattern}
-      />
-
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
         <motion.div {...reveal()} className="mx-auto max-w-3xl text-center">
           <div className="flex items-center justify-center gap-3 sm:gap-4">
             <span
               aria-hidden="true"
-              className="h-px w-10 bg-gradient-to-r from-transparent to-primary-border sm:w-20 lg:w-28"
+              className="h-px w-8 bg-primary-border sm:w-12"
             />
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary-border/70 bg-primary-soft px-3.5 py-1.5 text-[length:var(--font-size-xs)] font-bold uppercase tracking-[0.16em] text-primary-text shadow-[var(--shadow-sm)] sm:text-sm">
-              <Printer className="h-4 w-4" aria-hidden="true" />
+            <span className="font-hero text-badge font-bold text-primary-text">
               {landing("services_label")}
             </span>
             <span
               aria-hidden="true"
-              className="h-px w-10 bg-gradient-to-l from-transparent to-primary-border sm:w-20 lg:w-28"
+              className="h-px w-8 bg-primary-border sm:w-12"
             />
           </div>
 
           <h2
             id="services-heading"
-            className="mt-5 text-2xl font-bold leading-tight tracking-tight text-heading sm:text-3xl lg:text-4xl xl:text-5xl"
+            className="mt-[var(--space-4)] font-hero text-landing-section font-bold leading-tight tracking-tight text-heading sm:mt-[var(--space-5)]"
           >
             {t("heading_lead")}{" "}
             <span className="text-primary-text">{t("heading_highlight")}</span>
           </h2>
 
-          <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg lg:text-2xl lg:leading-9">
+          <p className="mx-auto mt-[var(--space-3)] max-w-3xl font-hero text-sm leading-6 text-muted-foreground sm:mt-[var(--space-4)] sm:text-base sm:leading-7">
             {t("description")}
           </p>
         </motion.div>
 
         <ul
           role="list"
-          className="mt-12 grid list-none grid-cols-1 gap-5 sm:mt-14 md:grid-cols-2 lg:gap-6 xl:grid-cols-3"
+          className="mt-[var(--space-6)] grid list-none grid-cols-2 gap-[var(--space-3)] sm:mt-[var(--space-8)] sm:gap-[var(--space-4)] md:grid-cols-3 xl:grid-cols-5"
         >
           {services.map((service, index) => {
-            const Icon = showcaseIcons[index] ?? NotebookPen;
+            const Icon = showcaseIcons[String(service.icon)] ?? NotebookPen;
+            const localizedTitle =
+              locale === "ur"
+                ? localizedServices.find(
+                    (item) => String(item.id) === String(service.id),
+                  )?.title ?? service.title
+                : service.title;
 
             return (
               <motion.li
@@ -123,52 +132,31 @@ export function ServicesSection() {
                 className="min-w-0"
               >
                 <Link
-                  href={service.link || `/services/${service.id}`}
-                  className="block h-full"
+                  href={{
+                    pathname: "/user-dashboard/new-order",
+                    query: { service: service.title },
+                  }}
+                  className="block h-full rounded-[var(--radius-2xl)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  aria-label={localizedTitle}
                 >
-                  <ServiceShowcaseCard
-                    title={service.title}
-                    description={service.description}
-                    Icon={Icon}
-                  />
+                  <ServiceShowcaseCard title={localizedTitle} Icon={Icon} />
                 </Link>
               </motion.li>
             );
           })}
         </ul>
 
-        <div className="mt-12 flex items-center justify-center gap-3 sm:mt-14 sm:gap-5">
-          <span
-            aria-hidden="true"
-            className="hidden h-px w-24 bg-gradient-to-r from-transparent to-primary-border sm:block lg:w-40"
-          />
+        <div className="mt-[var(--space-6)] flex justify-center sm:mt-[var(--space-8)]">
           <Link
             href="/services"
-            className={cn(
-              "group inline-flex h-14 max-w-full items-center justify-center gap-2.5 whitespace-nowrap",
-              "rounded-full bg-gradient-to-r from-primary to-primary-hover px-6",
-              "text-base font-bold text-on-color shadow-[var(--shadow-lg)]",
-              "transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-xl)]",
-              "motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-              "sm:h-[3.75rem] sm:px-10 sm:text-lg",
-              isRTL && "flex-row-reverse",
-            )}
+            className={`group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-[var(--space-6)] font-hero text-sm font-semibold text-primary-foreground shadow-[var(--shadow-md)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[var(--shadow-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:text-control ${isRTL ? "flex-row-reverse" : ""}`}
           >
             {landing("view_all")}
             <MoveRight
-              className={cn(
-                "h-5 w-5 transition-transform duration-300",
-                isRTL
-                  ? "rotate-180 group-hover:-translate-x-1"
-                  : "group-hover:translate-x-1",
-              )}
+              className={`size-4 transition-transform duration-300 ${isRTL ? "rotate-180 group-hover:-translate-x-1" : "group-hover:translate-x-1"}`}
               aria-hidden="true"
             />
           </Link>
-          <span
-            aria-hidden="true"
-            className="hidden h-px w-24 bg-gradient-to-l from-transparent to-primary-border sm:block lg:w-40"
-          />
         </div>
       </div>
     </section>

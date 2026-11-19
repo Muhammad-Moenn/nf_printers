@@ -195,18 +195,34 @@ export default function NewOrderServices({ userId }: { userId: string }) {
       : null;
 
   useEffect(() => {
-    setReorderId(new URLSearchParams(window.location.search).get("reorder"));
+    const params = new URLSearchParams(window.location.search);
+    const reorder = params.get("reorder");
+    setReorderId(reorder);
+
+    if (reorder) return;
+
+    const serviceTitle = params.get("service");
+    const selectedService = services.find((service) => service.title === serviceTitle);
+    if (!selectedService) return;
+
+    setDraft((current) => ({
+      ...current,
+      service: selectedService.title,
+      product: selectedService.title,
+    }));
   }, []);
 
   const visibleServices = useMemo(() => {
+    const includeSelected =
+      Boolean(draft.service) && !featuredTitles.includes(draft.service);
     const list =
-      showAll || query
+      showAll || query || includeSelected
         ? services
         : services.filter((s) => featuredTitles.includes(s.title));
     return list.filter((s) =>
       `${s.title} ${s.description}`.toLowerCase().includes(query.toLowerCase()),
     );
-  }, [query, showAll]);
+  }, [draft.service, query, showAll]);
   const relevantFinishes = finishByService[draft.service] ?? finishes;
   const selectedDesigns = (draft.designs ?? []) as DesignFile[];
 
