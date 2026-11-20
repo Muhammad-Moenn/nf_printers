@@ -13,6 +13,11 @@ export interface ServiceProps {
   options?: string[];
   idealFor?: string[];
   slug?: string;
+  imageUrl?: string | null;
+  iconName?: string;
+  isFavorite?: boolean;
+  isActive?: boolean;
+  displayOrder?: number;
 }
 export const services: ServiceProps[] = [
   {

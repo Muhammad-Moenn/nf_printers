@@ -1,66 +1,91 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
+import {
+  Archive,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  FileText,
+  Image as ImageIcon,
+  Layers,
+  NotebookPen,
+  Printer,
+  Receipt,
+  Scissors,
+  ShieldCheck,
+  Sticker,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
 
 import type { ServiceProps } from "@/data/services";
 
-type ServiceCardProps = Omit<ServiceProps, "id">;
+type ServiceCardProps = Pick<ServiceProps, "title" | "description" | "icon"> &
+  Pick<ServiceProps, "details" | "iconName" | "imageUrl">;
 
-const imageByIcon: Record<string, string> = {
-  bookOpen: "/03-testimonial-print-materials.png",
-  fileText: "/03-testimonial-print-materials.png",
-  image: "/03-testimonial-print-materials.png",
-  notebookPen: "/02-about-print-materials.png",
-  calendarDays: "/02-about-print-materials.png",
-  sticker: "/02-about-print-materials.png",
-  receipt: "/02-about-print-materials.png",
-  layers: "/printingImage.jpg",
-  archive: "/printingImage.jpg",
-  scissors: "/printingImage.jpg",
-  shieldCheck: "/printingImage.jpg",
-  printer: "/machine-image.png",
+const iconByName: Record<string, LucideIcon> = {
+  notebookPen: NotebookPen,
+  bookOpen: BookOpen,
+  layers: Layers,
+  fileText: FileText,
+  archive: Archive,
+  printer: Printer,
+  image: ImageIcon,
+  receipt: Receipt,
+  sticker: Sticker,
+  calendarDays: CalendarDays,
+  shieldCheck: ShieldCheck,
+  scissors: Scissors,
 };
 
-function getServiceImage(title: string, icon: string) {
-  const normalizedTitle = title.toLowerCase();
-
-  if (/book|brochure|flyer|poster|cover/.test(normalizedTitle)) {
-    return "/03-testimonial-print-materials.png";
-  }
-  if (/diary|notebook|calendar|business card|register|invoice|receipt/.test(normalizedTitle)) {
-    return "/02-about-print-materials.png";
-  }
-  if (/binding|lamination|cutting|trimming/.test(normalizedTitle)) {
-    return "/printingImage.jpg";
-  }
-
-  return imageByIcon[icon] ?? "/printingImage.jpg";
-}
-
-export function ServiceCard({ title, description, icon }: ServiceCardProps) {
+export function ServiceCard({
+  title,
+  description,
+  details,
+  icon,
+  iconName,
+  imageUrl,
+}: ServiceCardProps) {
   const t = useTranslations("home.services_page");
   const isRTL = useLocale() === "ur";
-  const iconKey = typeof icon === "string" ? icon : "printer";
-  const image = getServiceImage(title, iconKey);
-  const isPhoto = image.endsWith(".jpg");
+  const iconKey = iconName ?? (typeof icon === "string" ? icon : "printer");
+  const Icon = iconByName[iconKey] ?? Printer;
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const hasImage = Boolean(imageUrl) && imageUrl !== failedImageUrl;
+  const isRemoteImage = Boolean(imageUrl && /^https?:\/\//i.test(imageUrl));
 
   return (
     <div
       dir={isRTL ? "rtl" : "ltr"}
       className="group relative flex min-h-[9.25rem] w-full items-center gap-3 overflow-hidden rounded-[var(--radius-2xl)] border border-primary-border/60 bg-card/90 p-3.5 shadow-[var(--landing-card-shadow)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-primary-border hover:shadow-[var(--landing-card-shadow-hover)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:min-h-[9.75rem] sm:gap-4 sm:p-4 dark:border-on-color/10 dark:bg-background/85"
+      title={details || undefined}
     >
       <span className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
 
       <span className="relative flex h-[4.75rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary-soft/70 to-card sm:h-20 sm:w-24 dark:from-primary/10 dark:to-background">
-        <Image
-          src={image}
-          alt=""
-          fill
-          sizes="(max-width: 639px) 84px, 96px"
-          className={isPhoto ? "object-cover" : "object-contain p-1"}
-        />
+        {hasImage && isRemoteImage && imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 size-full object-contain p-1"
+            onError={() => setFailedImageUrl(imageUrl)}
+          />
+        ) : hasImage && imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt=""
+            fill
+            sizes="(max-width: 639px) 84px, 96px"
+            className="object-contain p-1"
+            onError={() => setFailedImageUrl(imageUrl)}
+          />
+        ) : (
+          <Icon aria-hidden="true" className="size-9 text-primary-text sm:size-10" />
+        )}
       </span>
 
       <span className="flex min-w-0 flex-1 flex-col self-stretch py-0.5">

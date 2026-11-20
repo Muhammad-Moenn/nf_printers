@@ -32,6 +32,7 @@ const normalize = (value: string) => value.trim().toLowerCase();
 const serviceIdSchema = z.string().trim().min(1).max(100);
 
 async function revalidateServices() {
+  revalidatePath("/[locale]", "page");
   revalidatePath("/[locale]/services", "page");
   revalidatePath("/[locale]/admin-dashboard/services", "page");
   await invalidateServiceCaches();

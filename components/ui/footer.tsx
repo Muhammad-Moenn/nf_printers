@@ -118,7 +118,7 @@ const Footer: React.FC<FooterProps> = ({ className }) => {
             >
               <Image
                 src="/footer-logo-extracted.png"
-                alt={t("logo_alt")}
+                alt={t("logo.alt")}
                 width={185}
                 height={42}
                 className="h-auto w-[11.5rem] max-w-full"

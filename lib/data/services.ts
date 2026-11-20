@@ -1,13 +1,25 @@
 import "server-only";
 
-import { services, type ServiceProps } from "@/data/services";
-import { CACHE_TTL, cacheKeys } from "@/lib/cache/keys";
-import { getOrSet } from "@/lib/cache/store";
+import type { ServiceProps } from "@/data/services";
 import { prisma } from "@/lib/prisma";
+
+function getSafeServiceImageUrl(imageUrl: string | null) {
+  if (!imageUrl) return undefined;
+  if (imageUrl.startsWith("/") && !imageUrl.startsWith("//")) return imageUrl;
+
+  try {
+    const parsedUrl = new URL(imageUrl);
+    return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:"
+      ? imageUrl
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 async function loadPublicServiceCatalog(): Promise<ServiceProps[]> {
   const records = await prisma.service.findMany({
-    where: { isActive: true, isFavorite: true },
+    where: { isActive: true },
     orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     select: {
       id: true,
@@ -16,16 +28,23 @@ async function loadPublicServiceCatalog(): Promise<ServiceProps[]> {
       description: true,
       details: true,
       icon: true,
+      imageUrl: true,
+      isFavorite: true,
+      isActive: true,
+      displayOrder: true,
     },
   });
-
-  if (!records.length) return services;
 
   return records.map((service) => ({
     id: service.id,
     title: service.name,
     description: service.description,
     icon: service.icon,
+    iconName: service.icon,
+    imageUrl: getSafeServiceImageUrl(service.imageUrl),
+    isFavorite: service.isFavorite,
+    isActive: service.isActive,
+    displayOrder: service.displayOrder,
     iconColor: "text-primary-text",
     iconBg: "bg-primary/10",
     details: service.details ?? undefined,
@@ -45,20 +64,11 @@ function isDynamicServerError(error: unknown) {
 
 export async function getPublicServiceCatalog(): Promise<ServiceProps[]> {
   try {
-    return await getOrSet(
-      cacheKeys.services.publicCatalog,
-      CACHE_TTL.publicServices,
-      loadPublicServiceCatalog
-    );
+    return await loadPublicServiceCatalog();
   } catch (error) {
-    // Let Next.js switch the route to dynamic rendering instead of silently
-    // freezing the built-in catalog into a static page.
     if (isDynamicServerError(error)) throw error;
 
-    console.error(
-      "Unable to load the public service catalog; using built-in services.",
-      error
-    );
-    return services;
+    console.error("Unable to load the public service catalog.", error);
+    return [];
   }
 }

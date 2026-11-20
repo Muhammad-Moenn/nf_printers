@@ -11,7 +11,6 @@ const PREFIX = "nf:v2";
 export const ADMIN_TOP_SERVICES_LIMIT = 5;
 
 export const CACHE_TTL = {
-  publicServices: 10 * 60,
   adminStats: 45,
   adminRevenue: 45,
   adminAnalytics: 60,
@@ -120,9 +119,6 @@ export const userOrdersPagePrefix = (userId: string) =>
   `${PREFIX}:user:${userId}:orders:page:`;
 
 export const cacheKeys = {
-  services: {
-    publicCatalog: `${PREFIX}:services:public`,
-  },
   admin: {
     stats: `${PREFIX}:admin:stats`,
     ordersOverview: `${PREFIX}:admin:orders:overview`,

@@ -2,38 +2,12 @@
 
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import {
-  Archive,
-  BookOpen,
-  CalendarDays,
-  FileText,
-  Image as ImageIcon,
-  Layers,
-  MoveRight,
-  NotebookPen,
-  Printer,
-  Receipt,
-  Sticker,
-  type LucideIcon,
-} from "lucide-react";
+import { MoveRight, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
-import { services as serviceCatalog } from "@/data/services";
-import { ServiceShowcaseCard } from "./service-showcase-card";
-
-const showcaseIcons: Record<string, LucideIcon> = {
-  notebookPen: NotebookPen,
-  bookOpen: BookOpen,
-  layers: Layers,
-  fileText: FileText,
-  archive: Archive,
-  printer: Printer,
-  image: ImageIcon,
-  receipt: Receipt,
-  sticker: Sticker,
-  calendarDays: CalendarDays,
-};
+import { useServiceCatalog } from "@/components/service-catalog-context";
+import { ServiceCard } from "@/components/service-card";
 
 const dotPattern = {
   backgroundImage:
@@ -45,14 +19,23 @@ export function ServicesSection() {
   const locale = useLocale();
   const t = useTranslations("home.servic_section");
   const landing = useTranslations("home.landing");
+  const services = useServiceCatalog();
   const isRTL = locale === "ur";
+  const displayedServices = services
+    .filter((service) => service.isActive === true && service.isFavorite === true)
+    .sort(
+      (first, second) =>
+        (first.displayOrder ?? 0) - (second.displayOrder ?? 0) ||
+        String(first.title).localeCompare(String(second.title)),
+    )
+    .slice(0, 10);
   const prefersReducedMotion = useReducedMotion();
   const [hasMounted, setHasMounted] = useState(false);
   const reduceMotion = hasMounted && Boolean(prefersReducedMotion);
-  const services = serviceCatalog.slice(0, 10);
   const localizedServices = t.raw("services") as {
     id: number | string;
     title: string;
+    slug?: string;
   }[];
 
   useEffect(() => {
@@ -105,16 +88,12 @@ export function ServicesSection() {
 
         <ul
           role="list"
-          className="mt-[var(--space-6)] grid list-none grid-cols-2 gap-[var(--space-3)] sm:mt-[var(--space-8)] sm:gap-[var(--space-4)] md:grid-cols-3 xl:grid-cols-5"
+          className="mt-[var(--space-6)] grid list-none grid-cols-1 gap-3 sm:mt-[var(--space-8)] sm:grid-cols-2 sm:gap-4 xl:grid-cols-3"
         >
-          {services.map((service, index) => {
-            const Icon = showcaseIcons[String(service.icon)] ?? NotebookPen;
-            const localizedTitle =
-              locale === "ur"
-                ? localizedServices.find(
-                    (item) => String(item.id) === String(service.id),
-                  )?.title ?? service.title
-                : service.title;
+          {displayedServices.map((service, index) => {
+            const localizedTitle = locale === "ur"
+              ? localizedServices.find((item) => item.slug === service.slug)?.title ?? service.title
+              : service.title;
 
             return (
               <motion.li
@@ -130,7 +109,14 @@ export function ServicesSection() {
                   className="block h-full rounded-[var(--radius-2xl)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   aria-label={localizedTitle}
                 >
-                  <ServiceShowcaseCard title={localizedTitle} Icon={Icon} />
+                  <ServiceCard
+                    title={localizedTitle}
+                    description={service.description}
+                    details={service.details}
+                    icon={service.icon}
+                    iconName={service.iconName}
+                    imageUrl={service.imageUrl}
+                  />
                 </Link>
               </motion.li>
             );

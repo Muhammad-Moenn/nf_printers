@@ -156,8 +156,5 @@ export async function invalidateAdminMessageCaches() {
 }
 
 export async function invalidateServiceCaches() {
-  await cacheDelete([
-    cacheKeys.services.publicCatalog,
-    cacheKeys.admin.servicesList,
-  ]);
+  await cacheDelete(cacheKeys.admin.servicesList);
 }

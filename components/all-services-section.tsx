@@ -1,15 +1,26 @@
+"use client";
+
 import { ArrowRight, Printer, Sparkles } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 
 import { ServiceCard } from "@/components/service-card";
+import { useServiceCatalog } from "@/components/service-catalog-context";
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { getPublicServiceCatalog } from "@/lib/data/services";
 
-async function AllServicesSection({ className = "" }: { className?: string }) {
-  const t = await getTranslations("home.services_page");
-  const catalog = await getPublicServiceCatalog();
+function AllServicesSection({
+  className = "",
+}: {
+  className?: string;
+}) {
+  const t = useTranslations("home.services_page");
+  const catalog = useServiceCatalog();
+  const orderedCatalog = [...catalog].sort(
+    (first, second) =>
+      (first.displayOrder ?? 0) - (second.displayOrder ?? 0) ||
+      String(first.title).localeCompare(String(second.title)),
+  );
   const customOrderHref = "/user-dashboard/new-order?service=Custom%20Printing&custom=1";
 
   return (
@@ -48,7 +59,7 @@ async function AllServicesSection({ className = "" }: { className?: string }) {
         </header>
 
         <div className="mt-[var(--space-6)] grid grid-cols-1 gap-3 sm:mt-[var(--space-8)] sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-          {catalog.map((service) => {
+          {orderedCatalog.map((service) => {
             const params = new URLSearchParams({ service: service.title });
             return (
               <Link
