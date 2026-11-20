@@ -1,83 +1,88 @@
 "use client";
 
-import { ServiceProps } from "@/data/services";
-import {
-  Archive,
-  BookOpen,
-  CalendarDays,
-  FileText,
-  Image,
-  Layers,
-  MoveRight,
-  NotebookPen,
-  Printer,
-  Receipt,
-  Scissors,
-  ShieldCheck,
-  Sticker,
-} from "lucide-react";
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-const serviceIconMap = {
-  bookOpen: BookOpen,
-  fileText: FileText,
-  layers: Layers,
-  printer: Printer,
-  notebookPen: NotebookPen,
-  archive: Archive,
-  image: Image,
-  receipt: Receipt,
-  sticker: Sticker,
-  calendarDays: CalendarDays,
-  scissors: Scissors,
-  shieldCheck: ShieldCheck,
+import type { ServiceProps } from "@/data/services";
+
+type ServiceCardProps = Omit<ServiceProps, "id">;
+
+const imageByIcon: Record<string, string> = {
+  bookOpen: "/03-testimonial-print-materials.png",
+  fileText: "/03-testimonial-print-materials.png",
+  image: "/03-testimonial-print-materials.png",
+  notebookPen: "/02-about-print-materials.png",
+  calendarDays: "/02-about-print-materials.png",
+  sticker: "/02-about-print-materials.png",
+  receipt: "/02-about-print-materials.png",
+  layers: "/printingImage.jpg",
+  archive: "/printingImage.jpg",
+  scissors: "/printingImage.jpg",
+  shieldCheck: "/printingImage.jpg",
+  printer: "/machine-image.png",
 };
 
-type ServiceIconKey = keyof typeof serviceIconMap;
-export type ServiceCardProps = Omit<ServiceProps, "id">;
+function getServiceImage(title: string, icon: string) {
+  const normalizedTitle = title.toLowerCase();
 
-export function ServiceCard({
-  title,
-  description,
-  icon,
-}: ServiceCardProps) {
-  const Icon = serviceIconMap[icon as ServiceIconKey] ?? NotebookPen;
-  const locale = useLocale();
-  const landing = useTranslations("home.landing");
-  const isRTL = locale === "ur";
+  if (/book|brochure|flyer|poster|cover/.test(normalizedTitle)) {
+    return "/03-testimonial-print-materials.png";
+  }
+  if (/diary|notebook|calendar|business card|register|invoice|receipt/.test(normalizedTitle)) {
+    return "/02-about-print-materials.png";
+  }
+  if (/binding|lamination|cutting|trimming/.test(normalizedTitle)) {
+    return "/printingImage.jpg";
+  }
+
+  return imageByIcon[icon] ?? "/printingImage.jpg";
+}
+
+export function ServiceCard({ title, description, icon }: ServiceCardProps) {
+  const t = useTranslations("home.services_page");
+  const isRTL = useLocale() === "ur";
+  const iconKey = typeof icon === "string" ? icon : "printer";
+  const image = getServiceImage(title, iconKey);
+  const isPhoto = image.endsWith(".jpg");
 
   return (
     <div
-      className={`group relative flex min-h-[250px] w-full flex-col overflow-hidden rounded-lg border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-border hover:shadow-xl hover:shadow-primary/10 dark:border-on-color/10 dark:bg-[var(--neutral-900)] dark:hover:border-primary/40 ${
-        isRTL ? "items-end text-right" : "items-start text-left"
-      }`}
+      dir={isRTL ? "rtl" : "ltr"}
+      className="group relative flex min-h-[9.25rem] w-full items-center gap-3 overflow-hidden rounded-[var(--radius-2xl)] border border-primary-border/60 bg-card/90 p-3.5 shadow-[var(--landing-card-shadow)] transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-1 hover:border-primary-border hover:shadow-[var(--landing-card-shadow-hover)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:min-h-[9.75rem] sm:gap-4 sm:p-4 dark:border-on-color/10 dark:bg-background/85"
     >
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-info opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <span className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
 
-      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-soft text-primary-text shadow-sm transition-transform duration-300 group-hover:scale-105 dark:bg-primary/10 dark:text-primary-soft-foreground">
-        <Icon className="h-6 w-6" />
-      </div>
+      <span className="relative flex h-[4.75rem] w-[5.25rem] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary-soft/70 to-card sm:h-20 sm:w-24 dark:from-primary/10 dark:to-background">
+        <Image
+          src={image}
+          alt=""
+          fill
+          sizes="(max-width: 639px) 84px, 96px"
+          className={isPhoto ? "object-cover" : "object-contain p-1"}
+        />
+      </span>
 
-      <h3 className="text-xl font-semibold text-foreground dark:text-on-color">
-        {title}
-      </h3>
+      <span className="flex min-w-0 flex-1 flex-col self-stretch py-0.5">
+        <span className="font-hero text-sm font-bold leading-snug text-heading sm:text-base">
+          {title}
+        </span>
+        <span className="mt-1 line-clamp-2 min-h-10 text-xs leading-5 text-muted-foreground sm:text-sm dark:text-neutral-300">
+          {description}
+        </span>
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-1 text-xs font-semibold text-primary-text sm:text-sm dark:text-primary-soft-foreground">
+          {t("customize_cta")}
+          <ArrowRight
+            aria-hidden="true"
+            className="size-3.5 transition-transform duration-200 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1"
+          />
+        </span>
+      </span>
 
-      <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground dark:text-neutral-300">
-        {description}
-      </p>
-
-      <span
-        className={`mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-on-color transition-colors group-hover:bg-primary dark:bg-primary dark:group-hover:bg-primary ${
-          isRTL ? "flex-row-reverse" : "flex-row"
-        }`}
-      >
-        {landing("order_now")}
-        <MoveRight
-          className={`h-4 w-4 transition-transform duration-500 ${
-            isRTL
-              ? "rotate-180 group-hover:-translate-x-1.5"
-              : "group-hover:translate-x-1.5"
-          }`}
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-border/60 bg-card text-primary-text shadow-[var(--shadow-sm)] transition-[transform,background-color,color] duration-200 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground dark:border-on-color/15 dark:bg-background dark:text-primary-soft-foreground">
+        <ArrowRight
+          aria-hidden="true"
+          className="size-4 rtl:rotate-180"
         />
       </span>
     </div>

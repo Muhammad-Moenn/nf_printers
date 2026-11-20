@@ -4,7 +4,7 @@ import { useSaveDesign, useUserDesigns } from "@/lib/query/hooks/use-designs";
 import { useReorderOrder } from "@/lib/query/hooks/use-orders";
 import { usePricingEstimate } from "@/lib/query/hooks/use-pricing";
 import { useCartStore } from "@/app/store/cart-store";
-import { services } from "@/data/services";
+import { services, type ServiceProps } from "@/data/services";
 import type { Order } from "@/types/order";
 import { UploadDropzone } from "@/utils/uploadthing";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,18 @@ const featuredTitles = [
   "Poster Printing",
   "Invoice & Receipt Books",
 ];
+const CUSTOM_PRINT_SERVICE = "Custom Printing";
+const customPrintService: ServiceProps = {
+  id: "custom-printing",
+  title: CUSTOM_PRINT_SERVICE,
+  description: "Configure custom print materials, quantities, and finishing.",
+  icon: "printer",
+  iconColor: "text-primary-text",
+  iconBg: "bg-primary/10",
+  link: "/user-dashboard/new-order",
+  slug: "custom-printing",
+};
+const orderServiceOptions = [...services, customPrintService];
 const paperTypes = [
   "Offset Paper",
   "Art Paper (Gloss)",
@@ -117,7 +129,14 @@ const fieldOptions: Record<CustomFieldKey, string[]> = {
   gsm: weights.map((weight) => `${weight} GSM`),
   colorMode: ["Black & White", "Two Color (CMYK)", "Full Color (CMYK)"],
 };
-const finishes = ["Lamination", "Folding", "UV Spot", "Cutting", "Binding"];
+const finishes = [
+  "Lamination",
+  "Folding",
+  "UV Spot",
+  "Cutting",
+  "Binding",
+  "CVC Binding",
+];
 const finishByService: Record<string, string[]> = {
   "File & Document Printing": ["Lamination", "Folding", "Cutting", "Binding"],
   "Book Printing": ["Lamination", "Cutting", "Binding"],
@@ -201,15 +220,21 @@ export default function NewOrderServices({ userId }: { userId: string }) {
 
     if (reorder) return;
 
-    const serviceTitle = params.get("service");
-    const selectedService = services.find((service) => service.title === serviceTitle);
-    if (!selectedService) return;
+    const requestedService = params.get("service")?.trim();
+    const serviceTitle =
+      params.get("custom") === "1" ? CUSTOM_PRINT_SERVICE : requestedService;
+    if (!serviceTitle || serviceTitle.length > 120) return;
+    const selectedService = orderServiceOptions.find(
+      (service) => service.title.toLocaleLowerCase() === serviceTitle.toLocaleLowerCase(),
+    );
+    const selectedTitle = selectedService?.title ?? serviceTitle;
 
     setDraft((current) => ({
       ...current,
-      service: selectedService.title,
-      product: selectedService.title,
+      service: selectedTitle,
+      product: selectedTitle,
     }));
+    if (selectedTitle === CUSTOM_PRINT_SERVICE) setShowAll(true);
   }, []);
 
   const visibleServices = useMemo(() => {
@@ -217,9 +242,27 @@ export default function NewOrderServices({ userId }: { userId: string }) {
       Boolean(draft.service) && !featuredTitles.includes(draft.service);
     const list =
       showAll || query || includeSelected
-        ? services
-        : services.filter((s) => featuredTitles.includes(s.title));
-    return list.filter((s) =>
+        ? orderServiceOptions
+        : orderServiceOptions.filter((s) => featuredTitles.includes(s.title));
+    const selectedServiceIsKnown = orderServiceOptions.some(
+      (service) => service.title === draft.service,
+    );
+    const selectedServiceOption: ServiceProps | null =
+      draft.service && !selectedServiceIsKnown
+        ? {
+            id: `selected-${draft.service}`,
+            title: draft.service,
+            description: "Selected from the Services page.",
+            icon: "printer",
+            iconColor: "text-primary-text",
+            iconBg: "bg-primary/10",
+            link: "/user-dashboard/new-order",
+          }
+        : null;
+    const servicesToFilter = selectedServiceOption
+      ? [selectedServiceOption, ...list]
+      : list;
+    return servicesToFilter.filter((s) =>
       `${s.title} ${s.description}`.toLowerCase().includes(query.toLowerCase()),
     );
   }, [draft.service, query, showAll]);

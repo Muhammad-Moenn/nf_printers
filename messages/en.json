@@ -16,6 +16,21 @@
       "video_label": "NF Printers commercial printing press video",
       "title": "About Us"
     },
+    "services_page": {
+      "badge": "Our Services",
+      "title_line1": "Professional Printing Services",
+      "title_line2": "for Every Need",
+      "description": "Choose a printing category and customize your designs, materials, specifications, and quantities through your personal dashboard.",
+      "primary_cta": "Explore Services",
+      "secondary_cta": "How It Works",
+      "image_alt": "Commercial printing press ready to produce custom print orders",
+      "catalog_title": "Our Printing Services",
+      "catalog_description": "Choose a printing category, then tailor the design, materials, quantity, and finishing to your needs.",
+      "customize_cta": "Customize & Order",
+      "custom_title": "Need a Custom Print Solution?",
+      "custom_description": "Build an order around your project with custom paper, size, color, quantity, and finishing options.",
+      "custom_accessible": "Customize and order a custom print job"
+    },
     "why_choose_us": {
       "eyebrow": "Why Choose Us",
       "title": "Printing Excellence, Always",
@@ -168,28 +183,24 @@
       "process_description": "From preparing your files to delivering finished prints, we keep the process simple.",
       "process_steps": [
         {
-          "title": "Upload Your File",
-          "description": "Share your design or let us create it."
+          "title": "Choose Your Service",
+          "description": "Choose book, diary, calendar printing, or another service that fits your needs."
         },
         {
-          "title": "Add Order Details",
-          "description": "Set size, paper & quantity."
+          "title": "Upload Your Designs",
+          "description": "Upload cover artwork, title pages, inner-page PDFs, indexes, and any other required files."
         },
         {
-          "title": "Confirm Order",
-          "description": "Review and confirm."
+          "title": "Configure Your Printing",
+          "description": "Choose the quantity, paper size and quality, GSM, colors, and finishing options."
         },
         {
-          "title": "Production",
-          "description": "We print with care."
+          "title": "Review & Confirm",
+          "description": "Review your specifications and submit the order for our team to confirm."
         },
         {
-          "title": "Completed",
-          "description": "Your order is ready."
-        },
-        {
-          "title": "Delivered",
-          "description": "At your doorstep."
+          "title": "Production & Delivery",
+          "description": "We process your order, complete the printing and finishing, then deliver it."
         }
       ],
       "order_now": "Read More",
@@ -335,15 +346,31 @@
           "links": [
             {
               "text": "Home",
-              "url": "/"
+              "url": "/#hero"
             },
             {
               "text": "Services",
-              "url": "/services"
+              "url": "/#services"
             },
             {
               "text": "About",
               "url": "/#about"
+            },
+            {
+              "text": "Trusted By",
+              "url": "/#partners"
+            },
+            {
+              "text": "Why Choose Us",
+              "url": "/#why-choose-us"
+            },
+            {
+              "text": "Testimonials",
+              "url": "/#testimonials"
+            },
+            {
+              "text": "FAQ",
+              "url": "/#faqs"
             },
             {
               "text": "Contact",

@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  Star,
   Trash2,
   X,
 } from "lucide-react";
@@ -66,6 +67,7 @@ const blankForm = (): ServiceInput => ({
   priceUnit: "service",
   displayOrder: 1,
   isActive: true,
+  isFavorite: false,
 });
 
 const inputClass =
@@ -172,6 +174,7 @@ function ServiceForm({
           priceUnit: service.priceUnit,
           displayOrder: service.displayOrder,
           isActive: service.isActive,
+          isFavorite: service.isFavorite,
         }
       : blankForm(),
   );
@@ -488,6 +491,23 @@ function ServiceForm({
               </Select>
             </label>
           </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-control border border-border-subtle bg-muted/30 p-3 text-sm dark:border-[var(--border)] dark:bg-[var(--surface-2)]">
+            <input
+              type="checkbox"
+              checked={form.isFavorite}
+              onChange={(event) => set("isFavorite", event.target.checked)}
+              className="mt-0.5 size-4 accent-primary"
+            />
+            <span>
+              <span className="flex items-center gap-1.5 font-medium text-foreground">
+                <Star aria-hidden="true" className="size-4 text-primary" />
+                Show on public Services page
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Favorite services are shown to customers on the Services page.
+              </span>
+            </span>
+          </label>
         </div>
         <footer className="sticky bottom-0 flex gap-3 border-t border-border-subtle bg-card p-5 dark:border-[var(--border)] dark:bg-[var(--surface-1)] sm:p-6">
           <button

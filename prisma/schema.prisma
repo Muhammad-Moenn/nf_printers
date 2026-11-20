@@ -69,6 +69,7 @@ model Service {
   id            String   @id @default(cuid())
   name          String   @unique
   slug          String   @unique
+  isFavorite    Boolean  @default(false)
   category      String
   description   String   @db.Text
   details       String?  @db.Text

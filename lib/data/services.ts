@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 
 async function loadPublicServiceCatalog(): Promise<ServiceProps[]> {
   const records = await prisma.service.findMany({
-    where: { isActive: true },
+    where: { isActive: true, isFavorite: true },
     orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     select: {
       id: true,

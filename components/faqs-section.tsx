@@ -135,7 +135,7 @@ export default function FAQSection() {
                     >
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <span className="min-w-0 flex-1 font-hero text-sm font-bold leading-snug tracking-tight text-heading sm:text-base lg:text-lg">
+                    <span className="min-w-0 flex-1 font-hero text-sm font-semibold leading-snug tracking-tight text-heading sm:text-base lg:text-lg">
                       {faq.question}
                     </span>
                   </AccordionTrigger>

@@ -18,3 +18,28 @@ export function highlightLastWord(
     </>
   );
 }
+
+export function highlightTrailingWords(
+  text: string,
+  count: number,
+  className = "text-primary-text",
+): ReactNode {
+  const trimmed = text.trimEnd();
+  const trailing = text.slice(trimmed.length);
+  const words = trimmed.split(/\s+/);
+
+  if (!trimmed || words.length <= count) {
+    return <span className={className}>{trimmed}</span>;
+  }
+
+  const lead = words.slice(0, -count).join(" ");
+  const highlight = words.slice(-count).join(" ");
+
+  return (
+    <>
+      {lead}{" "}
+      <span className={className}>{highlight}</span>
+      {trailing}
+    </>
+  );
+}

@@ -2,12 +2,12 @@
 
 import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  CheckCircle,
+  BriefcaseBusiness,
+  ClipboardCheck,
   CloudUpload,
-  FilePenLine,
-  PackageCheck,
   Printer,
+  Settings2,
+  SlidersHorizontal,
   Truck,
   type LucideIcon,
 } from "lucide-react";
@@ -18,30 +18,33 @@ import { highlightLastWord } from "@/components/ui/highlight-last-word";
 import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 
 const icons: LucideIcon[] = [
+  BriefcaseBusiness,
   CloudUpload,
-  FilePenLine,
-  CheckCircle,
-  Printer,
-  PackageCheck,
+  SlidersHorizontal,
+  ClipboardCheck,
   Truck,
 ];
+
+type ProcessStep = {
+  title: string;
+  description: string;
+};
 
 export default function PrintProcessSection() {
   const locale = useLocale();
   const t = useTranslations("home.landing");
   const isRTL = locale === "ur";
   const reduceMotion = useHydratedReducedMotion();
-  const steps = (t.raw("process_steps") as {
-    title: string;
-    description: string;
-  }[]) ?? [];
+  const steps = (t.raw("process_steps") as ProcessStep[]) ?? [];
 
   const itemVariants = {
-    hidden: reduceMotion ? {} : { opacity: 0, y: 18 },
+    hidden: reduceMotion ? {} : { opacity: 0, y: 16 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: reduceMotion ? { duration: 0 } : { duration: 0.45 },
+      transition: reduceMotion
+        ? { duration: 0 }
+        : { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
     },
   };
 
@@ -49,101 +52,99 @@ export default function PrintProcessSection() {
     <section
       id="process"
       aria-labelledby="process-heading"
-      className="relative overflow-hidden py-[var(--space-8)] scroll-mt-24 text-foreground sm:py-[var(--space-10)] lg:py-[var(--space-12)] dark:text-on-color"
+      dir={isRTL ? "rtl" : "ltr"}
+      className="relative scroll-mt-24 py-[var(--space-8)] text-foreground sm:py-[var(--space-10)] lg:py-[var(--space-12)] dark:text-on-color"
     >
-      <div
-        dir={isRTL ? "rtl" : "ltr"}
-        className="relative mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
-      >
+      <div className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.25 }}
+          viewport={{ once: true, amount: 0.2 }}
           transition={reduceMotion ? { duration: 0 } : { duration: 0.5 }}
-          className="mx-auto max-w-3xl text-center"
+          className="relative isolate overflow-hidden rounded-[var(--radius-4xl)] border border-primary-border/60 bg-gradient-to-br from-card via-primary-soft/25 to-card/90 px-4 py-6 shadow-[var(--shadow-lg)] sm:px-6 sm:py-8 lg:px-9 lg:py-16 dark:border-on-color/10 dark:from-background dark:via-primary/10 dark:to-background"
         >
-          <span className="landing-eyebrow">
-            <Printer aria-hidden="true" className="size-4 shrink-0" />
-            {t("process_label")}
-          </span>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute -start-24 -top-24 size-80 rounded-full bg-primary/10 blur-3xl sm:size-[26rem]" />
+            <div className="absolute -end-32 -bottom-32 size-96 rounded-full bg-landing-sky/20 blur-3xl" />
+            <div className="absolute start-1/2 top-1/2 size-[min(75vw,36rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/10" />
+          </div>
 
-          <h2
-            id="process-heading"
-            className="landing-section-title mt-[var(--space-4)]"
-          >
-            {highlightLastWord(t("process_title"), "landing-section-title-highlight")}
-          </h2>
+          <header className="relative mx-auto max-w-3xl text-center">
+            <span className="landing-eyebrow">
+              <Settings2 aria-hidden="true" className="size-4 shrink-0" />
+              {t("process_label")}
+            </span>
 
-          <p className="landing-section-description mx-auto mt-[var(--space-3)]">
-            {t("process_description")}
-          </p>
-        </motion.div>
+            <h2
+              id="process-heading"
+              className="landing-section-title mt-[var(--space-4)]"
+            >
+              {highlightLastWord(t("process_title"), "landing-section-title-highlight")}
+            </h2>
 
-        <motion.ol
-          initial={reduceMotion ? false : "hidden"}
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.15 }}
-          variants={{
-            hidden: {},
-            visible: {
-              transition: reduceMotion
-                ? { duration: 0 }
-                : { staggerChildren: 0.08, delayChildren: 0.08 },
-            },
-          }}
-          role="list"
-          className="mt-[var(--space-6)] grid list-none grid-cols-1 gap-x-[var(--space-4)] gap-y-[var(--space-5)] sm:mt-[var(--space-8)] sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
-        >
-          {steps.map((step, index) => {
-            const Icon = icons[index] ?? CloudUpload;
-            const isLast = index === steps.length - 1;
+            <p className="landing-section-description mx-auto mt-[var(--space-3)]">
+              {t("process_description")}
+            </p>
+          </header>
 
-            return (
-              <motion.li
-                key={`${index}-${step.title}`}
-                variants={itemVariants}
-                className="group relative min-w-0 pt-[var(--space-3)]"
+          <div className="relative mx-auto mt-[var(--space-6)] w-full max-w-5xl sm:mt-[var(--space-8)]">
+            <div className="relative min-w-0">
+              <motion.ol
+                initial={reduceMotion ? false : "hidden"}
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.12 }}
+                variants={{
+                  hidden: {},
+                  visible: {
+                    transition: reduceMotion
+                      ? { duration: 0 }
+                      : { staggerChildren: 0.07, delayChildren: 0.05 },
+                  },
+                }}
+                className="relative grid list-none gap-y-8 before:absolute before:inset-y-10 before:start-[1.375rem] before:z-0 before:border-s-2 before:border-dashed before:border-primary/35 sm:gap-y-10 lg:gap-y-12 lg:before:start-1/2 lg:before:-translate-x-1/2"
               >
-                <span className="absolute start-1/2 top-0 z-20 flex size-7 -translate-x-1/2 items-center justify-center rounded-full bg-primary font-hero text-sm font-bold leading-none text-primary-foreground shadow-[var(--shadow-md)] ring-4 ring-background/80">
-                  {index + 1}
-                </span>
+                {steps.map((step, index) => {
+                  const Icon = icons[index] ?? CloudUpload;
+                  const number = String(index + 1).padStart(2, "0");
+                  const isOnRight = index % 2 === 1;
 
-                  <div
-                  className={cn(
-                    "flex h-full flex-col items-center rounded-[var(--radius-2xl)] border border-primary-border/70",
-                    "bg-card/75 px-[var(--space-3)] pb-[var(--space-4)] pt-[var(--space-5)] text-center shadow-[var(--shadow-md)] backdrop-blur-sm",
-                    "transition-all duration-300 group-hover:-translate-y-0.5 group-hover:border-primary-border group-hover:shadow-[var(--shadow-lg)]",
-                    "motion-reduce:transition-none motion-reduce:group-hover:translate-y-0",
-                    "dark:border-on-color/10 dark:bg-background/70",
-                  )}
-                >
-                  <span className="mb-[var(--space-2)] flex size-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary-text shadow-[var(--shadow-sm)] dark:bg-primary/15 dark:text-primary-soft-foreground">
-                    <Icon className="size-6" strokeWidth={1.9} aria-hidden="true" />
-                  </span>
+                  return (
+                    <motion.li
+                      key={`${index}-${step.title}`}
+                      variants={itemVariants}
+                      className="relative z-10 grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-2.5 lg:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] lg:gap-3"
+                    >
+                      <span className="col-start-1 row-start-1 z-20 flex size-10 items-center justify-center justify-self-center rounded-full border-[3px] border-card bg-primary font-hero text-xs font-bold leading-none text-primary-foreground shadow-[var(--shadow-md)] sm:size-11 sm:text-sm lg:col-start-2">
+                        {number}
+                      </span>
 
-                  <h3 className="max-w-full font-hero text-sm font-bold leading-snug text-heading sm:text-control">
-                    {step.title}
-                  </h3>
-
-                  <p className="mt-1 font-hero text-xs leading-5 text-muted-foreground dark:text-neutral-300 sm:text-sm">
-                    {step.description}
-                  </p>
-                </div>
-
-                {!isLast ? (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -end-5 top-1/2 z-30 hidden size-6 -translate-y-1/2 items-center justify-center rounded-full border border-primary-border bg-card text-primary-text shadow-[var(--shadow-sm)] xl:flex"
-                  >
-                    <ArrowRight
-                      className={cn("size-4", isRTL && "rotate-180")}
-                    />
-                  </span>
-                ) : null}
-              </motion.li>
-            );
-          })}
-        </motion.ol>
+                      <div
+                        className={cn(
+                          "group col-start-2 row-start-1 min-w-0 rounded-[var(--radius-2xl)] border border-primary-border/55 bg-card/90 px-3.5 py-3.5 shadow-[var(--shadow-md)] backdrop-blur-sm transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-primary-border hover:shadow-[var(--shadow-lg)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:px-4 sm:py-4 dark:border-on-color/10 dark:bg-background/80",
+                          isOnRight ? "lg:col-start-3" : "lg:col-start-1",
+                        )}
+                      >
+                        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-hero text-sm font-bold leading-snug text-heading sm:text-base">
+                              {step.title}
+                            </h3>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm dark:text-neutral-300">
+                              {step.description}
+                            </p>
+                          </div>
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary-text shadow-[var(--shadow-sm)] transition-transform duration-300 group-hover:scale-105 dark:bg-primary/15 dark:text-primary-soft-foreground sm:size-11">
+                            <Icon className="size-5 sm:size-[1.375rem]" strokeWidth={1.9} aria-hidden="true" />
+                          </span>
+                        </div>
+                      </div>
+                    </motion.li>
+                  );
+                })}
+              </motion.ol>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

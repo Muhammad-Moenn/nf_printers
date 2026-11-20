@@ -81,7 +81,7 @@ const HeroSection = ({ className }: Props) => {
     <section
       id="hero"
       aria-labelledby="hero-heading"
-      className={cn("relative isolate overflow-hidden", className)}
+      className={cn("relative isolate scroll-mt-24 overflow-hidden", className)}
     >
       <div
         dir={isRTL ? "rtl" : "ltr"}

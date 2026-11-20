@@ -74,6 +74,7 @@ async function loadAdminServicesPayload(): Promise<AdminServicesPayload> {
           priceUnit: true,
           displayOrder: true,
           isActive: true,
+          isFavorite: true,
         },
       }),
       prisma.order.groupBy({
@@ -179,6 +180,7 @@ export async function saveAdminServiceAction(raw: unknown, id?: string) {
       priceUnit: input.priceUnit,
       displayOrder: input.displayOrder,
       isActive: input.isActive,
+      isFavorite: input.isFavorite,
     };
 
     if (id) await prisma.service.update({ where: { id }, data });

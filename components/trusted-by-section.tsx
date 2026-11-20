@@ -1,12 +1,17 @@
 "use client";
 
-import { Fragment } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ShieldCheck } from "lucide-react";
+import { Award } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-import { highlightLastWord } from "@/components/ui/highlight-last-word";
+import { highlightTrailingWords } from "@/components/ui/highlight-last-word";
 import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +38,6 @@ const brandLogoDimensions: Record<string, { width: number; height: number }> = {
   "/brand-images/Nishat_school .jpeg": { width: 200, height: 200 },
 };
 
-const dotPattern = {
-  backgroundImage:
-    "radial-gradient(color-mix(in oklab, var(--primary) 55%, transparent) 1.5px, transparent 1.5px)",
-  backgroundSize: "14px 14px",
-} as const;
-
 const MARQUEE_COPIES = [0, 1, 2];
 
 export default function TrustedBySection() {
@@ -48,6 +47,129 @@ export default function TrustedBySection() {
   const isRTL = locale === "ur";
   const reduceMotion = useHydratedReducedMotion();
   const brands = (t.raw("brands") as Brand[]) ?? [];
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const groupWidthRef = useRef(0);
+  const offsetRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartOffsetRef = useRef(0);
+  const isHoveringCardRef = useRef(false);
+  const isFocusWithinRef = useRef(false);
+  const reduceMotionRef = useRef(reduceMotion);
+
+  useEffect(() => {
+    reduceMotionRef.current = reduceMotion;
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    const group = trackRef.current?.firstElementChild as HTMLElement | null;
+    if (!group) return;
+
+    const measure = () => {
+      groupWidthRef.current = group.getBoundingClientRect().width;
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(group);
+    window.addEventListener("resize", measure);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    let frameId = 0;
+    let lastTime = performance.now();
+
+    const tick = (now: number) => {
+      const elapsed = Math.min(now - lastTime, 64) / 1000;
+      lastTime = now;
+
+      const width = groupWidthRef.current;
+      if (width > 0) {
+        const paused =
+          isHoveringCardRef.current ||
+          isFocusWithinRef.current ||
+          isDraggingRef.current;
+
+        if (!paused) {
+          const speed = reduceMotionRef.current ? 14 : 42;
+          offsetRef.current -= speed * elapsed;
+        }
+
+        let wrapped = offsetRef.current % width;
+        if (wrapped > 0) wrapped -= width;
+        offsetRef.current = wrapped;
+
+        track.style.transform = `translate3d(${wrapped}px, 0, 0)`;
+      }
+
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      const delta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+          ? event.deltaX
+          : event.shiftKey
+            ? event.deltaY
+            : 0;
+
+      if (delta === 0) return;
+      event.preventDefault();
+      offsetRef.current -= delta;
+    };
+
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    isDraggingRef.current = true;
+    dragStartXRef.current = event.clientX;
+    dragStartOffsetRef.current = offsetRef.current;
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    offsetRef.current =
+      dragStartOffsetRef.current + (event.clientX - dragStartXRef.current);
+  };
+
+  const handlePointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
+    isDraggingRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const reveal = {
+    initial: reduceMotion ? false : { opacity: 0, y: 18 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.2 },
+    transition: reduceMotion
+      ? { duration: 0 }
+      : { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
+  };
 
   return (
     <section
@@ -59,43 +181,41 @@ export default function TrustedBySection() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        {/* <div
+        <div className={styles.backdrop} />
+        <div
           className={cn(
-            "absolute -start-40 -top-24 h-56 w-[42rem] rounded-[100%] bg-gradient-to-r from-primary/15 via-landing-sky/20 to-transparent blur-3xl",
-            styles.waveOne,
+            styles.ring,
+            "start-[-16rem] top-1/2 size-[32rem] -translate-y-1/2",
           )}
         />
         <div
           className={cn(
-            "absolute -end-40 -bottom-24 h-52 w-[38rem] rounded-[100%] bg-gradient-to-l from-primary/15 via-landing-sky/20 to-transparent blur-3xl",
-            styles.waveTwo,
+            styles.ring,
+            "start-[-9rem] top-1/2 size-[21rem] -translate-y-1/2",
           )}
-        /> */}
-        <div
-          className="absolute end-6 top-8 h-20 w-20 opacity-40 sm:end-10 sm:h-24 sm:w-24"
-          style={dotPattern}
         />
         <div
-          className="absolute bottom-8 start-6 h-16 w-16 opacity-35 sm:start-10 sm:h-20 sm:w-20"
-          style={dotPattern}
+          className={cn(
+            styles.ring,
+            "end-[-16rem] top-1/2 size-[32rem] -translate-y-1/2",
+          )}
+        />
+        <div
+          className={cn(
+            styles.ring,
+            "end-[-9rem] top-1/2 size-[21rem] -translate-y-1/2",
+          )}
         />
       </div>
 
       <motion.div
         dir={isRTL ? "rtl" : "ltr"}
-        initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={
-          reduceMotion
-            ? { duration: 0 }
-            : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
-        }
+        {...reveal}
         className="mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]"
       >
         <header className="mx-auto max-w-3xl text-center">
           <span className="landing-eyebrow">
-            <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
+            <Award aria-hidden="true" className="size-4 shrink-0" />
             {landing("partners_label")}
           </span>
 
@@ -103,7 +223,11 @@ export default function TrustedBySection() {
             id="trusted-heading"
             className="landing-section-title mt-[var(--space-4)]"
           >
-            {highlightLastWord(t("brand_title"), "landing-section-title-highlight")}
+            {highlightTrailingWords(
+              t("brand_title"),
+              2,
+              "landing-section-title-highlight",
+            )}
           </h2>
 
           <p className="landing-section-description mx-auto mt-[var(--space-3)]">
@@ -112,22 +236,28 @@ export default function TrustedBySection() {
         </header>
       </motion.div>
 
-      <div className="relative mt-[var(--space-8)] w-full sm:mt-[var(--space-10)]">
-        <div
-          className={cn(
-            "relative w-full overflow-hidden border-y border-primary-border/80",
-            "bg-[linear-gradient(115deg,var(--landing-ice)_0%,var(--card)_50%,var(--landing-ice)_100%)]",
-            "dark:border-primary/20 dark:bg-[linear-gradient(115deg,var(--landing-ice)_0%,var(--landing-surface)_50%,var(--landing-ice)_100%)]",
-            styles.marqueeRail,
-          )}
-        >
+      <motion.div
+        dir={isRTL ? "rtl" : "ltr"}
+        {...reveal}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }
+        }
+        className="mx-auto mt-[var(--space-8)] w-full sm:mt-[var(--space-10)]"
+      >
+        <div className={cn(styles.marqueeShell, "relative w-full")}>
           <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
-          />
-
-          <div className={styles.marqueeViewport} dir="ltr">
-            <div className={styles.track}>
+            ref={viewportRef}
+            className={styles.marqueeViewport}
+            dir="ltr"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerEnd}
+            onPointerCancel={handlePointerEnd}
+            onLostPointerCapture={handlePointerEnd}
+          >
+            <div ref={trackRef} className={styles.track}>
               {MARQUEE_COPIES.map((copy) => (
                 <div
                   key={copy}
@@ -147,13 +277,25 @@ export default function TrustedBySection() {
                           role="img"
                           aria-label={copy === 0 ? brand.name : undefined}
                           tabIndex={copy === 0 ? 0 : undefined}
+                          onPointerEnter={() => {
+                            isHoveringCardRef.current = true;
+                          }}
+                          onPointerLeave={() => {
+                            isHoveringCardRef.current = false;
+                          }}
+                          onFocus={() => {
+                            isFocusWithinRef.current = true;
+                          }}
+                          onBlur={() => {
+                            isFocusWithinRef.current = false;
+                          }}
                         >
                           <Image
                             src={brand.logo}
                             alt=""
                             width={dimensions.width}
                             height={dimensions.height}
-                            sizes="(max-width: 639px) 110px, (max-width: 1023px) 150px, 190px"
+                            sizes="(max-width: 639px) 140px, (max-width: 1023px) 170px, 190px"
                             draggable={false}
                             className={cn(
                               styles.logoImage,
@@ -161,18 +303,13 @@ export default function TrustedBySection() {
                             )}
                           />
                           <span
-                            className={styles.logoTooltip}
+                            className={styles.logoName}
                             aria-hidden="true"
                             dir="auto"
                           >
                             {brand.name}
                           </span>
                         </div>
-
-                        <span
-                          className={styles.logoSeparator}
-                          aria-hidden="true"
-                        />
                       </Fragment>
                     );
                   })}
@@ -180,18 +317,8 @@ export default function TrustedBySection() {
               ))}
             </div>
           </div>
-
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-12 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent"
-          />
         </div>
-
-        <div
-          aria-hidden="true"
-          className="mx-auto -mt-3 h-10 w-[min(80vw,60rem)] rounded-full bg-primary/15 blur-2xl"
-        />
-      </div>
+      </motion.div>
     </section>
   );
 }

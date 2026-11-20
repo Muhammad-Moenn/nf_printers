@@ -1,14 +1,15 @@
 import ActionBanner from "@/components/action-banner";
 import AllServicesSection from "@/components/all-services-section";
 import FAQSection from "@/components/faqs-section";
+import PrintProcessSection from "@/components/print-process-section";
 import ServicesHero from "@/components/services-hero";
-import { FileText } from "lucide-react";
 
 export default function page() {
   return (
    <div >
      <ServicesHero/>
      <AllServicesSection/>
+     <PrintProcessSection/>
      <FAQSection/>
       <ActionBanner
       // heading="Need Professional Printing Services?"

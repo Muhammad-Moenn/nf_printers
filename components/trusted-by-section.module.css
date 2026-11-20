@@ -1,57 +1,99 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  /* background: */
+    /* linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--landing-ice) 72%, transparent) 16%,
+      color-mix(in srgb, var(--landing-ice) 72%, transparent) 84%,
+      transparent 100%
+    ), */
+    /* radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--landing-sky) 20%, transparent) 0%,
+      transparent 62%
+    ), */
+    /* radial-gradient(
+      100% 85% at 50% 100%,
+      color-mix(in srgb, var(--landing-sky) 14%, transparent) 0%,
+      transparent 68%
+    ); */
+}
+
+.ring {
+  position: absolute;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
+  pointer-events: none;
+}
+
+:global(.dark) .backdrop {
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--landing-ice) 55%, transparent) 16%,
+      color-mix(in srgb, var(--landing-ice) 55%, transparent) 84%,
+      transparent 100%
+    ),
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--landing-sky) 22%, transparent) 0%,
+      transparent 62%
+    );
+}
+
+.marqueeShell {
+  border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+  padding: clamp(0.75rem, 1.4vw, 1.15rem) clamp(0.75rem, 1.8vw, 1.5rem);
+  box-shadow:
+    0 24px 44px -34px color-mix(in srgb, var(--primary) 28%, transparent),
+    0 12px 24px -18px color-mix(in srgb, var(--primary) 18%, transparent),
+    0 -10px 22px -18px color-mix(in srgb, var(--primary) 14%, transparent),
+    inset 0 1px 0 0 color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(10px);
+  transition: box-shadow 240ms ease, border-color 240ms ease;
+}
+
 .marqueeViewport {
   position: relative;
   width: 100%;
   overflow: hidden;
+  padding-block: 0.25rem;
   scrollbar-width: none;
-  padding-block: 3rem 1.75rem;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0,
-    #000 clamp(2.5rem, 7vw, 7rem),
-    #000 calc(100% - clamp(2.5rem, 7vw, 7rem)),
+    #000 4%,
+    #000 96%,
     transparent 100%
   );
   mask-image: linear-gradient(
     to right,
     transparent 0,
-    #000 clamp(2.5rem, 7vw, 7rem),
-    #000 calc(100% - clamp(2.5rem, 7vw, 7rem)),
+    #000 4%,
+    #000 96%,
     transparent 100%
   );
 }
 
-.marqueeRail {
-  box-shadow:
-    0 30px 70px -46px color-mix(in srgb, var(--primary) 70%, transparent),
-    0 12px 30px -24px color-mix(in srgb, var(--primary) 30%, transparent),
-    inset 0 1px 0 0 color-mix(in srgb, var(--card) 70%, transparent);
+.marqueeViewport:active {
+  cursor:pointer;
 }
 
 .marqueeViewport::-webkit-scrollbar {
   display: none;
 }
 
-.waveOne,
-.waveTwo {
-  animation: trusted-wave-float 18s ease-in-out infinite alternate;
-}
-
-.waveOne {
-  rotate: -12deg;
-}
-
-.waveTwo {
-  animation-duration: 22s;
-  animation-delay: -6s;
-  rotate: 12deg;
-}
-
 .track {
   display: flex;
   width: max-content;
-  animation: trusted-marquee 32s linear infinite;
-  animation-iteration-count: infinite;
-  animation-play-state: running;
   will-change: transform;
 }
 
@@ -59,199 +101,119 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: clamp(1.25rem, 3vw, 2.75rem);
-  padding-inline-end: clamp(1.25rem, 3vw, 2.75rem);
+  gap: clamp(0.75rem, 1.6vw, 1.5rem);
+  padding-inline-end: clamp(0.75rem, 1.6vw, 1.5rem);
 }
 
 .logoItem {
   position: relative;
   display: flex;
   flex-shrink: 0;
-  width: clamp(9rem, 15vw, 12rem);
-  min-height: 4.75rem;
+  width: clamp(8.25rem, 15vw, 14rem);
+  height: clamp(4.75rem, 8vw, 6.5rem);
   align-items: center;
   justify-content: center;
-  padding: 0.7rem 0.9rem;
-  cursor: pointer;
+  padding: 0.75rem 1rem;
+  cursor: inherit;
   border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
-  border-radius: var(--radius-2xl);
-  background: color-mix(in srgb, var(--card) 88%, transparent);
-  box-shadow: 0 8px 20px -14px color-mix(in srgb, var(--primary) 45%, transparent);
+  border-radius: clamp(1rem, 1.8vw, 1.375rem);
+  background: var(--card);
+  box-shadow:
+    0 10px 22px -18px color-mix(in srgb, var(--primary) 40%, transparent),
+    0 2px 5px -4px color-mix(in srgb, var(--primary) 22%, transparent);
   outline: none;
   transition:
     transform 260ms var(--ease-out-emphasis, cubic-bezier(0.22, 1, 0.36, 1)),
     border-color 220ms ease,
-    background-color 220ms ease,
     box-shadow 220ms ease;
 }
 
 .logoImage {
-  height: 2.25rem;
+  max-width: 100%;
+  max-height: clamp(2.25rem, 3.6vw, 3.25rem);
   width: auto;
-  max-width: none;
+  height: auto;
   object-fit: contain;
-  opacity: 0.82;
+  opacity: 0.9;
   transition:
     transform 300ms var(--ease-out-emphasis, cubic-bezier(0.22, 1, 0.36, 1)),
     opacity 300ms ease;
 }
 
-.logoSeparator {
-  display: block;
-  height: 1.5rem;
-  width: 1px;
-  flex-shrink: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--primary-border),
-    transparent
-  );
-  opacity: 0.8;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--primary) 45%, transparent));
-}
-
-.logoTooltip {
+.logoName {
   position: absolute;
-  bottom: calc(100% + 0.6rem);
-  left: 50%;
-  z-index: 30;
-  transform: translate(-50%, 0.35rem);
-  border-radius: var(--radius-lg);
-  background-color: var(--landing-footer);
-  padding: 0.4rem 0.75rem;
-  color: var(--on-color);
+  inset-inline: 0.5rem;
+  bottom: 0.4rem;
+  z-index: 2;
+  overflow: hidden;
+  color: var(--landing-title-color);
   font-family: var(--font-family);
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
+  text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
   opacity: 0;
-  visibility: hidden;
+  transform: translateY(0.35rem);
   pointer-events: none;
-  box-shadow:
-    0 12px 28px -10px rgba(21, 87, 245, 0.55),
-    var(--shadow-md);
   transition:
     opacity 180ms ease,
-    transform 180ms ease,
-    visibility 180ms ease;
-}
-
-.logoTooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--landing-footer);
-}
-
-@media (min-width: 640px) {
-  .marqueeViewport {
-    padding-block: 3.25rem 2rem;
-  }
-
-  .logoImage {
-    height: 2.75rem;
-  }
-
-  .logoItem {
-    min-height: 5.25rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .marqueeViewport {
-    padding-block: 3.75rem 2.25rem;
-  }
-
-  .track {
-    animation-duration: 46s;
-  }
-
-  .logoImage {
-    height: 3.5rem;
-  }
-
-  .logoItem {
-    min-height: 5.75rem;
-  }
+    transform 180ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .track:hover {
-    animation-play-state: paused;
+  .logoItem:hover {
+    z-index: 2;
+    transform: translateY(-0.25rem);
+    border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+    box-shadow:
+      0 20px 34px -14px color-mix(in srgb, var(--primary) 40%, transparent),
+      0 8px 14px -10px color-mix(in srgb, var(--primary) 30%, transparent);
   }
 
   .logoItem:hover .logoImage {
-    transform: scale(1.06);
+    transform: translateY(-0.35rem) scale(1.03);
     opacity: 1;
   }
 
-  .logoItem:hover {
-    z-index: 2;
-    transform: translateY(-0.35rem) scale(1.04);
-    border-color: color-mix(in srgb, var(--primary) 36%, transparent);
-    background: var(--card);
-    box-shadow:
-      0 18px 36px -12px color-mix(in srgb, var(--primary) 38%, transparent),
-      0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent),
-      var(--shadow-md);
-  }
-
-  .logoItem:hover .logoTooltip {
-    transform: translate(-50%, 0);
+  .logoItem:hover .logoName {
+    transform: translateY(0);
     opacity: 1;
-    visibility: visible;
   }
-
 }
 
 .logoItem:focus-visible {
   z-index: 2;
-  transform: translateY(-0.35rem) scale(1.04);
-  border-color: color-mix(in srgb, var(--primary) 36%, transparent);
-  background: var(--card);
+  transform: translateY(-0.25rem);
+  border-color: color-mix(in srgb, var(--primary) 38%, transparent);
   box-shadow:
-    0 18px 36px -12px color-mix(in srgb, var(--primary) 38%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent),
-    var(--shadow-md);
+    0 20px 34px -14px color-mix(in srgb, var(--primary) 40%, transparent),
+    0 8px 14px -10px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .logoItem:focus-visible .logoImage {
-  transform: scale(1.06);
+  transform: translateY(-0.35rem) scale(1.03);
   opacity: 1;
 }
 
-.logoItem:focus-visible .logoTooltip {
-  transform: translate(-50%, 0);
+.logoItem:focus-visible .logoName {
+  transform: translateY(0);
   opacity: 1;
-  visibility: visible;
-}
-
-.track:has(.logoItem:focus-visible) {
-  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .track {
-    animation-duration: 90s !important;
-    animation-iteration-count: infinite !important;
-  }
-
-  .waveOne,
-  .waveTwo {
-    animation: none;
-  }
-
   .logoImage {
     transition: none;
   }
 
-  .logoItem {
+  .logoItem,
+  .logoName {
+    transition: none;
+  }
+
+  .marqueeShell {
     transition: none;
   }
 }
@@ -262,14 +224,5 @@
   }
   to {
     transform: translate3d(-33.3333%, 0, 0);
-  }
-}
-
-@keyframes trusted-wave-float {
-  from {
-    transform: translate3d(0, -6px, 0) scale(1);
-  }
-  to {
-    transform: translate3d(0, 10px, 0) scale(1.05);
   }
 }

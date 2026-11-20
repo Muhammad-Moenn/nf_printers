@@ -24,12 +24,7 @@ import { submitContactRequest } from "@/lib/data/contact";
 
 import { highlightLastWord } from "@/components/ui/highlight-last-word";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -179,10 +174,7 @@ const ContactSection = () => {
     >
       <div className="relative mx-auto w-full max-w-[var(--hero-max-width)] px-[var(--hero-padding-x)] sm:px-[var(--space-6)] lg:px-[var(--space-8)]">
         <div className="relative mx-auto max-w-7xl">
-          <motion.div
-            {...reveal()}
-            className="mx-auto max-w-3xl text-center"
-          >
+          <motion.div {...reveal()} className="mx-auto max-w-3xl text-center">
             <span className="landing-eyebrow">
               <Mail aria-hidden="true" className="size-4 shrink-0" />
               {t("contact_label")}
@@ -192,13 +184,19 @@ const ContactSection = () => {
               id="contact-heading"
               className="landing-section-title mt-[var(--space-4)]"
             >
-              {highlightLastWord(t("contact_title"), "landing-section-title-highlight")}
+              {highlightLastWord(
+                t("contact_title"),
+                "landing-section-title-highlight",
+              )}
             </h2>
 
             <p className="landing-section-description mx-auto mt-[var(--space-3)]">
               {t("contact_description")}
             </p>
-            <div aria-hidden="true" className="mt-[var(--space-3)] flex items-center justify-center gap-4 text-primary sm:mt-[var(--space-4)]">
+            <div
+              aria-hidden="true"
+              className="mt-[var(--space-3)] flex items-center justify-center gap-4 text-primary sm:mt-[var(--space-4)]"
+            >
               <span className="h-0.5 w-16 rounded-full bg-primary-border sm:w-20" />
               <Printer className="size-6" strokeWidth={2.2} />
               <span className="h-0.5 w-16 rounded-full bg-primary-border sm:w-20" />
@@ -225,17 +223,30 @@ const ContactSection = () => {
                   sizes="(max-width: 1023px) 92vw, 42vw"
                   className="pointer-events-none -z-10 object-contain object-right-bottom opacity-20"
                 />
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-[var(--landing-footer)] via-[var(--landing-footer)]/90 to-primary/55" />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-[var(--landing-footer)] via-[var(--landing-footer)]/90 to-primary/55"
+                />
 
-                <CardHeader className={cn("block px-[var(--space-5)] pb-0 pt-[var(--space-5)] sm:px-[var(--space-6)] sm:pt-[var(--space-6)]", isRTL && "text-end")}>
-                  <span aria-hidden="true" className="mb-[var(--space-2)] block h-1 w-20 rounded-full bg-primary" />
+                <CardHeader
+                  className={cn(
+                    "block px-[var(--space-5)] pb-0 pt-[var(--space-5)] sm:px-[var(--space-6)] sm:pt-[var(--space-6)]",
+                    isRTL && "text-end",
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="mb-[var(--space-2)] block h-1 w-20 rounded-full bg-primary"
+                  />
                   <CardTitle
                     role="heading"
                     aria-level={3}
-                    className="font-hero text-3xl font-bold leading-tight tracking-tight text-on-color sm:text-4xl"
+                    className="font-hero text-3xl font-semibold leading-tight tracking-tight text-on-color sm:text-4xl"
                   >
-                    {t("contact_card_title")} {" "}
-                    <span className="text-landing-sky dark:text-primary-soft-foreground">{t("contact_card_highlight")}</span>
+                    {t("contact_card_title")}{" "}
+                    <span className="text-landing-sky dark:text-primary-soft-foreground">
+                      {t("contact_card_highlight")}
+                    </span>
                   </CardTitle>
                   <p className="mt-[var(--space-2)] max-w-lg font-hero text-sm leading-relaxed text-on-color/90 sm:text-base">
                     {t("contact_card_description")}
@@ -243,7 +254,10 @@ const ContactSection = () => {
                 </CardHeader>
 
                 <CardContent className="relative z-10 p-[var(--space-4)] sm:p-[var(--space-5)]">
-                  <ul role="list" className="space-y-[var(--space-2)] sm:space-y-[var(--space-3)]">
+                  <ul
+                    role="list"
+                    className="space-y-[var(--space-2)] sm:space-y-[var(--space-3)]"
+                  >
                     {contactItems.map(
                       ({ icon: Icon, label, value, href, external }) => (
                         <li key={label}>
@@ -265,14 +279,17 @@ const ContactSection = () => {
                               />
                             </span>
 
-                            <span aria-hidden="true" className="mt-0.5 hidden h-11 w-0.5 shrink-0 rounded-full bg-primary sm:block" />
+                            <span
+                              aria-hidden="true"
+                              className="mt-0.5 hidden h-11 w-0.5 shrink-0 rounded-full bg-primary sm:block"
+                            />
                             <div className="min-w-0">
-                              <p className="font-hero text-sm font-bold text-on-color">
+                              <p className="font-hero text-sm font-semibold text-on-color">
                                 {label}
                               </p>
                               <p
                                 dir="auto"
-                                className="mt-[var(--space-1)] break-words font-hero text-sm font-medium leading-snug text-on-color/90 sm:text-base"
+                                className="mt-[var(--space-1)] break-words font-hero text-sm font-medium leading-snug text-on-color/90 sm:text-sm"
                               >
                                 {value}
                               </p>
@@ -304,7 +321,10 @@ const ContactSection = () => {
                 >
                   <MapPin className="size-4 text-primary" aria-hidden="true" />
                   {t("open_maps")}
-                  <ArrowUpRight className="size-4 text-primary" aria-hidden="true" />
+                  <ArrowUpRight
+                    className="size-4 text-primary"
+                    aria-hidden="true"
+                  />
                 </a>
               </div>
             </motion.div>
@@ -353,7 +373,10 @@ const ContactSection = () => {
                           {t("name_label")}
                         </Label>
                         <div className="relative">
-                          <UserRound aria-hidden="true" className="pointer-events-none absolute start-4 top-1/2 z-10 size-5 -translate-y-1/2 text-primary" />
+                          <UserRound
+                            aria-hidden="true"
+                            className="pointer-events-none absolute start-4 top-1/2 z-10 size-5 -translate-y-1/2 text-primary"
+                          />
                           <Input
                             id="contact-name"
                             name="name"
@@ -379,7 +402,10 @@ const ContactSection = () => {
                           {t("email_form_label")}
                         </Label>
                         <div className="relative">
-                          <Mail aria-hidden="true" className="pointer-events-none absolute start-4 top-1/2 z-10 size-5 -translate-y-1/2 text-primary" />
+                          <Mail
+                            aria-hidden="true"
+                            className="pointer-events-none absolute start-4 top-1/2 z-10 size-5 -translate-y-1/2 text-primary"
+                          />
                           <Input
                             id="contact-email"
                             name="email"
@@ -407,7 +433,10 @@ const ContactSection = () => {
                         {t("subject_label")}
                       </Label>
                       <div className="relative">
-                        <Tag aria-hidden="true" className="pointer-events-none absolute start-4 top-1/2 z-10 size-5 -translate-y-1/2 text-primary" />
+                        <Tag
+                          aria-hidden="true"
+                          className="pointer-events-none absolute start-4 top-1/2 z-10 size-5 -translate-y-1/2 text-primary"
+                        />
                         <Input
                           id="contact-subject"
                           name="subject"
@@ -432,7 +461,10 @@ const ContactSection = () => {
                         {t("message_label")}
                       </Label>
                       <div className="relative">
-                        <MessageSquareText aria-hidden="true" className="pointer-events-none absolute start-4 top-4 z-10 size-5 text-primary" />
+                        <MessageSquareText
+                          aria-hidden="true"
+                          className="pointer-events-none absolute start-4 top-4 z-10 size-5 text-primary"
+                        />
                         <Textarea
                           id="contact-message"
                           name="message"

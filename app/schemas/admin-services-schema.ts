@@ -86,6 +86,7 @@ export const serviceInputSchema = z
       .min(0, "Display order cannot be negative.")
       .max(100000, "Display order is too large."),
     isActive: z.boolean(),
+    isFavorite: z.boolean(),
   })
   .refine(
     (data) =>
@@ -117,6 +118,7 @@ export type AdminService = {
   priceUnit: string;
   displayOrder: number;
   isActive: boolean;
+  isFavorite: boolean;
   orderCount: number;
 };
 export type AdminServicesPayload = {
