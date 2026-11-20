@@ -41,7 +41,7 @@ export default function LanguageSelector() {
     return (
       <div
         aria-hidden="true"
-        className="h-9 w-24 shrink-0 rounded-full border border-primary-border/60 bg-card/80 backdrop-blur-md"
+        className="h-9 w-24 shrink-0 rounded-full border border-primary-border bg-primary-soft/80 backdrop-blur-md"
       />
     );
   }
@@ -54,13 +54,13 @@ export default function LanguageSelector() {
       <SelectTrigger
         aria-label="Select language"
         className={cn(
-          "h-9 w-24 cursor-pointer gap-2 rounded-full px-3",
-          "border border-primary-border/60 bg-card/80 text-heading backdrop-blur-md",
-          "shadow-[0_2px_10px_-2px_rgba(18,101,233,0.25)]",
-          "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-border hover:bg-card",
-          "hover:shadow-[0_6px_18px_-4px_rgba(18,101,233,0.4)]",
+          "h-9 w-25 cursor-pointer gap-2 rounded-full px-3",
+          "border border-primary-border bg-primary-soft/80 text-heading backdrop-blur-md",
+          "shadow-sm shadow-primary/20",
+          "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary-soft",
+          "hover:shadow-md hover:shadow-primary/25",
           "focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:ring-offset-0",
-          "data-[state=open]:border-primary data-[state=open]:bg-card",
+          "data-[state=open]:border-primary data-[state=open]:bg-primary-soft",
           "[&>svg]:text-primary-text/70!",
           "dark:border-on-color/15 dark:bg-on-color/[0.08] dark:text-neutral-100 dark:hover:bg-on-color/[0.12] dark:[&>svg]:text-primary-soft-foreground!",
         )}

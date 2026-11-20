@@ -1,22 +1,16 @@
 "use client";
 
 import { useAuthUser } from "@/components/auth-provider";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
+import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { ArrowRight, ChevronDown, LayoutDashboard, LogIn, Menu } from "lucide-react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Link, usePathname } from "@/i18n/navigation";
 import LanguageSelector from "./language-selector";
 import NotificationButton from "./notification-btn";
 import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -49,6 +43,58 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAboutMenuOpen, setIsAboutMenuOpen] = useState(false);
+  const [isAboutHoverOpen, setIsAboutHoverOpen] = useState(false);
+  const aboutCloseTimer = useRef<number | null>(null);
+  const aboutMenuRef = useRef<HTMLLIElement | null>(null);
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    return () => {
+      if (aboutCloseTimer.current) window.clearTimeout(aboutCloseTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAboutHoverOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!aboutMenuRef.current?.contains(event.target as Node)) {
+        setIsAboutHoverOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsAboutHoverOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAboutHoverOpen]);
+
+  const openAboutMenu = () => {
+    if (aboutCloseTimer.current) {
+      window.clearTimeout(aboutCloseTimer.current);
+      aboutCloseTimer.current = null;
+    }
+    setIsAboutHoverOpen(true);
+  };
+
+  const closeAboutMenuSoon = () => {
+    if (aboutCloseTimer.current) window.clearTimeout(aboutCloseTimer.current);
+    aboutCloseTimer.current = window.setTimeout(() => {
+      setIsAboutHoverOpen(false);
+    }, 150);
+  };
+
+  const navLinkBase =
+    "relative flex h-10 items-center px-2.5 text-sm font-semibold transition-colors after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-primary after:transition-transform after:duration-200 hover:text-primary-text hover:after:scale-x-100 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px] xl:after:inset-x-3";
+  const navLinkIdle =
+    "text-muted-foreground after:scale-x-0 dark:text-neutral-300";
+  const navLinkActive =
+    "text-primary-text after:scale-x-100 dark:text-primary-soft-foreground";
 
   const dashboardHref =
     dbUser?.role === "ADMIN" ? "/admin-dashboard" : "/user-dashboard";
@@ -83,6 +129,7 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
     section.scrollIntoView({ behavior: "smooth", block: "start" });
     setIsMobileMenuOpen(false);
     setIsAboutMenuOpen(false);
+    setIsAboutHoverOpen(false);
   };
 
   return (
@@ -118,42 +165,95 @@ export function NavBar({ dbUser }: { dbUser: HeaderUser }) {
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
           <ul className="flex items-center gap-0.5 xl:gap-1">
-            {items.map((item) => (
-              <li key={item.link}>
-                {item.link === "about" ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="group flex h-10 items-center gap-1.5 px-2.5 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-primary-text focus-visible:text-primary-text dark:text-neutral-300 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px]">
-                      {item.name}
-                      <ChevronDown aria-hidden="true" className="size-4 transition-transform group-data-[state=open]:rotate-180" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align={isUrdu ? "end" : "start"} className="min-w-52 p-1.5">
-                      {aboutLinks.map((subItem) => (
-                        <DropdownMenuItem key={subItem.link} asChild className="min-h-10 rounded-lg px-3 font-medium">
-                          <Link
-                            href={getNavHref(subItem)}
-                            onClick={(event) => handleSectionLink(event, subItem)}
-                          >
-                            {subItem.name}
-                          </Link>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
+            {items.map((item) =>
+              item.link === "about" ? (
+                <li
+                  key={item.link}
+                  ref={aboutMenuRef}
+                  className="relative"
+                  onMouseEnter={openAboutMenu}
+                  onMouseLeave={closeAboutMenuSoon}
+                  onBlur={(event) => {
+                    const next = event.relatedTarget;
+                    if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
+                      closeAboutMenuSoon();
+                    }
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-expanded={isAboutHoverOpen}
+                    aria-controls="about-submenu"
+                    aria-current={isActive(item) ? "page" : undefined}
+                    onClick={() => setIsAboutHoverOpen((open) => !open)}
+                    className={`cursor-pointer gap-1.5 ${
+                      isAboutHoverOpen || isActive(item) ? navLinkActive : navLinkIdle
+                    } ${navLinkBase}`}
+                  >
+                    {item.name}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`size-4 transition-transform duration-200 ${
+                        isAboutHoverOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <AnimatePresence>
+                    {isAboutHoverOpen && (
+                      <motion.div
+                        id="about-submenu"
+                        initial={
+                          shouldReduceMotion
+                            ? { opacity: 0 }
+                            : { opacity: 0, y: -6, scale: 0.97 }
+                        }
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={
+                          shouldReduceMotion
+                            ? { opacity: 0 }
+                            : { opacity: 0, y: -4, scale: 0.98 }
+                        }
+                        transition={
+                          shouldReduceMotion
+                            ? { duration: 0 }
+                            : { duration: 0.18, ease: [0.22, 1, 0.36, 1] }
+                        }
+                        className="absolute start-0 top-full z-50 origin-top pt-2.5"
+                      >
+                        <ul className="min-w-56 rounded-xl border border-primary-border bg-card p-1.5 shadow-lg shadow-primary/20 backdrop-blur-xl dark:border-primary/25 dark:bg-popover">
+                          {aboutLinks.map((subItem) => (
+                            <li key={subItem.link}>
+                              <Link
+                                href={getNavHref(subItem)}
+                                onClick={(event) => {
+                                  handleSectionLink(event, subItem);
+                                  setIsAboutHoverOpen(false);
+                                }}
+                                className="flex min-h-10 items-center rounded-lg px-3 text-sm font-medium text-foreground/80 transition-colors hover:bg-primary-soft hover:text-primary-text focus-visible:bg-primary-soft focus-visible:text-primary-text focus-visible:outline-none dark:text-neutral-200 dark:hover:bg-primary/10 dark:hover:text-primary-soft-foreground dark:focus-visible:bg-primary/10 dark:focus-visible:text-primary-soft-foreground"
+                              >
+                                {subItem.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </li>
+              ) : (
+                <li key={item.link}>
                   <Link
                     href={getNavHref(item)}
                     aria-current={isActive(item) ? "page" : undefined}
-                    className={`relative flex h-10 items-center px-2.5 text-sm font-semibold transition-colors after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-primary after:transition-transform after:duration-200 hover:text-primary-text hover:after:scale-x-100 dark:hover:text-primary-soft-foreground xl:px-3 xl:text-[15px] xl:after:inset-x-3 ${
-                      isActive(item)
-                        ? "text-primary-text after:scale-x-100 dark:text-primary-soft-foreground"
-                        : "text-muted-foreground after:scale-x-0 dark:text-neutral-300"
+                    className={`${navLinkBase} ${
+                      isActive(item) ? navLinkActive : navLinkIdle
                     }`}
                   >
                     {item.name}
                   </Link>
-                )}
-              </li>
-            ))}
+                </li>
+              ),
+            )}
           </ul>
         </nav>
 

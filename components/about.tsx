@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Building2, Check, Play } from "lucide-react";
 import Image from "next/image";
@@ -18,7 +18,22 @@ export default function About() {
   const isRTL = locale === "ur";
   const reduceMotion = useHydratedReducedMotion();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const benefits = (t.raw("features") as string[]) ?? [];
+
+  useEffect(() => {
+    if (!isVideoPlaying) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        video.muted = true;
+        void video.play().catch(() => {});
+      });
+    }
+  }, [isVideoPlaying]);
 
   const reveal = (delay = 0, distance = 20) => ({
     initial: reduceMotion ? false : { opacity: 0, y: distance },
@@ -75,7 +90,8 @@ export default function About() {
             {isVideoPlaying ? (
               <video
                 key="about-video"
-                src="/heroSection-video.mp4"
+                ref={videoRef}
+                src="/videos/heroSection-video.mp4"
                 autoPlay
                 controls
                 playsInline

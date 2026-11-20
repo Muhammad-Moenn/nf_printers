@@ -7,15 +7,25 @@ import {
   Printer,
   Smile,
   Trophy,
+  X,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useHydratedReducedMotion } from "@/components/use-hydrated-reduced-motion";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +51,22 @@ const HeroSection = ({ className }: Props) => {
   const reduceMotion = useHydratedReducedMotion();
   const isRTL = locale === "ur";
   const stats = (landing.raw("hero_stats") as HeroStat[]) ?? [];
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!isVideoOpen) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const playPromise = video.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        video.muted = true;
+        void video.play().catch(() => {});
+      });
+    }
+  }, [isVideoOpen]);
 
   const reveal = (delay = 0, distance = 16) => ({
     initial: reduceMotion ? false : { opacity: 0, y: distance },
@@ -55,16 +81,18 @@ const HeroSection = ({ className }: Props) => {
     <section
       id="hero"
       aria-labelledby="hero-heading"
-      className={cn(
-        "relative isolate overflow-hidden",
-        className,
-      )}
+      className={cn("relative isolate overflow-hidden", className)}
     >
       <div
         dir={isRTL ? "rtl" : "ltr"}
         className="relative mx-auto grid min-h-[var(--hero-min-height)] w-full max-w-[var(--hero-max-width)] items-center gap-[var(--space-6)] px-[var(--hero-padding-x)] py-[var(--hero-padding-y)] sm:px-[var(--space-6)] lg:min-h-[var(--hero-desktop-min-height)] lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-[var(--space-8)] lg:px-[var(--space-8)] lg:py-[var(--space-8)]"
       >
-        <div className={cn("relative z-10 min-w-0", isRTL ? "text-end" : "text-start")}>
+        <div
+          className={cn(
+            "relative z-10 min-w-0",
+            isRTL ? "text-end" : "text-start",
+          )}
+        >
           <motion.div {...reveal(0)}>
             <span className="landing-eyebrow">
               <Printer className="size-4 shrink-0" aria-hidden="true" />
@@ -77,9 +105,7 @@ const HeroSection = ({ className }: Props) => {
             {...reveal(0.04, 12)}
             className="mt-[var(--space-4)] max-w-[var(--hero-title-width)] font-hero text-hero font-bold leading-hero tracking-hero text-heading sm:mt-[var(--space-5)]"
           >
-            <span className="block">
-              {landing("hero_title_line1")}
-            </span>
+            <span className="block">{landing("hero_title_line1")}</span>
             <span className="landing-section-title-highlight block">
               {landing("hero_title_line2")}
             </span>
@@ -106,7 +132,10 @@ const HeroSection = ({ className }: Props) => {
             >
               <Link
                 href="/services"
-                className={cn("flex items-center gap-2", isRTL && "flex-row-reverse")}
+                className={cn(
+                  "flex items-center gap-2",
+                  isRTL && "flex-row-reverse",
+                )}
               >
                 {landing("hero_cta_primary")}
                 <ArrowRight
@@ -121,24 +150,59 @@ const HeroSection = ({ className }: Props) => {
               </Link>
             </Button>
 
-            <Button
-              asChild
-              size="lg"
-              variant="ghost"
-              className="group min-h-12 rounded-full !px-[var(--space-4)] font-hero text-sm font-semibold text-heading transition-transform duration-300 hover:-translate-y-0.5 hover:bg-primary-soft hover:text-primary-text sm:text-control"
-            >
-              <a
-                href="/heroSection-video.mp4"
-                target="_blank"
-                rel="noreferrer"
-                className={cn("flex items-center gap-3", isRTL && "flex-row-reverse")}
+            <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  className="group !min-h-13 rounded-full !px-[var(--space-4)] font-hero text-sm font-semibold text-heading transition-transform duration-300 hover:-translate-y-0.5 bg-primary-soft hover:bg-primary-soft hover:text-primary-text sm:text-control"
+                >
+                  <span
+                    className={cn(
+                      "flex items-center gap-3",
+                      isRTL && "flex-row-reverse",
+                    )}
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary-border bg-card text-primary shadow-[var(--shadow-sm)] transition-transform duration-300 group-hover:scale-105">
+                      <Play
+                        className="ms-0.5 size-4 fill-current"
+                        aria-hidden="true"
+                      />
+                    </span>
+                    {landing("hero_cta_secondary")}
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent
+                showCloseButton={false}
+                className="max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden border-primary-border bg-card p-0 sm:max-w-4xl dark:border-primary/25"
               >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary-border bg-card text-primary shadow-[var(--shadow-sm)] transition-transform duration-300 group-hover:scale-105">
-                  <Play className="ms-0.5 size-4 fill-current" aria-hidden="true" />
-                </span>
-                {landing("hero_cta_secondary")}
-              </a>
-            </Button>
+                <DialogTitle className="sr-only">
+                  {landing("hero_video_title")}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {landing("hero_video_description")}
+                </DialogDescription>
+                <div className="relative bg-black">
+                  <video
+                    ref={videoRef}
+                    src="/videos/heroSection-video.mp4"
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                    aria-label={landing("hero_video_title")}
+                    className="aspect-video h-auto w-full object-contain"
+                  />
+                  <DialogClose
+                    aria-label={landing("hero_video_close")}
+                    className="absolute end-3 top-3 z-10 flex size-10 cursor-pointer items-center justify-center rounded-full border border-on-color/15 bg-black/60 text-on-color backdrop-blur transition-colors hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    <X className="size-5" aria-hidden="true" />
+                  </DialogClose>
+                </div>
+              </DialogContent>
+            </Dialog>
           </motion.div>
 
           <motion.dl
@@ -178,7 +242,10 @@ const HeroSection = ({ className }: Props) => {
                     aria-hidden="true"
                   />
                   <div className="min-w-0">
-                    <dt dir="ltr" className="font-hero text-base font-bold leading-tight text-heading sm:text-lg">
+                    <dt
+                      dir="ltr"
+                      className="font-hero text-base font-bold leading-tight text-heading sm:text-lg"
+                    >
                       {stat.value}
                     </dt>
                     <dd className="mt-0.5 font-hero text-[length:var(--font-size-xs)] font-medium leading-snug text-muted-foreground sm:text-sm">

@@ -113,10 +113,17 @@ export default function TrustedBySection() {
       </motion.div>
 
       <div className="relative mt-[var(--space-8)] w-full sm:mt-[var(--space-10)]">
-        <div className={cn("relative border-y border-primary-border/35 bg-gradient-to-r from-primary-soft/20 via-card/60 to-primary-soft/20 dark:border-on-color/10 dark:from-primary/5 dark:via-background/40 dark:to-primary/5", styles.marqueeRail)}>
+        <div
+          className={cn(
+            "relative w-full overflow-hidden border-y border-primary-border/80",
+            "bg-[linear-gradient(115deg,var(--landing-ice)_0%,var(--card)_50%,var(--landing-ice)_100%)]",
+            "dark:border-primary/20 dark:bg-[linear-gradient(115deg,var(--landing-ice)_0%,var(--landing-surface)_50%,var(--landing-ice)_100%)]",
+            styles.marqueeRail,
+          )}
+        >
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent"
+            className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
           />
 
           <div className={styles.marqueeViewport} dir="ltr">
@@ -176,17 +183,13 @@ export default function TrustedBySection() {
 
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent"
+            className="pointer-events-none absolute inset-x-12 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent"
           />
         </div>
 
         <div
           aria-hidden="true"
-          className="mx-auto h-px w-[min(92vw,80rem)] bg-gradient-to-r from-transparent via-primary/50 to-transparent"
-        />
-        <div
-          aria-hidden="true"
-          className="mx-auto -mt-1 h-8 w-[min(80vw,64rem)] rounded-full bg-primary/20 blur-2xl"
+          className="mx-auto -mt-3 h-10 w-[min(80vw,60rem)] rounded-full bg-primary/15 blur-2xl"
         />
       </div>
     </section>
